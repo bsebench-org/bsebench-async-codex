@@ -1,12 +1,13 @@
 {
   "phase_id": "phase-restart-chef-daemon-v2-bootstrap",
-  "status": "running",
+  "status": "error",
   "ts_queued": "2026-05-06T17:30:00Z",
   "ts_started": "2026-05-06T17:37:24Z",
-  "ts_done": null,
-  "exit_code": null,
+  "ts_done": "2026-05-06T18:50:00Z",
+  "exit_code": -98,
   "worker_id": "france-personal",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
   "target_branch": "bootstrap/chef-daemon-v2-respawn-2026-05-06",
-  "base_branch": "main"
+  "base_branch": "main",
+  "error_at_line": "manual claude-TN intervention : worker V0 hung on this BRIEF (no SIGKILL escalation in V0). User pkill'd everything + relaunched both daemons V2 manually. This phase superseded by user manual restart 2026-05-06T20:47:30+02:00."
 }
