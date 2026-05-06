@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [OK] phase-6-11-a-chi2-smoke-yao-bcdc-t25 (panel 84/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T00:05:54+02:00
+
+Phase    : phase-6-11-a-chi2-smoke-yao-bcdc-t25
+Etat     : approved (approved)
+Panel    : 84/100 (seuil 89)
+Quoi     : Phase 6.11.a — chi² smoke test on Yao BCDC T25
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-a-chi2-smoke-yao-bcdc-t25/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-a-chi2-smoke-yao-bcdc-t25/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-a-chi2-smoke-yao-bcdc-t25/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
