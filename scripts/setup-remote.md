@@ -1,42 +1,60 @@
-# One-time setup on the remote PC (France personal PC)
+# One-time setup on the remote PC
 
-> Run these once. After that, the worker runs every 60 s via cron / Task Scheduler.
+> Run these once. After that, the worker runs every 60 s via cron / Task Scheduler. The chef queues phases by pushing `inbox/<phase-id>/BRIEF.md` ; the worker picks them up and pushes results back.
+
+## Default reference layout (France personal PC, Windows + Git Bash)
+
+```
+C:\doctorat\bsebench-org\          (Posix : /c/doctorat/bsebench-org/)
+├── bsebench-datasets\
+├── bsebench-runner\
+├── bsebench-filters\
+├── bsebench-async-codex\          (this repo)
+├── bsebench-specs\
+├── bsebench-stats\
+└── _datasets\                     (created by the onboarding dispatch — large raw datasets)
+```
+
+If your remote PC uses a different OS or layout, adjust paths in section 5/5-bis below.
 
 ## Prerequisites
 
 - `git` (any version ≥ 2.30)
 - `bash` (Git Bash on Windows, native bash on Linux/macOS)
-- `jq` (`apt install jq` / `brew install jq` / `choco install jq`)
-- `flock` (built-in on Linux ; on Windows Git Bash it ships with the standard install ; on macOS install via `brew install flock`)
-- `codex` CLI ≥ 0.129.0-alpha.7 (`npm install -g @openai/codex@0.129.0-alpha.7`)
+- `jq` (`apt install jq` / `brew install jq` / `choco install jq` / Git-Bash includes recent versions)
+- `flock` (Linux/macOS native ; Git Bash on Windows ships with `util-linux`'s flock)
+- `node` + `npm` (for codex)
+- `codex` CLI ≥ 0.129.0-alpha.7 : `npm install -g @openai/codex@0.129.0-alpha.7`
 - GitHub credentials configured for `git push` (HTTPS PAT or SSH key) for `bsebench-org/*` repos
-- OpenAI API key for codex (set in `~/.codex/auth.json` after `codex login`, or via env var)
+- OpenAI API key for codex (set via `codex login`, or `OPENAI_API_KEY` env var)
 
-## 1. Clone target repos
+## 1. Clone all bsebench-org repos under one root
 
 ```bash
-mkdir -p ~/doctorat/workspace/bsebench-org
-cd ~/doctorat/workspace/bsebench-org
+mkdir -p /c/doctorat/bsebench-org
+cd /c/doctorat/bsebench-org
+
 git clone https://github.com/bsebench-org/bsebench-datasets.git
-# add other target repos here as phases require :
+git clone https://github.com/bsebench-org/bsebench-async-codex.git
+# add other target repos as phases require :
 # git clone https://github.com/bsebench-org/bsebench-runner.git
 # git clone https://github.com/bsebench-org/bsebench-filters.git
+# git clone https://github.com/bsebench-org/bsebench-specs.git
+# git clone https://github.com/bsebench-org/bsebench-stats.git
 ```
 
-## 2. Clone this orchestration repo
+## 2. Make worker script executable
 
 ```bash
-cd ~
-git clone https://github.com/bsebench-org/bsebench-async-codex.git
-chmod +x bsebench-async-codex/scripts/remote-worker.sh
+chmod +x /c/doctorat/bsebench-org/bsebench-async-codex/scripts/remote-worker.sh
 ```
 
 ## 3. Configure codex
 
 ```bash
-codex --version           # should be ≥ 0.129.0-alpha.7
-codex login               # interactive — provide your OpenAI API key when prompted
-# OR set OPENAI_API_KEY env var system-wide
+codex --version           # confirm ≥ 0.129.0-alpha.7
+codex login               # interactive — paste your OpenAI API key when prompted
+                          # (skip if OPENAI_API_KEY is already in env)
 
 # Verify writes work via the bypass flag :
 mkdir -p /tmp/codex-canary
@@ -46,18 +64,55 @@ codex exec --dangerously-bypass-approvals-and-sandbox -C /tmp/codex-canary \
 ls /tmp/codex-canary/   # should now contain canary.txt
 ```
 
-If the canary fails, see `~/.claude/projects/<project>/memory/reference_codex_cli_windows_bug.md` (Phase 6.6.b notes) for the regression workaround.
+If the canary fails, see `docs/onboarding-codex.md` §3 ("The bypass flag is not optional on Windows").
 
-## 4. Register the worker
+## 4. Run the codex onboarding (saves memory + downloads CALCE)
+
+This is the **first interactive dispatch**. Codex reads `docs/onboarding-codex.md` from this repo, persists context to `~/.codex/memories/`, and downloads ~5-10 GB of CALCE zips into `_datasets/`. Wallclock ~30-60 min depending on your bandwidth.
 
 ```bash
-cd ~/bsebench-async-codex
+cd /c/doctorat/bsebench-org
+
+codex exec --dangerously-bypass-approvals-and-sandbox \
+  -C /c/doctorat/bsebench-org \
+  --add-dir /c/doctorat/bsebench-org/bsebench-datasets \
+  --add-dir /c/doctorat/bsebench-org/bsebench-async-codex \
+  < /c/doctorat/bsebench-org/bsebench-async-codex/docs/onboarding-codex.md
+```
+
+When codex exits, it should print :
+
+```
+ASYNC-CODEX ONBOARDING COMPLETE
+- memory saved : ~/.codex/memories/bsebench-async-codex-context.md (size: <bytes>)
+- CALCE A123 dynamic : <N>/8 zips downloaded
+- CALCE INR-20R dynamic : <N>/12 zips downloaded
+- log : C:/doctorat/bsebench-org/_datasets/.calce-download-log.txt
+- next step : user installs the cron worker per scripts/setup-remote.md, then chef queues phase-async-canary
+```
+
+Verify :
+
+```bash
+ls ~/.codex/memories/bsebench-async-codex-context.md
+ls /c/doctorat/bsebench-org/_datasets/calce_a123_lfp_dynamic/
+ls /c/doctorat/bsebench-org/_datasets/calce_inr18650_20R_dynamic/
+cat /c/doctorat/bsebench-org/_datasets/.calce-download-log.txt
+```
+
+If fewer than 16 / 20 zips downloaded, retry the failed ones manually before proceeding (the worker will not handle these — they are pre-flight data the chef's BRIEFs will assume present).
+
+## 5. Register the worker
+
+```bash
+cd /c/doctorat/bsebench-org/bsebench-async-codex
 cat > workers/france-personal.json <<EOF
 {
   "worker_id": "france-personal",
   "owner": "Oussama Akir",
   "os": "$(uname -s)",
   "target_repos": ["bsebench-datasets"],
+  "datasets_root": "/c/doctorat/bsebench-org/_datasets",
   "registered_at": "$(date -Iseconds)",
   "git_user_name": "$(git config --global user.name)",
   "git_user_email": "$(git config --global user.email)"
@@ -68,53 +123,71 @@ git commit -m "chore(workers): register france-personal worker"
 git push origin main
 ```
 
-## 5. Configure cron (Linux/macOS)
+## 6. Configure Task Scheduler (Windows)
 
-```bash
-( crontab -l 2>/dev/null ; \
-  echo "* * * * * cd $HOME/bsebench-async-codex && WORKER_ID=france-personal ASYNC_REPO=$HOME/bsebench-async-codex bash scripts/remote-worker.sh >> $HOME/.async-worker.log 2>&1" \
-) | crontab -
-```
-
-Verify : `crontab -l | grep remote-worker.sh`
-
-Tail the worker log :
-
-```bash
-tail -f ~/.async-worker.log
-```
-
-## 5-bis. Configure Task Scheduler (Windows)
-
-Open PowerShell as Admin and create a scheduled task that runs every 1 minute :
+Open PowerShell as Admin and create a task that runs every 1 minute :
 
 ```powershell
-$action = New-ScheduledTaskAction -Execute "C:\Program Files\Git\bin\bash.exe" `
-  -Argument "-c 'cd ~/bsebench-async-codex && WORKER_ID=france-personal ASYNC_REPO=$HOME/bsebench-async-codex bash scripts/remote-worker.sh >> $HOME/.async-worker.log 2>&1'"
+$bash = "C:\Program Files\Git\bin\bash.exe"
+$cmd = "cd /c/doctorat/bsebench-org/bsebench-async-codex && WORKER_ID=france-personal ASYNC_REPO=/c/doctorat/bsebench-org/bsebench-async-codex bash scripts/remote-worker.sh >> /c/doctorat/bsebench-org/.async-worker.log 2>&1"
+
+$action = New-ScheduledTaskAction -Execute $bash -Argument "-c '$cmd'"
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
   -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration ([TimeSpan]::MaxValue)
 Register-ScheduledTask -TaskName "BSEBenchAsyncCodexWorker" `
   -Action $action -Trigger $trigger -RunLevel Highest -User $env:USERNAME
 ```
 
-## 6. Smoke test
+Verify :
 
-After the worker is registered + cron/Task Scheduler is running, the chef will queue a small canary phase ("phase-async-canary") with a trivial brief. Within ≤ 60 s the worker should pick it up, write `outbox/phase-async-canary/SUMMARY.md` with status `done`, and push back. Chef confirms the round-trip via git pull.
+```powershell
+Get-ScheduledTask -TaskName "BSEBenchAsyncCodexWorker"
+```
 
-If the canary fails : check `~/.async-worker.log` for the error, fix, reset STATUS to `queued`, and the next cron tick retries.
+Tail the worker log (Git Bash) :
+
+```bash
+tail -f /c/doctorat/bsebench-org/.async-worker.log
+```
+
+## 6-bis. Configure cron (Linux/macOS — alternative to 6)
+
+```bash
+( crontab -l 2>/dev/null ; \
+  echo "* * * * * cd \$HOME/bsebench-async-codex && WORKER_ID=france-personal ASYNC_REPO=\$HOME/bsebench-async-codex bash scripts/remote-worker.sh >> \$HOME/.async-worker.log 2>&1" \
+) | crontab -
+
+crontab -l | grep remote-worker.sh
+tail -f ~/.async-worker.log
+```
+
+## 7. Smoke test
+
+After the worker is registered + cron/Task Scheduler is running, the **chef** queues `phase-async-canary` with a trivial brief. Within ≤ 60 s the worker should pick it up, write `outbox/phase-async-canary/SUMMARY.md` with status `done`, and push back. The chef confirms the round-trip via `git pull` on bsebench-async-codex.
+
+If the canary fails : check `/c/doctorat/bsebench-org/.async-worker.log` for the error, fix, reset STATUS to `queued`, and the next cron tick retries.
 
 ## Failure modes already accounted for
 
-| Symptom | Likely cause | Fix |
+| Symptom | Likely cause | Recovery |
 |---|---|---|
 | `flock` exits silently | another worker tick still running | normal — bail and retry next tick |
-| jq errors | malformed STATUS.json | the worker writes `error` status with exit code -1 |
-| codex exit 124 | `timeout` killed it (wallclock cap hit) | adjust `hard_wallclock_min` in the brief |
-| git push rejected | branch already pushed by another worker | worker re-pulls on next tick |
-| `target_repo` not on disk | the path in BRIEF.md doesn't match remote layout | chef must align paths with the remote's filesystem before queuing |
+| jq error | malformed STATUS.json | worker writes `error` status with exit code -1 |
+| codex exit 124 | `timeout` killed it (wallclock cap hit) | adjust `hard_wallclock_min` in BRIEF.md frontmatter |
+| git push rejected from worker | branch already pushed by another worker | worker re-pulls on next tick |
+| `target_repo` not on disk | path in BRIEF.md doesn't match remote layout | chef must align paths with remote filesystem before queuing |
+| codex session header says `sandbox: read-only` | upstream issue #6667 regression in 0.129-alpha.7 | already handled : worker passes `--dangerously-bypass-approvals-and-sandbox` |
 
 ## Stopping the worker
 
-Linux/macOS : `crontab -l | grep -v remote-worker.sh | crontab -`
+Windows :
 
-Windows : `Unregister-ScheduledTask -TaskName "BSEBenchAsyncCodexWorker" -Confirm:$false`
+```powershell
+Unregister-ScheduledTask -TaskName "BSEBenchAsyncCodexWorker" -Confirm:$false
+```
+
+Linux/macOS :
+
+```bash
+crontab -l | grep -v remote-worker.sh | crontab -
+```
