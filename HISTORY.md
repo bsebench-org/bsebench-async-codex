@@ -29,6 +29,15 @@
 >   is via the inbox/outbox protocol — HANDOFF is for explicit, narrative-
 >   relevant transfers, e.g., user asks for X, chef plans Y)
 > - `LEARN` : an empirical observation worth remembering for future phases
+> - `KAIZEN-RETRO` : an auto-generated retrospective (KEEP/FIX/SHIP-ONE) was
+>   written to outbox/<phase>/KAIZEN.md by the chef-daemon's kaizen step,
+>   after a verdict was committed. Look up the file for the bullets. One per
+>   phase verdict, fired at most once per phase id.
+> - `KAIZEN-SHIP` : a SHIP-ONE recommendation from a prior KAIZEN-RETRO
+>   landed as a real change (commit on async-codex or a target repo). Cite
+>   the originating KAIZEN.md + the implementation commit SHA. This is the
+>   counter to KAIZEN-RETRO : grepping for KAIZEN-RETRO without a matching
+>   KAIZEN-SHIP shows ideas that were proposed but not yet shipped.
 >
 > **Maintenance** :
 > - claude-TN appends entries during chef sessions (live + post-mortem at

@@ -39,6 +39,14 @@ ASYNC_REPO="${ASYNC_REPO:-$HOME/bsebench-async-codex}"
 LOCK_FILE="/tmp/codex-async-chef.lock"
 INTERVAL_SEC="${CHEF_INTERVAL_SEC:-60}"
 DEFAULT_TARGET_REPO_ROOT="${TARGET_REPO_ROOT:-/mnt/c/doctorat/bsebench-org}"
+KAIZEN_ENABLED="${KAIZEN_ENABLED:-1}"
+KAIZEN_WALLCLOCK_SEC="${KAIZEN_WALLCLOCK_SEC:-180}"
+
+# Self-respawn : capture our own script's SHA at start. If it changes after
+# a git pull inside the loop, exec ourselves with the new version so patches
+# take effect without manual restart.
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_SHA_AT_START=$(sha256sum "$SCRIPT_PATH" 2>/dev/null | cut -d' ' -f1)
 
 # ------------------------------------------------------------------ flock
 exec 9>"$LOCK_FILE"
@@ -267,6 +275,105 @@ classify_error() {
 $log_tail"
 }
 
+# Kaizen retro : after a verdict is written, dispatch codex with a tight
+# kaizen-BRIEF that produces KEEP/FIX/SHIP-ONE markdown. The codex run reads
+# inbox/<phase>/BRIEF.md + outbox/<phase>/SUMMARY.md + outbox/<phase>/CHEF_VERDICT.md
+# and outputs ≤ 200 tokens of retrospective. We save that as
+# outbox/<phase>/KAIZEN.md and commit with [role: kaizen-FR].
+#
+# The SHIP-ONE recommendation is TEXT only — not auto-executed. claude-TN
+# (or a future auto-fix-BRIEF queueing daemon V2) is responsible for
+# converting the SHIP-ONE bullet into a concrete fix-BRIEF if the value /
+# scope justifies it.
+#
+# Wallclock cap : KAIZEN_WALLCLOCK_SEC (default 180 s). The retro is meant
+# to be FAST — no code changes, no test runs, just reading 3 files and
+# producing a short markdown.
+run_kaizen() {
+  local phase_id="$1"
+  local decision="$2"
+
+  if [[ "$KAIZEN_ENABLED" != "1" ]] ; then
+    return
+  fi
+
+  # Skip if we already have a KAIZEN.md (idempotency)
+  if [[ -f "$ASYNC_REPO/outbox/$phase_id/KAIZEN.md" ]] ; then
+    return
+  fi
+
+  log "kaizen retro on $phase_id (decision=$decision)"
+
+  cd "$ASYNC_REPO" || return
+
+  # Inline kaizen-BRIEF for codex. Hard-coded prompt — no separate file
+  # to keep the daemon self-contained.
+  local kaizen_prompt
+  read -r -d '' kaizen_prompt <<KAIZEN_EOF || true
+You are the **kaizen reviewer** for the bsebench-async-codex protocol. Your job here is short and tight : look at the three files for phase **$phase_id** and produce a retrospective. Decision recorded by chef : **$decision**.
+
+Files to read in this cwd ($ASYNC_REPO) :
+
+- inbox/$phase_id/BRIEF.md   — what was asked
+- outbox/$phase_id/SUMMARY.md — what worker reported (codex stdout tail + branch SHA + push result)
+- outbox/$phase_id/CHEF_VERDICT.md — what chef decided (gates evidence + action taken)
+
+If HISTORY.md is present, skim its last 50 lines for context.
+
+**Output a single Markdown document, ≤ 250 tokens, with EXACTLY these three sections**, written DIRECTLY to outbox/$phase_id/KAIZEN.md via apply_patch (replace its content if it already exists, else create) :
+
+\`\`\`
+# Kaizen retro for $phase_id
+
+[role: kaizen-FR]
+Decision audited : $decision
+Generated at : <ISO-8601 UTC timestamp>
+
+## KEEP
+<1 short bullet : what worked that we should explicitly preserve. e.g., "ERR trap caught the worktree-add failure cleanly and produced a forensic SUMMARY", "GLASSBOX [role:] tags made the verdict's authorship obvious".>
+
+## FIX
+<1 short bullet : what surprised, rubbed, or partially failed. If NOTHING — write "none — clean run." Don't fabricate friction.>
+
+## SHIP-ONE
+<1 specific improvement to ship NEXT. Constraints : ≤ 30 LOC of code OR ≤ 1 paragraph in a doc OR ≤ 1 bullet in a checklist. Be concrete : file path + what to change + why. claude-TN or V2 auto-fix-BRIEF queueing will pick this up and queue a fix-BRIEF if it's worth it.>
+\`\`\`
+
+Then commit + DO NOT PUSH (the chef-daemon will commit + push the file). Just write KAIZEN.md and exit.
+
+**Rules** :
+- Keep it short. ≤ 250 tokens of markdown total.
+- Be concrete on SHIP-ONE — vague "improve robustness" is forbidden.
+- Don't propose architectural changes. Kaizen is for incremental, ≤30-LOC moves.
+- Don't fabricate FIX. "none — clean run" is acceptable and accurate when true.
+KAIZEN_EOF
+
+  # Dispatch codex (inline brief via stdin). Wallclock cap.
+  local kaizen_log
+  kaizen_log=$(mktemp)
+  if echo "$kaizen_prompt" | timeout --kill-after=15s "${KAIZEN_WALLCLOCK_SEC}s" \
+       codex exec --dangerously-bypass-approvals-and-sandbox \
+       -C "$ASYNC_REPO" - > "$kaizen_log" 2>&1 ; then
+    log "$phase_id kaizen codex ok"
+  else
+    log "$phase_id kaizen codex exit non-zero (continuing with whatever was written)"
+  fi
+  rm -f "$kaizen_log"
+
+  # Commit + push if codex actually wrote KAIZEN.md
+  if [[ -f "$ASYNC_REPO/outbox/$phase_id/KAIZEN.md" ]] ; then
+    git add "outbox/$phase_id/KAIZEN.md"
+    git commit -m "docs(kaizen): retro for $phase_id
+
+[role: kaizen-FR]
+
+Auto-generated kaizen retro (KEEP / FIX / SHIP-ONE). Triggered by chef-daemon after writing CHEF_VERDICT (decision=$decision). The SHIP-ONE bullet is text-only — claude-TN at next session, or V2 auto-fix-BRIEF queueing, decides whether to convert it into a fix-BRIEF based on scope/value/timing." --quiet 2>/dev/null || true
+    git push origin main --quiet 2>/dev/null || log "$phase_id kaizen push failed (will retry on next phase)"
+  else
+    log "$phase_id KAIZEN.md not written by codex — skipping commit"
+  fi
+}
+
 # ------------------------------------------------------------------ main loop
 log "chef-daemon start (interval ${INTERVAL_SEC}s, async_repo=$ASYNC_REPO)"
 
@@ -277,6 +384,14 @@ while true ; do
   git fetch origin main --quiet || true
   git reset --hard origin/main --quiet || true
 
+  # Self-respawn : if our own script changed (just pulled a patched
+  # version), exec ourselves so the next iteration runs the new code.
+  current_sha=$(sha256sum "$SCRIPT_PATH" 2>/dev/null | cut -d' ' -f1)
+  if [[ -n "$current_sha" && "$current_sha" != "$SCRIPT_SHA_AT_START" ]] ; then
+    log "chef-daemon source changed ($SCRIPT_SHA_AT_START -> $current_sha), exec'ing new version"
+    exec bash "$SCRIPT_PATH"
+  fi
+
   for status_path in inbox/*/STATUS.json ; do
     [[ -f "$status_path" ]] || continue
     phase_id=$(basename "$(dirname "$status_path")")
@@ -286,9 +401,18 @@ while true ; do
     case "$status" in
       done)
         verify_and_merge "$phase_id" "$status_path"
+        # Kaizen retro after verdict is written. Read the verdict back to
+        # discover the decision so we can pass it to run_kaizen.
+        if [[ -f "outbox/$phase_id/CHEF_VERDICT.md" ]] ; then
+          decision=$(grep -E '^- Decision :' "outbox/$phase_id/CHEF_VERDICT.md" | awk -F': ' '{print $2}' | head -1)
+          run_kaizen "$phase_id" "${decision:-unknown}"
+        fi
         ;;
       error)
         classify_error "$phase_id" "$status_path"
+        if [[ -f "outbox/$phase_id/CHEF_VERDICT.md" ]] ; then
+          run_kaizen "$phase_id" "escalated"
+        fi
         ;;
       *)
         : # queued, running — leave alone
