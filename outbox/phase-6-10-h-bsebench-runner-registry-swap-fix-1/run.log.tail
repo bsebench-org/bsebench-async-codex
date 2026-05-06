@@ -1,0 +1,200 @@
++
++        return NasaPcoeLoader
++    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
++
++
+ __all__ = [
+     "AUDIT_J_V1_WRAPPER_NAMES",
+     "LoaderFactory",
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index 3f30e037ec97da402ea5deb828ee9f351da5c9c1..eb424fcf4c595e42f9d81dc4acff3b4117ead2ca
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -1,13 +1,12 @@
+ """argparse contract tests for the ``bsebench`` CLI.
+ 
+ The console script's argparse layer is verified independently of the
+-orchestrator. As of Phase 6.2.c the default registries are populated
+-(10 filters + 7 wrapper adapters with 6 stubs), so the ``run``
+-subcommand executes a real benchmark against any caller-supplied
+-split. End-to-end CLI coverage uses a synthetic stub-only split that
+-all-skips at the adapter layer (DIVERGENCE_SENTINEL_MV across the
+-matrix), avoiding HF Hub I/O and the legacy autoresearch dependency
+-while still exercising the full CLI -> orchestrator -> JSON pipeline.
++orchestrator. The default registries are populated, so the ``run``
++subcommand executes a real benchmark against any caller-supplied split.
++End-to-end CLI coverage injects a synthetic stub-only adapter registry
++that all-skips at the adapter layer (DIVERGENCE_SENTINEL_MV across the
++matrix), avoiding HF Hub I/O and the legacy autoresearch dependency while
++still exercising the full CLI -> orchestrator -> JSON pipeline.
+ """
+ 
+ from __future__ import annotations
+@@ -16,10 +15,11 @@
+ from pathlib import Path
+ 
+ import pytest
++from bsebench_datasets.loaders import StubLoader
+ from bsebench_filters.base import StateEstimator
+ 
+ from bsebench_runner.cli import build_parser, main
+-from bsebench_runner.registry import FilterRegistry
++from bsebench_runner.registry import AdapterRegistry, FilterRegistry
+ 
+ 
+ @pytest.mark.fast
+@@ -140,19 +140,26 @@
+ def test_main_with_stub_only_split_writes_verdict(tmp_path, capsys, monkeypatch):
+     """End-to-end CLI run on a synthetic stub-only split.
+ 
+-    All adapters in the default registry are stubs for these wrappers
++    The adapter registry is mocked with stubs for these wrappers
+     (calce_legacy, panasonic), so every cfg short-circuits to
+     DIVERGENCE_SENTINEL_MV before any filter is instantiated. The CLI
+-    completes, writes JSON, and the FilterRegistry side is mocked to
+-    a non-empty single-entry registry to satisfy
++    completes, writes JSON, and the FilterRegistry side is mocked to a
++    non-empty single-entry registry to satisfy
+     ``run_benchmark``'s precondition.
+     """
+     fake_filter_registry = FilterRegistry()
+     fake_filter_registry.register("MockEKF", lambda: _NeverInstantiated())
++    fake_adapter_registry = AdapterRegistry()
++    fake_adapter_registry.register("calce_legacy", lambda: StubLoader("calce_legacy").load)
++    fake_adapter_registry.register("panasonic", lambda: StubLoader("panasonic").load)
+     monkeypatch.setattr(
+         "bsebench_runner.cli.build_default_filter_registry",
+         lambda _: fake_filter_registry,
+     )
++    monkeypatch.setattr(
++        "bsebench_runner.cli.build_default_adapter_registry",
++        lambda: fake_adapter_registry,
++    )
+ 
+     split_yaml = tmp_path / "stub_split.yaml"
+     split_yaml.write_text(
+diff --git a/tests/test_default_adapters.py b/tests/test_default_adapters.py
+index 8c616145bd3e1eef20bd74bec6076fc2d1287e9c..beedb60c05330b0c1cc5a75ef2ab8ab460b7db7f
+--- a/tests/test_default_adapters.py
++++ b/tests/test_default_adapters.py
+@@ -1,15 +1,20 @@
+ """Forensic-quality tests for the Audit J v1 default adapter registry.
+ 
+-Fast tests verify registry shape + stub raise contract + nasa-loader
+-construction-time path. They do NOT hit HuggingFace Hub. Slow tests
+-(marker ``slow``) exercise the real NasaRwLoader against
+-``bsebench-org/nasa-rw-2014`` Tier 2 ; skipped in default CI.
++Fast tests verify registry shape + real loader construction-time paths. They
++do NOT call loader ``load`` methods or hit HuggingFace Hub. Slow tests
++(marker ``slow``) exercise the default NASA PCoE loader against
++``bsebench-org/nasa-pcoe-saha-goebel-2007`` Tier 2 ; skipped unless
++``BSEBENCH_RUN_HF_SLOW`` is set.
+ """
+ 
+ from __future__ import annotations
+ 
++import importlib
++import os
++import sys
++
+ import pytest
+-from bsebench_datasets.loaders import AdapterNotAvailableError, StubLoader, Tier2Loader
++from bsebench_datasets.loaders import StubLoader, Tier2Loader
+ 
+ from bsebench_runner.default_adapters import (
+     AUDIT_J_V1_WRAPPER_NAMES,
+@@ -29,8 +34,25 @@
+     }
+ )
+ 
+-STUB_WRAPPERS = frozenset(
+-    {"calce_legacy", "calce_a123_dyn", "panasonic", "lg_hg2", "yao", "calce_inr_dyn"}
++EXPECTED_DEFAULT_LOADER_CLASS_NAMES = {
++    "nasa": "NasaPcoeLoader",
++    "calce_legacy": "CalceLegacyLoader",
++    "calce_a123_dyn": "CalceA123DynLoader",
++    "panasonic": "PanasonicKollmeyerLoader",
++    "lg_hg2": "LgHg2Stroebl2024Loader",
++    "yao": "YaoTuBerlin2024Loader",
++    "calce_inr_dyn": "CalceInr20RLoader",
++}
++
++CONCRETE_LOADER_MODULES = (
++    "bsebench_datasets.loaders.calce_a123_dyn_loader",
++    "bsebench_datasets.loaders.calce_a123_legacy_loader",
++    "bsebench_datasets.loaders.calce_inr_20r_loader",
++    "bsebench_datasets.loaders.lg_hg2_stroebl_2024_loader",
++    "bsebench_datasets.loaders.nasa_pcoe_loader",
++    "bsebench_datasets.loaders.nasa_rw_loader",
++    "bsebench_datasets.loaders.panasonic_kollmeyer_loader",
++    "bsebench_datasets.loaders.yao_tu_berlin_2024_loader",
+ )
+ 
+ 
+@@ -58,11 +80,33 @@
+         assert callable(adapter_loader)
+ 
+ 
+-def test_stub_wrappers_raise_adapter_not_available(registry: AdapterRegistry) -> None:
+-    for wrapper in STUB_WRAPPERS:
+-        loader = registry.get(wrapper)()
+-        with pytest.raises(AdapterNotAvailableError):
+-            loader("any_profile", 25.0)
++def test_default_adapter_module_does_not_import_concrete_loader_modules() -> None:
++    import bsebench_runner.default_adapters as default_adapters
++
++    for module_name in CONCRETE_LOADER_MODULES:
++        sys.modules.pop(module_name, None)
++
++    importlib.reload(default_adapters)
++
++    imported = sorted(
++        module_name for module_name in CONCRETE_LOADER_MODULES if module_name in sys.modules
++    )
++    assert imported == []
++
++
++@pytest.mark.parametrize(
++    ("wrapper", "loader_class_name"),
++    sorted(EXPECTED_DEFAULT_LOADER_CLASS_NAMES.items()),
++)
++def test_default_factories_instantiate_real_loaders(
++    registry: AdapterRegistry,
++    wrapper: str,
++    loader_class_name: str,
++) -> None:
++    loader_method = registry.get(wrapper)()
++    loader = loader_method.__self__
++    assert loader.__class__.__name__ == loader_class_name
++    assert not isinstance(loader, StubLoader)
+ 
+ 
+ def test_nasa_wrapper_returns_a_callable_without_fetching(registry: AdapterRegistry) -> None:
+@@ -95,7 +139,9 @@
+ 
+ @pytest.mark.slow
+ def test_nasa_adapter_loads_real_data_from_hf_hub(registry: AdapterRegistry) -> None:
+-    """Network-bound integration test against ``bsebench-org/nasa-rw-2014``."""
++    """Network-bound integration test against the default NASA PCoE mirror."""
++    if not os.environ.get("BSEBENCH_RUN_HF_SLOW"):
++        pytest.skip("BSEBENCH_RUN_HF_SLOW not set")
+     nasa_loader = registry.get("nasa")()
+     data = nasa_loader("CC-discharge", 24.0)
+     assert {"t", "V", "I"}.issubset(data.keys())
+
+tokens used
+194,762
+Implemented and committed.
+
+Commit: `34acb8b feat(adapters): swap default stubs to Tier 2 loaders [role: worker-codex-FR]`
+
+Changed [default_adapters.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-6-10-h-bsebench-runner-registry-swap-fix-1/src/bsebench_runner/default_adapters.py:63) so all seven Audit J adapter keys instantiate real Tier 2 loaders via lazy factory-local imports. NASA remains `NasaPcoeLoader`. `uv.lock` now pins `bsebench-datasets` to `1dd4624`, the commit containing the needed loaders.
+
+Added focused coverage in [test_default_adapters.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-6-10-h-bsebench-runner-registry-swap-fix-1/tests/test_default_adapters.py:36) for all seven real loader classes and lazy module import behavior. Updated the CLI test to inject stubs explicitly for its sentinel-path test.
+
+Verification passed:
+
+- `uv run pytest tests/test_default_adapters.py tests/test_default_registries.py -v` → 26 passed, 2 skipped
+- `uv run pytest -m "not slow" --tb=short` → 55 passed, 5 deselected
+- `uv run ruff format --check .` → passed
+- `uv run ruff check .` → passed
