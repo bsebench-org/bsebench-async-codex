@@ -1,12 +1,13 @@
 {
   "phase_id": "phase-6-11-b-chi2-multi-cfg-sweep",
-  "status": "running",
+  "status": "error",
   "ts_queued": "2026-05-06T21:05:30Z",
   "ts_started": "2026-05-06T21:16:09Z",
-  "ts_done": null,
-  "exit_code": null,
+  "ts_done": "2026-05-06T22:36:00Z",
+  "exit_code": 125,
   "worker_id": "france-personal-2",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-runner",
   "target_branch": "phase-6-11-b-chi2-multi-cfg-sweep",
-  "base_branch": "main"
+  "base_branch": "main",
+  "error_at_line": "cto-reconcile: stale running, no process/worktree/origin branch/outbox after wallclock cap"
 }

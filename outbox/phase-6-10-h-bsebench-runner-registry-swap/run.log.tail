@@ -1,0 +1,5 @@
+CTO stale-running reconciliation, 2026-05-06T22:36:00Z.
+
+No worker stdout tail existed. Read-only diagnostic found no active process, no
+local or remote branch, no worktree, and no deliverable. The phase exceeded its
+30 minute wallclock cap and is requeued as fix-1.

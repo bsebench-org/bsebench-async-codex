@@ -1,12 +1,13 @@
 {
   "phase_id": "merge-validate-phase-7-1-bsebench-readme-examples-20260506T220841Z",
-  "status": "running",
+  "status": "error",
   "ts_queued": "2026-05-06T22:08:41Z",
   "ts_started": "2026-05-06T22:09:52Z",
-  "ts_done": null,
-  "exit_code": null,
+  "ts_done": "2026-05-06T22:36:00Z",
+  "exit_code": 125,
   "worker_id": "france-personal-2",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
   "target_branch": "merge-validate/phase-7-1-bsebench-readme-examples-20260506T220841Z",
-  "base_branch": "main"
+  "base_branch": "main",
+  "error_at_line": "cto-reconcile: stale merge-validate duplicate; phase-7-1 already approved"
 }

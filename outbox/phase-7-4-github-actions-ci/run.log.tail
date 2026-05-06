@@ -1,0 +1,6 @@
+CTO validation block, 2026-05-06T22:36:00Z.
+
+Branch exists: b5571d70d6485da2dc1a36f2f3ad75e70fd4964b.
+Validation blocked because CI uses `uv sync --extra dev`, which omits scipy/h5py
+from adapters-mat while non-slow pytest collection imports modules requiring
+those packages.
