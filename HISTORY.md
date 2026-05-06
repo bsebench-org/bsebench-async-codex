@@ -49,6 +49,13 @@
 >   outbox/_emails_pending/ for akir.oussama@gmail.com. The chef-daemon
 >   refuses to process any further phases until the corresponding
 >   outbox/_blocks/<phase>.block file is removed by the user.
+> - `EMAIL-SENT` : a progress notification email was queued in
+>   outbox/_emails_pending/. Fired UNCONDITIONALLY after every iteration
+>   close (PASS, FIX, ESCALATED, BLOCKED — doesn't matter, always one
+>   per phase). Concise format : phase / state / panel / next-task / 4
+>   links. Subject tag = OK | FIX | ESCALATED | BLOCKED. V1 = file in
+>   repo (user reads via GitHub watch or direct visit) ; V2 = GitHub
+>   Actions on push to outbox/_emails_pending/* sends via SMTP secret.
 >
 > **Maintenance** :
 > - claude-TN appends entries during chef sessions (live + post-mortem at

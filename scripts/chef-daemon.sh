@@ -508,27 +508,7 @@ Threshold : $PANEL_THRESHOLD
 ## Reasoning
 <2-4 sentences explaining your decision>
 
-If you choose BLOCK, ALSO create outbox/_emails_pending/$(date -u +%Y%m%dT%H%M%SZ)-block-$phase_id.eml with this content :
-
-To: $ESCALATION_EMAIL
-Subject: [BLOCK] $phase_id needs your review (panel=$panel_avg, advisor=BLOCK)
-From: chef-daemon <noreply@bsebench-async-codex>
-
-Phase $phase_id closed with verdict $decision.
-Panel of 3 (Mme Rim + 2 experts) avg confidence : $panel_avg < $PANEL_THRESHOLD threshold.
-Advisor (fresh context) confirmed BLOCK.
-
-Files to review :
-- https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/$phase_id/CHEF_VERDICT.md
-- https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/$phase_id/KAIZEN.md
-- https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/$phase_id/PANEL_CHECK.md
-- https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/$phase_id/ADVISOR_CHECK.md
-
-Action required :
-1. Review at https://github.com/bsebench-org/bsebench-async-codex
-2. Either DELETE the block file outbox/_blocks/$phase_id.block to override (chef-daemon resumes), OR queue a fix-BRIEF in inbox/ that addresses the concerns.
-
-The chef-daemon is paused (no new phases will be picked up by chef OR worker until the block is cleared).
+Note : the chef-daemon will write a unified progress email after this advisor decision (PASS or BLOCK both produce a notification). Don't write your own email file.
 ADV_EOF
 
   local adv_log
@@ -567,6 +547,117 @@ Panel sub-threshold but advisor approved GO with reasoning. Continuing to next i
     git push origin main --quiet 2>/dev/null || true
     log "$phase_id advisor said GO — continuing"
   fi
+}
+
+# Write a unified progress email after every iteration close.
+# User mandate 2026-05-06 ~17:30 UTC : "dans tout les cas, envoi un email
+# après chaque itération, concis, bref, mot simple, qui me permet de
+# suivre l'avancement et interagir si necessaire.. il faut dire tache
+# suivante aussi". One email per phase verdict, regardless of decision.
+write_progress_email() {
+  local phase_id="$1"
+  local decision="$2"          # approved | needs_fix | escalated
+  local panel_avg="$3"         # number or "?" or "N/A"
+  local final_state="$4"       # approved | needs_fix | escalated | blocked
+
+  cd "$ASYNC_REPO" || return
+
+  # Find next queued phase (worker picks lex-smallest first)
+  local next_phase="(aucune phase en attente)"
+  if [[ -d inbox ]] ; then
+    local found
+    found=$(for s in inbox/*/STATUS.json ; do
+      [[ -f "$s" ]] || continue
+      local st
+      st=$(jq -r '.status' "$s" 2>/dev/null)
+      if [[ "$st" == "queued" ]] ; then
+        basename "$(dirname "$s")"
+        break
+      fi
+    done | head -1)
+    [[ -n "$found" ]] && next_phase="$found"
+  fi
+
+  # Subject tag (short, scannable)
+  local subject_tag
+  case "$final_state" in
+    approved)  subject_tag="OK" ;;
+    needs_fix) subject_tag="FIX" ;;
+    escalated) subject_tag="ESCALATED" ;;
+    blocked)   subject_tag="BLOCKED" ;;
+    *)         subject_tag="?" ;;
+  esac
+
+  # Quoi : extract first H1 line from BRIEF.md as a one-line summary
+  local brief_title="(no title)"
+  if [[ -f "inbox/$phase_id/BRIEF.md" ]] ; then
+    brief_title=$(grep -E '^# ' "inbox/$phase_id/BRIEF.md" | head -1 | sed 's/^# //')
+    [[ -z "$brief_title" ]] && brief_title="(no title)"
+  fi
+
+  # Repo URLs
+  local repo_url="https://github.com/bsebench-org/bsebench-async-codex"
+  local verdict_url="$repo_url/blob/main/outbox/$phase_id/CHEF_VERDICT.md"
+  local kaizen_url="$repo_url/blob/main/outbox/$phase_id/KAIZEN.md"
+  local panel_url="$repo_url/blob/main/outbox/$phase_id/PANEL_CHECK.md"
+
+  local ts
+  ts=$(date -u +%Y%m%dT%H%M%SZ)
+  local email_path="outbox/_emails_pending/${ts}-progress-${phase_id}.eml"
+  mkdir -p "outbox/_emails_pending"
+
+  cat > "$email_path" <<PEMAIL
+To: $ESCALATION_EMAIL
+Subject: [$subject_tag] $phase_id (panel ${panel_avg}/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: $(date -Iseconds)
+
+Phase    : $phase_id
+Etat     : $final_state ($decision)
+Panel    : ${panel_avg}/100 (seuil 89)
+Quoi     : $brief_title
+Prochaine: $next_phase
+
+Liens :
+- Verdict : $verdict_url
+- Kaizen  : $kaizen_url
+- Panel   : $panel_url
+- Repo    : $repo_url
+PEMAIL
+
+  # BLOCK addendum
+  if [[ "$final_state" == "blocked" ]] ; then
+    cat >> "$email_path" <<PEMAIL_BLOCK
+
+ATTENTION : chef-daemon est PAUSE.
+Action :
+  (a) supprime outbox/_blocks/$phase_id.block pour reprendre, OU
+  (b) queue une fix-BRIEF dans inbox/ qui repond aux preoccupations.
+
+ADVISOR_CHECK : $repo_url/blob/main/outbox/$phase_id/ADVISOR_CHECK.md
+PEMAIL_BLOCK
+  fi
+
+  git add "$email_path"
+  git commit -m "notify(email): progress for $phase_id ($final_state)
+
+[role: chef-FR]
+
+Email concise pour $ESCALATION_EMAIL : $phase_id => $final_state ($decision), panel=$panel_avg, prochaine=$next_phase. Notification est ecrite a chaque iteration (PASS, FIX, ESCALATED, ou BLOCKED) per user mandate 2026-05-06 ~17:30 UTC. V1 = file pending in outbox/_emails_pending/ ; V2 = GitHub Actions on-push SMTP send (pas encore configure)." --quiet 2>/dev/null || true
+  git push origin main --quiet 2>/dev/null || log "$phase_id progress email push failed"
+  log "$phase_id progress email queued ($final_state, next=$next_phase)"
+}
+
+# Determine final state of an iteration based on decision + presence of block file
+determine_final_state() {
+  local phase_id="$1"
+  local decision="$2"
+
+  if [[ -f "$ASYNC_REPO/outbox/_blocks/$phase_id.block" ]] ; then
+    echo "blocked"
+    return
+  fi
+  echo "$decision"
 }
 
 # Check if chef-daemon is paused due to a block file
@@ -613,11 +704,16 @@ while true ; do
     case "$status" in
       done)
         verify_and_merge "$phase_id" "$status_path"
-        # Kaizen retro then panel check (advisor + email block) after verdict
         if [[ -f "outbox/$phase_id/CHEF_VERDICT.md" ]] ; then
           decision=$(grep -E '^- Decision :' "outbox/$phase_id/CHEF_VERDICT.md" | awk -F': ' '{print $2}' | head -1)
-          run_kaizen "$phase_id" "${decision:-unknown}"
-          run_panel_check "$phase_id" "${decision:-unknown}"
+          decision="${decision:-unknown}"
+          run_kaizen "$phase_id" "$decision"
+          run_panel_check "$phase_id" "$decision"
+          # Unified progress email — fires regardless of state
+          panel_avg=$(grep -oE 'AVERAGE\s*:?\s*\*?\*?\s*[0-9]+' "outbox/$phase_id/PANEL_CHECK.md" 2>/dev/null | grep -oE '[0-9]+' | head -1)
+          panel_avg="${panel_avg:-?}"
+          final_state=$(determine_final_state "$phase_id" "$decision")
+          write_progress_email "$phase_id" "$decision" "$panel_avg" "$final_state"
         fi
         ;;
       error)
@@ -625,6 +721,10 @@ while true ; do
         if [[ -f "outbox/$phase_id/CHEF_VERDICT.md" ]] ; then
           run_kaizen "$phase_id" "escalated"
           run_panel_check "$phase_id" "escalated"
+          panel_avg=$(grep -oE 'AVERAGE\s*:?\s*\*?\*?\s*[0-9]+' "outbox/$phase_id/PANEL_CHECK.md" 2>/dev/null | grep -oE '[0-9]+' | head -1)
+          panel_avg="${panel_avg:-?}"
+          final_state=$(determine_final_state "$phase_id" "escalated")
+          write_progress_email "$phase_id" "escalated" "$panel_avg" "$final_state"
         fi
         ;;
       *)
