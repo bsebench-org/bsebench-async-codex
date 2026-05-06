@@ -1,0 +1,12 @@
+{
+  "phase_id": "diag-chef-daemon-silent-2026-05-06",
+  "status": "queued",
+  "ts_queued": "2026-05-06T19:50:00Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
+  "target_branch": "diag/chef-daemon-silent-2026-05-06",
+  "base_branch": "main"
+}
