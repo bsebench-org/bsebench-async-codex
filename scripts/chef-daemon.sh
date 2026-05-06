@@ -48,6 +48,12 @@ KAIZEN_WALLCLOCK_SEC="${KAIZEN_WALLCLOCK_SEC:-180}"
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 SCRIPT_SHA_AT_START=$(sha256sum "$SCRIPT_PATH" 2>/dev/null | cut -d' ' -f1)
 
+# Write running-state file so the worker daemon (meta-supervisor) can detect
+# a stale chef-daemon version and trigger a restart. Format : single line
+# "PID SHA". Worker-daemon reads this and compares SHA to disk-SHA each tick.
+RUNNING_STATE_FILE="$HOME/.async-chef-daemon.running"
+echo "$$ $SCRIPT_SHA_AT_START" > "$RUNNING_STATE_FILE" 2>/dev/null || true
+
 # ------------------------------------------------------------------ flock
 exec 9>"$LOCK_FILE"
 if ! flock -n 9 ; then
