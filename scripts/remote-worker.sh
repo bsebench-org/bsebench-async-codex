@@ -30,6 +30,23 @@ queued_phase=""
 status_file=""
 phase_marked_running=0
 
+push_async_main_with_rebase() {
+  local label="${1:-async state}"
+  local attempt
+  if git push origin main --quiet ; then
+    return 0
+  fi
+  for attempt in 1 2 3 ; do
+    echo "worker: push raced for $label, retry $attempt/3 after rebase" >&2
+    if git pull --rebase origin main --quiet && git push origin main --quiet ; then
+      return 0
+    fi
+    sleep "$attempt"
+  done
+  echo "worker: push failed after retries for $label" >&2
+  return 1
+}
+
 # ------------------------------------------------------------------ ERR trap
 # If anything fails after we've marked a phase running, write status=error
 # with a forensic note and push. Without this, the script exits silently and
@@ -48,7 +65,7 @@ on_error() {
 [role: worker-FR]
 
 ERR trap fired at remote-worker.sh:$lineno with exit $exit_code AFTER phase had been marked running. Forensic SUMMARY.md written to outbox/ before exit." --quiet 2>/dev/null
-    git push origin main --quiet 2>/dev/null || true
+    push_async_main_with_rebase "crash status for $queued_phase" 2>/dev/null || true
 
     # Best-effort outbox note for forensic visibility
     mkdir -p "outbox/$queued_phase" 2>/dev/null
@@ -73,7 +90,7 @@ NOTE
 [role: worker-FR]
 
 Companion to the ERR trap commit above : SUMMARY.md captures the pre-crash state for chef diagnosis." --quiet 2>/dev/null
-    git push origin main --quiet 2>/dev/null || true
+    push_async_main_with_rebase "crash summary for $queued_phase" 2>/dev/null || true
   fi
   exit "$exit_code"
 }
@@ -301,6 +318,10 @@ git commit -m "feat(async): $queued_phase ${final_status} (exit $codex_exit)
 [role: worker-FR]
 
 Codex run finished : exit_code=$codex_exit, push_result=$push_result, branch_sha=${branch_sha:-none}, wallclock_cap=${hard_wallclock_min}min. SUMMARY.md + run.log.tail written to outbox/. Final status=$final_status. Chef-daemon will pick this up for verify-and-merge or classify-and-recover at its next tick." --quiet
-git push origin main --quiet
+if ! push_async_main_with_rebase "final status for $queued_phase" ; then
+  # Trigger ERR trap explicitly. `exit 1` from inside this conditional would
+  # bypass the trap and could leave origin stuck at status=running.
+  false
+fi
 
 exit 0
