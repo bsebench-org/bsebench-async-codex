@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [OK] phase-6-10-f-calce-inr-20r-adapter (panel 91/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T00:00:27+02:00
+
+Phase    : phase-6-10-f-calce-inr-20r-adapter
+Etat     : approved (approved)
+Panel    : 91/100 (seuil 89)
+Quoi     : Phase 6.10.f — CalceInr20RAdapter Tier 1 (NMC chemistry, separate from A123)
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-f-calce-inr-20r-adapter/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-f-calce-inr-20r-adapter/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-f-calce-inr-20r-adapter/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
