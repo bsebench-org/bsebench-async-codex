@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [OK] phase-6-10-g-calce-inr-20r-loader-tier2 (panel 92/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T00:02:33+02:00
+
+Phase    : phase-6-10-g-calce-inr-20r-loader-tier2
+Etat     : approved (approved)
+Panel    : 92/100 (seuil 89)
+Quoi     : Phase 6.10.g — CalceInr20RLoader Tier 2 (NMC)
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-g-calce-inr-20r-loader-tier2/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-g-calce-inr-20r-loader-tier2/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-g-calce-inr-20r-loader-tier2/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
