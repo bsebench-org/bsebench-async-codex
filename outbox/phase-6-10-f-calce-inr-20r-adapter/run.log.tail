@@ -1,0 +1,200 @@
++
++    missing = [column for column in REQUIRED_COLUMNS if column not in df.columns]
++    if missing:
++        raise ValueError(f"{xls_path.name} is missing required columns: {missing}")
++
++    time_s = df["Test_Time(s)"].to_numpy(dtype=np.float64)
++    voltage_v = df["Voltage(V)"].to_numpy(dtype=np.float64)
++    current_a = df["Current(A)"].to_numpy(dtype=np.float64)
++    temperature_c = np.full(len(df), float(temp_c), dtype=np.float64)
++
++    return pa.table(
++        {
++            "time_s": pa.array(time_s - time_s[0], type=pa.float64()),
++            "voltage_V": pa.array(voltage_v, type=pa.float64()),
++            "current_A": pa.array(current_a, type=pa.float64()),
++            "temperature_C": pa.array(temperature_c, type=pa.float64()),
++        }
++    )
++
++
++def harmonize(local_root: Path, output_dir: Path) -> dict[str, Path]:
++    """Convert caller-supplied CALCE INR-20R zip bundles to canonical Parquet."""
++    return CalceInr20RAdapter(local_root=local_root).harmonize(output_dir)
++
++
++__all__ = [
++    "CHEMISTRY_TAG",
++    "DATASET_TAG",
++    "MIN_SEGMENT_ROWS",
++    "NOMINAL_CAPACITY_AH",
++    "PROFILES",
++    "REQUIRED_COLUMNS",
++    "SOC_STARTS",
++    "TEMPS_C",
++    "T_TO_ZIP_PATTERN",
++    "CalceInr20RAdapter",
++    "harmonize",
++]
+diff --git a/tests/test_adapter_calce_inr_20r.py b/tests/test_adapter_calce_inr_20r.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..44efc12a33afa8db599c7b06c43b5206cca176f8
+--- /dev/null
++++ b/tests/test_adapter_calce_inr_20r.py
+@@ -0,0 +1,140 @@
++"""Tests for the CALCE INR-20R Tier 1 adapter."""
++
++from __future__ import annotations
++
++import zipfile
++from pathlib import Path
++from unittest.mock import MagicMock, patch
++
++import pandas as pd
++import pyarrow.parquet as pq
++import pytest
++
++from bsebench_datasets.adapters.calce_inr_20r_2014 import (
++    CHEMISTRY_TAG,
++    DATASET_TAG,
++    NOMINAL_CAPACITY_AH,
++    PROFILES,
++    SOC_STARTS,
++    T_TO_ZIP_PATTERN,
++    TEMPS_C,
++    CalceInr20RAdapter,
++)
++
++REAL_DST_ZIP = Path(
++    "/mnt/c/doctorat/bsebench-org/_datasets/calce_inr18650_20R_dynamic/SP2_25C_DST.zip"
++)
++
++
++def _write_fake_zip(root: Path, *, profile: str = "DST", temp_c: int = 25) -> Path:
++    zip_path = root / T_TO_ZIP_PATTERN.format(T=temp_c, profile=profile)
++    with zipfile.ZipFile(zip_path, "w") as zf:
++        zf.writestr(f"nested/11_05_2015_SP20-2_{profile}_80SOC.xls", b"fake xlsx")
++    return zip_path
++
++
++def _segment_df(*, rows: int = 120, currents: list[float] | None = None) -> pd.DataFrame:
++    current_values = currents or [-1.0] * rows
++    if len(current_values) < rows:
++        repeats = (rows + len(current_values) - 1) // len(current_values)
++        current_values = (current_values * repeats)[:rows]
++
++    return pd.DataFrame(
++        {
++            "Test_Time(s)": [100.0 + float(idx) * 10.0 for idx in range(rows)],
++            "Step_Index": [8] * rows,
++            "Current(A)": current_values,
++            "Voltage(V)": [4.1 - float(idx) * 0.001 for idx in range(rows)],
++        }
++    )
++
++
++def _run_synthetic_zip(tmp_path: Path, df: pd.DataFrame) -> dict[str, Path]:
++    _write_fake_zip(tmp_path)
++    xls = MagicMock()
++    xls.sheet_names = ["Info", "Channel_1-008", "Channel_2-001"]
++
++    with (
++        patch("pandas.ExcelFile", return_value=xls),
++        patch("pandas.read_excel", return_value=df),
++    ):
++        return CalceInr20RAdapter(local_root=tmp_path).harmonize(output_dir=tmp_path / "out")
++
++
++def test_constants_match_paper2b_canonical() -> None:
++    assert PROFILES == ("DST", "FUDS", "US06", "BJDST")
++    assert TEMPS_C == (0, 25, 45)
++    assert SOC_STARTS == (50, 80)
++    assert NOMINAL_CAPACITY_AH == 2.0
++    assert CHEMISTRY_TAG == "NMC_CALCE_INR18650_20R"
++    assert DATASET_TAG == "calce_inr_20r"
++    assert T_TO_ZIP_PATTERN == "SP2_{T}C_{profile}.zip"
++
++
++def test_constructor_stores_local_root_as_path(tmp_path: Path) -> None:
++    adapter = CalceInr20RAdapter(local_root=str(tmp_path))
++
++    assert isinstance(adapter.local_root, Path)
++    assert adapter.local_root == tmp_path
++
++
++def test_harmonize_empty_local_root_returns_empty_dict(tmp_path: Path) -> None:
++    out_dir = tmp_path / "out"
++
++    written = CalceInr20RAdapter(local_root=tmp_path).harmonize(output_dir=out_dir)
++
++    assert written == {}
++    assert list(out_dir.glob("*.parquet")) == []
++
++
++def test_harmonize_synthetic_zip_writes_expected_cell_id(tmp_path: Path) -> None:
++    written = _run_synthetic_zip(tmp_path, _segment_df())
++
++    expected_path = tmp_path / "out" / "calce_inr_20r_DST_T25_soc80.parquet"
++    assert written == {"INR_DST_T25_soc80": expected_path}
++    assert expected_path.is_file()
++
++
++def test_cell_id_format_is_forensic_profile_temp_soc(tmp_path: Path) -> None:
++    written = _run_synthetic_zip(tmp_path, _segment_df())
++
++    assert list(written) == ["INR_DST_T25_soc80"]
++
++
++def test_harmonize_writes_bpx_columns_and_constant_temperature(tmp_path: Path) -> None:
++    written = _run_synthetic_zip(tmp_path, _segment_df())
++    table = pq.read_table(written["INR_DST_T25_soc80"])
++
++    assert table.column_names == ["time_s", "voltage_V", "current_A", "temperature_C"]
++    assert table.column("time_s").to_pylist()[:3] == pytest.approx([0.0, 10.0, 20.0])
++    assert table.column("temperature_C").to_pylist()[:3] == pytest.approx([25.0, 25.0, 25.0])
++
++
++def test_harmonize_preserves_raw_current_sign(tmp_path: Path) -> None:
++    written = _run_synthetic_zip(tmp_path, _segment_df(currents=[-1.25, 0.5, -2.0]))
++    table = pq.read_table(written["INR_DST_T25_soc80"])
++
++    assert table.column("current_A").to_pylist()[:6] == pytest.approx(
++        [-1.25, 0.5, -2.0, -1.25, 0.5, -2.0]
++    )
++
++
++def test_harmonize_skips_segment_shorter_than_100_rows(tmp_path: Path) -> None:
++    written = _run_synthetic_zip(tmp_path, _segment_df(rows=99))
++
++    assert written == {}
++    assert list((tmp_path / "out").glob("*.parquet")) == []
++
++
++@pytest.mark.slow
++@pytest.mark.skipif(not REAL_DST_ZIP.is_file(), reason="CALCE INR-20R DST zip is absent")
++def test_harmonize_real_dst_zip_writes_two_soc_parquets(tmp_path: Path) -> None:
++    pytest.importorskip("openpyxl")
++
++    written = CalceInr20RAdapter(local_root=REAL_DST_ZIP).harmonize(output_dir=tmp_path / "out")
++
++    assert written.keys() == {"INR_DST_T25_soc50", "INR_DST_T25_soc80"}
++    assert {path.name for path in written.values()} == {
++        "calce_inr_20r_DST_T25_soc50.parquet",
++        "calce_inr_20r_DST_T25_soc80.parquet",
++    }
+
+tokens used
+195,051
+Implemented and committed `c05e611 feat(calce): add INR-20R Tier 1 adapter`.
+
+Changed only:
+- [calce_inr_20r_2014.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-f-calce-inr-20r-adapter/src/bsebench_datasets/adapters/calce_inr_20r_2014.py)
+- [test_adapter_calce_inr_20r.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-f-calce-inr-20r-adapter/tests/test_adapter_calce_inr_20r.py)
+
+Verification passed:
+- `uv run --extra dev pytest -m 'not slow' tests/test_adapter_calce_inr_20r.py` -> 8 passed, 1 deselected
+- `uv run --extra dev pytest -m slow tests/test_adapter_calce_inr_20r.py` -> 1 passed
+- `uv run --extra dev ruff format --check src/bsebench_datasets/adapters/calce_inr_20r_2014.py tests/test_adapter_calce_inr_20r.py`
+- `uv run --extra dev ruff check src/ tests/`
+
+Final status: worktree clean, branch ahead by 1 commit, scope is 2 files, and the commit has no `Co-Authored-By: Claude` trailer.
