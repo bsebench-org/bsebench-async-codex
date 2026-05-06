@@ -1,0 +1,23 @@
+To: akir.oussama@gmail.com
+Subject: [BLOCKED] phase-6-11-b-chi2-multi-cfg-sweep (panel 24/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T00:51:56+02:00
+
+Phase    : phase-6-11-b-chi2-multi-cfg-sweep
+Etat     : blocked (escalated)
+Panel    : 24/100 (seuil 89)
+Quoi     : Phase 6.11.b — chi² sweep multi-cfg (5 cfgs × 5 filters)
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
+
+ATTENTION : chef-daemon est PAUSE.
+Action :
+  (a) supprime outbox/_blocks/phase-6-11-b-chi2-multi-cfg-sweep.block pour reprendre, OU
+  (b) queue une fix-BRIEF dans inbox/ qui repond aux preoccupations.
+
+ADVISOR_CHECK : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep/ADVISOR_CHECK.md
