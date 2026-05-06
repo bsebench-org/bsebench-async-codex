@@ -123,6 +123,36 @@ git commit -m "chore(workers): register france-personal worker"
 git push origin main
 ```
 
+## 5-bis. Multi-worker parallelization (optional, for parallel phase execution)
+
+Since 2026-05-06 the worker-daemon supports multiple instances via different `WORKER_ID` env vars + automatic per-worker lock files (`/tmp/codex-async-worker-${WORKER_ID}.lock`). With Codex Max Pro High subscription (unlimited tokens), launching N workers lets the system process N independent phases in parallel. Phase-claim race (when two workers select the same queued phase) is handled by the existing `git push origin main --quiet` rejection retry pattern : only one worker wins the push, the loser pulls + retries on the next phase.
+
+**Launch 2 workers in parallel** (replace step 6 below) :
+
+```bash
+# Worker #1
+WORKER_ID=france-personal-1 nohup bash \
+  /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
+  > /mnt/c/doctorat/bsebench-org/.async-worker-1.log 2>&1 &
+disown
+
+# Worker #2 (different WORKER_ID = different lock = parallel)
+WORKER_ID=france-personal-2 nohup bash \
+  /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
+  > /mnt/c/doctorat/bsebench-org/.async-worker-2.log 2>&1 &
+disown
+
+# Optional : Worker #3, #4, etc. — same pattern, different WORKER_ID.
+
+sleep 3
+pgrep -af 'worker-daemon.sh|chef-daemon.sh'
+```
+
+Constraints :
+- Each worker needs a unique `WORKER_ID` (used in lock filename + commit author "started by").
+- Chef-daemon is single-instance (only one verifies/merges/emails — no parallelization on the chef side).
+- Phases must have ZERO file-overlap to safely parallelize (e.g., 6.10.e modifies adapters/calce_a123_2014.py, 6.10.f modifies adapters/calce_inr_20r_2014.py — different files, parallel-safe).
+
 ## 6. Start the worker daemon (recommended — userspace, no sudo, no cron)
 
 The simplest and most portable option. One bash process loops in the background and calls `remote-worker.sh` every 60 s. No `sudo apt install cron`, no `/etc/wsl.conf`, no Task Scheduler.

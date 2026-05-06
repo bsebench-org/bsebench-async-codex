@@ -21,7 +21,7 @@ set -uo pipefail
 
 ASYNC_REPO="${ASYNC_REPO:-$HOME/bsebench-async-codex}"
 WORKER_ID="${WORKER_ID:-france-personal}"
-LOCK_FILE="/tmp/codex-async-worker.lock"
+LOCK_FILE="${REMOTE_WORKER_LOCK_FILE:-/tmp/codex-async-worker-${WORKER_ID}.lock}"
 LOG_TAIL_LINES=200
 DEFAULT_WALLCLOCK_MIN=90
 
@@ -222,6 +222,8 @@ wallclock_sec=$((hard_wallclock_min * 60))
 set +e
 timeout --kill-after=30s "${wallclock_sec}s" codex exec \
   --dangerously-bypass-approvals-and-sandbox \
+  -c 'model="gpt-5.5"' \
+  -c 'model_reasoning_effort="xhigh"' \
   -C "$worktree_path" \
   "${add_dir_args[@]}" \
   < "$brief" > "$log_file" 2>&1

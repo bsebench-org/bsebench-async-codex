@@ -36,6 +36,12 @@ WORKER_ID="${WORKER_ID:-france-personal}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ASYNC_REPO="${ASYNC_REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
+# Multi-worker support : parameterize LOCK_FILE per WORKER_ID so multiple
+# worker daemons can coexist (different WORKER_ID values, different lock
+# files). Each picks queued phases independently. Race on phase claim is
+# handled in remote-worker.sh via push-rejected → retry pattern.
+WORKER_LOCK_FILE="${WORKER_LOCK_FILE:-/tmp/codex-async-worker-${WORKER_ID}.lock}"
+
 # Sanity : worker script must exist
 if [[ ! -f "$SCRIPT_DIR/remote-worker.sh" ]] ; then
   echo "[$(date -Iseconds)] FATAL : $SCRIPT_DIR/remote-worker.sh not found" >&2

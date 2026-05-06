@@ -359,6 +359,7 @@ KAIZEN_EOF
   kaizen_log=$(mktemp)
   if echo "$kaizen_prompt" | timeout --kill-after=15s "${KAIZEN_WALLCLOCK_SEC}s" \
        codex exec --dangerously-bypass-approvals-and-sandbox \
+       -c 'model="gpt-5.5"' -c 'model_reasoning_effort="xhigh"' \
        -C "$ASYNC_REPO" - > "$kaizen_log" 2>&1 ; then
     log "$phase_id kaizen codex ok"
   else
@@ -453,6 +454,7 @@ PANEL_EOF
   panel_log=$(mktemp)
   echo "$panel_prompt" | timeout --kill-after=15s "${PANEL_WALLCLOCK_SEC}s" \
        codex exec --dangerously-bypass-approvals-and-sandbox \
+       -c 'model="gpt-5.5"' -c 'model_reasoning_effort="xhigh"' \
        -C "$ASYNC_REPO" - > "$panel_log" 2>&1 || \
        log "$phase_id panel codex exit non-zero"
   rm -f "$panel_log"
@@ -521,6 +523,7 @@ ADV_EOF
   adv_log=$(mktemp)
   echo "$advisor_prompt" | timeout --kill-after=15s "${PANEL_WALLCLOCK_SEC}s" \
        codex exec --dangerously-bypass-approvals-and-sandbox \
+       -c 'model="gpt-5.5"' -c 'model_reasoning_effort="xhigh"' \
        -C "$ASYNC_REPO" - > "$adv_log" 2>&1 || \
        log "$phase_id advisor codex exit non-zero"
   rm -f "$adv_log"
