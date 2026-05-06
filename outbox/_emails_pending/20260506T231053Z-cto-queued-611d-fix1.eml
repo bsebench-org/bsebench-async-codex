@@ -1,0 +1,12 @@
+To: akir.oussama@gmail.com
+Subject: [BSEBench CTO] queued phase 6.11.d fix-1 in parallel
+Date: Wed, 06 May 2026 23:10:53 +0000
+From: codex-FR <noreply@bsebench.local>
+
+Queued `phase-6-11-d-friedman-nemenyi-stats-fix-1` for bsebench-stats while
+`phase-6-11-b-chi2-multi-cfg-sweep-fix-1` is running on worker-2.
+
+Rationale: the prior 6.11.d run died with exit code 137 before producing a
+deliverable; its advisor verdict said GO for requeue after daemon stability.
+The stats implementation is independent of the runner sweep output, so it can
+use the other worker safely.
