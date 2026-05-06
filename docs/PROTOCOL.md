@@ -283,6 +283,23 @@ Examples :
 
 The chef-daemon's verify step DOES NOT currently enforce the glassbox format (V1 only checks author + Co-Authored-By + scope). V2 will pattern-match the `[role: ...]` tag presence as part of the auto-merge matrix.
 
+## Narrative audit ledger — `HISTORY.md`
+
+`HISTORY.md` at the repo root is a high-level **narrative audit trail**, append-only, one bullet per significant event. It is the human-and-LLM-readable companion to the machine-readable inbox/outbox/STATUS.json artifacts.
+
+**Purpose** : an LLM auditor (any LLM, months later) can read `HISTORY.md` chronologically and reconstruct what happened, who decided what, what evidence backs each claim, without having to grep 200 commits.
+
+**Format** : `- **HH:MM UTC** | [actor: <role-tag>] | [<EVENT-TYPE>] | <phase or area> | <one-line narrative>`
++ optional `key=value` facts on a continuation line.
+
+**Event types** : `QUEUE`, `START`, `DONE`, `FAIL`, `TIMEOUT`, `MERGE`, `VERDICT`, `DECIDE`, `BUG`, `FIX`, `INSTALL`, `HANDOFF`, `LEARN`. SHOUTED-CASE.
+
+**Maintenance V1** : `claude-TN` (chef in Claude Code) appends entries during sessions and at session-end. Append-only — never rewrite past entries ; supersede via a new entry that cites the older UTC timestamp.
+
+**Maintenance V2 (deferred)** : chef-daemon could auto-append a single VERDICT line per tick. Deferred because (a) file-lock races with concurrent worker, (b) merge conflicts between daemon writes and chef-TN curation, (c) V1 manual narrative tends to be richer than auto-generated lines.
+
+See `HISTORY.md` for the live trail.
+
 ## Polling cadences
 
 - worker → bsebench-async-codex : every 60 s (cron).
