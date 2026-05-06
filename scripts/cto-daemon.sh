@@ -250,12 +250,15 @@ PROMPT_EOF
   codex_log=$(mktemp)
   log "dispatching codex exec (wallclock=${TICK_WALLCLOCK_SEC}s)"
 
+  # Pattern mirrors remote-worker.sh:223 (proven on this codex 0.129.0-alpha.7)
+  # -C explicit cwd, --add-dir for repo visibility, stdin redirect for prompt
   if timeout --kill-after=30s "${TICK_WALLCLOCK_SEC}" \
        codex exec --dangerously-bypass-approvals-and-sandbox \
-         --add-dir "$ASYNC_REPO" \
-         --add-dir /mnt/c/doctorat/bsebench-org \
          -c 'model="gpt-5.5"' \
          -c 'model_reasoning_effort="xhigh"' \
+         -C "$ASYNC_REPO" \
+         --add-dir "$ASYNC_REPO" \
+         --add-dir /mnt/c/doctorat/bsebench-org \
          < "$prompt" \
          > "$codex_log" 2>&1 ; then
     log "codex exec completed for iso=$iso"
