@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [FIX] phase-6-11-b-chi2-multi-cfg-sweep-fix-1 (panel 73/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T01:25:30+02:00
+
+Phase    : phase-6-11-b-chi2-multi-cfg-sweep-fix-1
+Etat     : needs_fix (needs_fix)
+Panel    : 73/100 (seuil 89)
+Quoi     : Phase 6.11.b fix-1 - chi2 sweep multi-cfg (5 cfgs x 5 filters)
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep-fix-1/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep-fix-1/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep-fix-1/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
