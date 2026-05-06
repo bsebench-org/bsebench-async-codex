@@ -80,17 +80,47 @@ verify_and_merge() {
     return
   }
 
-  # Fetch + checkout
+  # Fetch + clean working tree before checkout. The chef-daemon shares the
+  # canonical clone with the worker daemon — worker creates worktrees there
+  # and codex runs leave .coverage / .pytest_cache / .venv / .ruff_cache
+  # untracked artifacts in the working tree. Without `git clean -fdx`, those
+  # block `git checkout` with "would overwrite untracked files" errors.
   if ! git fetch origin --prune --quiet ; then
     write_verdict "$phase_id" "escalated" "git fetch failed on $repo_dir" ""
     return
   fi
 
-  # Make sure we are not already on the target branch (avoid checkout from itself).
-  git checkout main --quiet 2>/dev/null || true
+  # Early exit : if the worker SUMMARY.md branch SHA is already an ancestor
+  # of origin/main, the phase has been merged (manually by claude-TN, or by
+  # an earlier chef tick). No checkout / re-test needed — write approved.
+  local summary_path="$ASYNC_REPO/outbox/$phase_id/SUMMARY.md"
+  if [[ -f "$summary_path" ]] ; then
+    local worker_sha
+    worker_sha=$(grep -E '^- Branch SHA :' "$summary_path" | awk '{print $5}' | head -1)
+    if [[ -n "$worker_sha" && "$worker_sha" != "none" ]] ; then
+      if git merge-base --is-ancestor "$worker_sha" origin/main 2>/dev/null ; then
+        write_verdict "$phase_id" "approved" "branch SHA $worker_sha already in origin/main — manual chef merge or prior chef tick handled this" ""
+        log "$phase_id approved (already-in-main fast path, sha=$worker_sha)"
+        return
+      fi
+    fi
+  fi
 
-  if ! git checkout "$target_branch" --quiet ; then
-    write_verdict "$phase_id" "escalated" "git checkout $target_branch failed (branch missing or conflicting state)" ""
+  # Hard-reset to origin/main and remove all untracked files. This is safe :
+  # the worker uses a SEPARATE worktree at $repo_dir-$target_branch for codex
+  # runs, so we cannot lose codex work by cleaning $repo_dir itself.
+  git checkout main --quiet 2>/dev/null || true
+  git reset --hard "origin/main" --quiet 2>/dev/null || true
+  git clean -fdx --quiet 2>/dev/null || true
+
+  # Now check out the target branch from origin (force-create local tracking)
+  if ! git checkout -B "$target_branch" "origin/$target_branch" --quiet 2>/dev/null ; then
+    # Fallback : maybe origin already deleted the branch (chef merged earlier)
+    if git show-ref --verify --quiet "refs/remotes/origin/$target_branch" ; then
+      write_verdict "$phase_id" "escalated" "git checkout origin/$target_branch failed despite ref existing — investigate working tree state" ""
+    else
+      write_verdict "$phase_id" "escalated" "branch $target_branch missing on origin (already merged + cleaned by another chef tick ?)" ""
+    fi
     return
   fi
 
