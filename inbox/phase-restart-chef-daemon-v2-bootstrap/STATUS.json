@@ -1,11 +1,11 @@
 {
   "phase_id": "phase-restart-chef-daemon-v2-bootstrap",
-  "status": "queued",
+  "status": "running",
   "ts_queued": "2026-05-06T17:30:00Z",
-  "ts_started": null,
+  "ts_started": "2026-05-06T17:37:24Z",
   "ts_done": null,
   "exit_code": null,
-  "worker_id": null,
+  "worker_id": "france-personal",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
   "target_branch": "bootstrap/chef-daemon-v2-respawn-2026-05-06",
   "base_branch": "main"
