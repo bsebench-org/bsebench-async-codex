@@ -1,11 +1,11 @@
 {
   "phase_id": "merge-validate-phase-7-1-bsebench-readme-examples-20260506T220841Z",
-  "status": "queued",
+  "status": "running",
   "ts_queued": "2026-05-06T22:08:41Z",
-  "ts_started": null,
+  "ts_started": "2026-05-06T22:09:52Z",
   "ts_done": null,
   "exit_code": null,
-  "worker_id": null,
+  "worker_id": "france-personal-2",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
   "target_branch": "merge-validate/phase-7-1-bsebench-readme-examples-20260506T220841Z",
   "base_branch": "main"
