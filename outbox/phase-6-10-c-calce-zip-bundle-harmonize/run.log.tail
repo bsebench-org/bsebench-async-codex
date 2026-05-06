@@ -1,0 +1,200 @@
+             written[cell_id] = out_path
+ 
++        pd = None
++        for temp_c, zip_name in DYN_T_TO_ZIP.items():
++            zip_path = self.local_root / zip_name
++            if not zip_path.is_file():
++                continue
++
++            if pd is None:
++                import pandas as pd
++
++            with tempfile.TemporaryDirectory() as tmp:
++                with zipfile.ZipFile(zip_path) as zf:
++                    zf.extractall(tmp)
++
++                xlsx_files = sorted(glob.glob(os.path.join(tmp, "**", "*.xlsx"), recursive=True))
++                for cell_idx, xlsx_path in enumerate(xlsx_files[:2]):
++                    xls = pd.ExcelFile(xlsx_path, engine="openpyxl")
++                    channel_sheets = [
++                        sheet for sheet in xls.sheet_names if sheet.startswith("Channel_")
++                    ]
++                    if not channel_sheets:
++                        print(f"CALCE A123 dynamic warning: no Channel_* sheet in {xlsx_path}")
++                        continue
++
++                    df = pd.read_excel(xls, sheet_name=channel_sheets[0])
++                    for profile, step_index in DYN_PROFILE_TO_STEP.items():
++                        segment = df[df["Step_Index"] == step_index].reset_index(drop=True)
++                        if len(segment) < 100:
++                            print(
++                                "CALCE A123 dynamic warning: "
++                                f"{profile} T={temp_c} cell={cell_idx} "
++                                f"Step_Index={step_index} has {len(segment)} rows; skipping"
++                            )
++                            continue
++
++                        t_arr = segment["Test_Time(s)"].to_numpy(dtype=np.float64)
++                        table = pa.table(
++                            {
++                                "time_s": t_arr - t_arr[0],
++                                "voltage_V": segment["Voltage(V)"].to_numpy(dtype=np.float64),
++                                "current_A": segment["Current(A)"].to_numpy(dtype=np.float64),
++                                "temperature_C": segment["Temperature (C)_1"].to_numpy(
++                                    dtype=np.float64
++                                ),
++                            }
++                        )
++                        cell_id = f"A123_{profile}_T{temp_c}_cell{cell_idx}"
++                        out_path = (
++                            output_dir
++                            / f"calce_a123_dyn_{profile}_T{temp_c}_cell{cell_idx}.parquet"
++                        )
++                        pq.write_table(table, out_path)
++                        written[cell_id] = out_path
++
+         return written
+diff --git a/tests/test_adapter_calce_a123_skeleton.py b/tests/test_adapter_calce_a123_skeleton.py
+index c017e71480831252dc4421160a130ad5e37f64f5..28339cc2d094a985077acf37c601bfccf66701ee
+--- a/tests/test_adapter_calce_a123_skeleton.py
++++ b/tests/test_adapter_calce_a123_skeleton.py
+@@ -4,7 +4,9 @@
+ """
+ 
+ from pathlib import Path
++from unittest.mock import MagicMock, patch
+ 
++import pandas as pd
+ import pyarrow.parquet as pq
+ import pytest
+ 
+@@ -15,6 +17,8 @@
+     CALCE_A123_LEGACY_TEMPS_C,
+     CHEMISTRY_TAG,
+     DATASET_TAG,
++    DYN_PROFILE_TO_STEP,
++    DYN_T_TO_ZIP,
+     LEGACY_T_TO_CSV,
+     NOMINAL_CAPACITY_AH,
+     CalceA123Adapter,
+@@ -41,6 +45,41 @@
+     return pq.read_table(str(path))
+ 
+ 
++def _dyn_df(step_counts: dict[int, int]) -> pd.DataFrame:
++    rows = []
++    t = 100.0
++    for step_index, count in step_counts.items():
++        for row_idx in range(count):
++            rows.append(
++                {
++                    "Test_Time(s)": t,
++                    "Step_Index": step_index,
++                    "Current(A)": -1.0 + row_idx * 0.001,
++                    "Voltage(V)": 3.3 - row_idx * 0.0001,
++                    "Temperature (C)_1": 25.0,
++                }
++            )
++            t += 1.0
++    return pd.DataFrame(rows)
++
++
++def _run_dyn_mock(tmp_path: Path, df: pd.DataFrame, *, temp_c: int = 25) -> dict[str, Path]:
++    zip_path = tmp_path / DYN_T_TO_ZIP[temp_c]
++    zip_path.write_bytes(b"fake zip bytes")
++    fake_xlsx = str(tmp_path / "A1-007.xlsx")
++
++    xls = MagicMock()
++    xls.sheet_names = ["Info", "Channel_1-001"]
++    with (
++        patch("bsebench_datasets.adapters.calce_a123_2014.zipfile.ZipFile") as zip_cls,
++        patch("bsebench_datasets.adapters.calce_a123_2014.glob.glob", return_value=[fake_xlsx]),
++        patch("pandas.ExcelFile", return_value=xls),
++        patch("pandas.read_excel", return_value=df),
++    ):
++        zip_cls.return_value.__enter__.return_value.extractall.return_value = None
++        return CalceA123Adapter(local_root=tmp_path).harmonize(output_dir=tmp_path / "out")
++
++
+ def test_constants_match_paper2b_canonical() -> None:
+     # Mirror paper2b benchmark_grid_multi.py:472-483
+     assert CALCE_A123_DYN_TEMPS_C == (-10, 0, 10, 20, 25, 30, 40, 50)
+@@ -54,6 +93,12 @@
+     assert DATASET_TAG == "calce_a123_lfp"
+ 
+ 
++def test_dyn_constants() -> None:
++    assert len(DYN_T_TO_ZIP) == 8
++    assert tuple(DYN_T_TO_ZIP) == (-10, 0, 10, 20, 25, 30, 40, 50)
++    assert DYN_PROFILE_TO_STEP == {"DST": 8, "US06": 16, "FUDS": 24}
++
++
+ def test_class_attributes() -> None:
+     assert CalceA123Adapter.DATASET_NAME == DATASET_TAG
+     assert CalceA123Adapter.CHEMISTRY == CHEMISTRY_TAG
+@@ -172,3 +217,46 @@
+         "calce_a123_DST_T25.parquet",
+         "calce_a123_DST_T40.parquet",
+     }
++
++
++def test_harmonize_dyn_skips_missing_zip(tmp_path: Path) -> None:
++    written = CalceA123Adapter(local_root=tmp_path).harmonize(output_dir=tmp_path / "out")
++
++    assert written == {}
++    assert list((tmp_path / "out").glob("calce_a123_dyn_*.parquet")) == []
++
++
++def test_harmonize_dyn_writes_parquet_for_one_profile_one_t_one_cell(tmp_path: Path) -> None:
++    written = _run_dyn_mock(tmp_path, _dyn_df({8: 200}))
++
++    expected_path = tmp_path / "out" / "calce_a123_dyn_DST_T25_cell0.parquet"
++    assert written == {"A123_DST_T25_cell0": expected_path}
++    assert expected_path.is_file()
++
++    table = _read_table(expected_path)
++    assert table.num_rows == 200
++    assert table.column_names == ["time_s", "voltage_V", "current_A", "temperature_C"]
++    assert table.column("time_s").to_pylist()[:3] == pytest.approx([0.0, 1.0, 2.0])
++    assert table.column("current_A").to_pylist()[0] == pytest.approx(-1.0)
++
++
++def test_harmonize_dyn_segments_three_profiles(tmp_path: Path) -> None:
++    written = _run_dyn_mock(tmp_path, _dyn_df({8: 120, 16: 140, 24: 160}))
++
++    assert set(written) == {
++        "A123_DST_T25_cell0",
++        "A123_US06_T25_cell0",
++        "A123_FUDS_T25_cell0",
++    }
++    assert _read_table(written["A123_DST_T25_cell0"]).num_rows == 120
++    assert _read_table(written["A123_US06_T25_cell0"]).num_rows == 140
++    assert _read_table(written["A123_FUDS_T25_cell0"]).num_rows == 160
++
++
++def test_harmonize_dyn_skips_short_segments(
++    tmp_path: Path, capsys: pytest.CaptureFixture[str]
++) -> None:
++    written = _run_dyn_mock(tmp_path, _dyn_df({8: 120, 16: 50, 24: 130}))
++
++    assert set(written) == {"A123_DST_T25_cell0", "A123_FUDS_T25_cell0"}
++    assert "US06 T=25 cell=0 Step_Index=16 has 50 rows; skipping" in capsys.readouterr().out
+
+tokens used
+210,955
+Implemented and committed Phase 6.10.c.
+
+Commit: `d765fb2 feat(calce): harmonize dynamic A123 zips`
+
+Changed:
+- [calce_a123_2014.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-c-calce-zip-bundle-harmonize/src/bsebench_datasets/adapters/calce_a123_2014.py)
+- [test_adapter_calce_a123_skeleton.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-c-calce-zip-bundle-harmonize/tests/test_adapter_calce_a123_skeleton.py)
+
+Verified:
+- `uv run pytest tests/test_adapter_calce_a123_*.py -m "not slow" -v` -> `16 passed`
+- `uv run ruff format --check src/bsebench_datasets/adapters/calce_a123_2014.py tests/test_adapter_calce_a123_*.py` -> passed
+- `uv run ruff check src/ tests/` -> passed
+- Real T25 smoke with ephemeral `openpyxl` -> `6` Parquets written for `3 profiles x 2 cells`
+- Empirical sign check on T25 DST `Step_Index=8`: `Current(A) min=-3.84941 max=1.92527`, confirming raw current is BPX-aligned and not flipped
+
+Worktree is clean. I did not push.
