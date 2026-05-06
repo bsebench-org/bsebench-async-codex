@@ -38,6 +38,17 @@
 >   the originating KAIZEN.md + the implementation commit SHA. This is the
 >   counter to KAIZEN-RETRO : grepping for KAIZEN-RETRO without a matching
 >   KAIZEN-SHIP shows ideas that were proposed but not yet shipped.
+> - `PANEL-VALIDATE` : a 3-agent panel (Mme Rim Barrak + 2 task-relevant
+>   experts) reviewed the phase and produced a confidence score. Cite the
+>   average score + verdict (PASS | NEEDS_REVIEW). One per phase verdict.
+> - `ADVISOR-OVERRIDE` : after a NEEDS_REVIEW from the panel, the advisor
+>   (fresh-context reviewer) returned GO and overrode the panel — chef
+>   continues. Cite the reasoning summary.
+> - `BLOCK` : after a NEEDS_REVIEW from the panel AND a BLOCK from the
+>   advisor, chef-daemon is paused and an email is queued at
+>   outbox/_emails_pending/ for akir.oussama@gmail.com. The chef-daemon
+>   refuses to process any further phases until the corresponding
+>   outbox/_blocks/<phase>.block file is removed by the user.
 >
 > **Maintenance** :
 > - claude-TN appends entries during chef sessions (live + post-mortem at

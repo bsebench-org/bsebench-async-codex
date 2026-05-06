@@ -374,6 +374,211 @@ Auto-generated kaizen retro (KEEP / FIX / SHIP-ONE). Triggered by chef-daemon af
   fi
 }
 
+# ------------------------------------------------------------------ panel check + advisor + email block (V1)
+# Per user mandate 2026-05-06 ~17:00 UTC : after each iteration close, run a
+# 3-agent panel (Mme Rim Barrak + 2 task-relevant experts), get confidence
+# scores. If avg < 89, escalate to advisor (single fresh-context reviewer).
+# If advisor returns BLOCK, write outbox/_blocks/<phase>.block + email
+# pending in outbox/_emails_pending/. The chef-daemon then refuses to
+# process new phases until block file is removed.
+
+PANEL_CHECK_ENABLED="${PANEL_CHECK_ENABLED:-1}"
+PANEL_THRESHOLD="${PANEL_THRESHOLD:-89}"
+PANEL_WALLCLOCK_SEC="${PANEL_WALLCLOCK_SEC:-180}"
+ESCALATION_EMAIL="${ESCALATION_EMAIL:-akir.oussama@gmail.com}"
+
+run_panel_check() {
+  local phase_id="$1"
+  local decision="$2"
+
+  if [[ "$PANEL_CHECK_ENABLED" != "1" ]] ; then return ; fi
+  if [[ -f "$ASYNC_REPO/outbox/$phase_id/PANEL_CHECK.md" ]] ; then return ; fi
+
+  log "panel check on $phase_id"
+  cd "$ASYNC_REPO" || return
+
+  local panel_prompt
+  read -r -d '' panel_prompt <<PANEL_EOF || true
+You are a 3-agent review panel for the bsebench-async-codex protocol. Read these files in cwd ($ASYNC_REPO) :
+
+- inbox/$phase_id/BRIEF.md
+- outbox/$phase_id/SUMMARY.md
+- outbox/$phase_id/CHEF_VERDICT.md
+- outbox/$phase_id/KAIZEN.md (if present)
+
+Decision recorded by chef : **$decision**.
+
+Play these 3 personas, each scoring 0-100 :
+
+1. **Mme Rim Barrak** (thesis director, Sup'Com Tunisia, GRESCOM Lab) — applies REPORT_RULES_MME_RIM discipline : pagination, acronyms, biblio, sign convention, source-of-truth pinning. Score the work's academic / forensic rigor.
+2. **Expert 2** : pick based on phase type. If BRIEF involves CODE / TESTS / ADAPTERS / LOADERS → "ML/Stats expert" (frequentist + nonparametric, scrutinizes test coverage + edge cases). If DOCS / PROTOCOL / META → "Q1 reviewer" (Q1 venue peer-review experience). If DATA / DATASET / CHEMISTRY → "Battery-electrochem expert".
+3. **Expert 3** : pick complementary. Default = "Adversarial reviewer" (red-team, attacks assumptions). For dataset work, "Embedded/MCU expert" (deployability constraints). State your reasoning briefly.
+
+Write your output DIRECTLY to outbox/$phase_id/PANEL_CHECK.md via apply_patch :
+
+# Panel check for $phase_id
+
+[role: panel-FR]
+Decision audited : $decision
+Generated at : <ISO-8601 UTC>
+
+## Panel composition
+- Mme Rim Barrak (thesis director, mandatory)
+- <expert 2 name> (reasoning : <one line>)
+- <expert 3 name> (reasoning : <one line>)
+
+## Confidence scores (0-100, where 100 = "ship it now, no concerns")
+- mme_rim : NN — <one-line rationale>
+- expert2 : NN — <one-line rationale>
+- expert3 : NN — <one-line rationale>
+- **AVERAGE : NN**
+
+## Key concerns (if any)
+- <bullet 1>
+- <bullet 2>
+
+## Verdict
+PASS (avg ≥ $PANEL_THRESHOLD) | NEEDS_REVIEW (avg < $PANEL_THRESHOLD, escalate to advisor)
+
+Output ONLY the markdown above. No extra commentary. The threshold for escalation is $PANEL_THRESHOLD.
+PANEL_EOF
+
+  local panel_log
+  panel_log=$(mktemp)
+  echo "$panel_prompt" | timeout --kill-after=15s "${PANEL_WALLCLOCK_SEC}s" \
+       codex exec --dangerously-bypass-approvals-and-sandbox \
+       -C "$ASYNC_REPO" - > "$panel_log" 2>&1 || \
+       log "$phase_id panel codex exit non-zero"
+  rm -f "$panel_log"
+
+  if [[ ! -f "$ASYNC_REPO/outbox/$phase_id/PANEL_CHECK.md" ]] ; then
+    log "$phase_id PANEL_CHECK.md not written — skipping panel logic"
+    return
+  fi
+
+  # Parse average from PANEL_CHECK.md
+  local avg
+  avg=$(grep -oE 'AVERAGE\s*:?\s*\*?\*?\s*[0-9]+' "$ASYNC_REPO/outbox/$phase_id/PANEL_CHECK.md" | grep -oE '[0-9]+' | head -1)
+  log "$phase_id panel avg = ${avg:-unknown}"
+
+  git add "outbox/$phase_id/PANEL_CHECK.md"
+  git commit -m "docs(panel): $phase_id avg=${avg:-?} (threshold=$PANEL_THRESHOLD)
+
+[role: panel-FR]
+
+3-agent panel (Mme Rim + 2 experts) reviewed phase $phase_id (decision=$decision). Average confidence : ${avg:-unparseable}. Threshold : $PANEL_THRESHOLD. $([[ -n "$avg" && "$avg" -ge "$PANEL_THRESHOLD" ]] && echo "PASS — continuing." || echo "NEEDS_REVIEW — escalating to advisor.")" --quiet 2>/dev/null || true
+  git push origin main --quiet 2>/dev/null || true
+
+  if [[ -n "$avg" && "$avg" -ge "$PANEL_THRESHOLD" ]] ; then
+    return  # PASS
+  fi
+
+  # Escalate to advisor
+  log "$phase_id panel below threshold ($avg < $PANEL_THRESHOLD), escalating to advisor"
+  call_advisor_block_check "$phase_id" "$decision" "${avg:-unparseable}"
+}
+
+call_advisor_block_check() {
+  local phase_id="$1"
+  local decision="$2"
+  local panel_avg="$3"
+
+  cd "$ASYNC_REPO" || return
+
+  local advisor_prompt
+  read -r -d '' advisor_prompt <<ADV_EOF || true
+You are the FRESH-CONTEXT ADVISOR. A 3-agent panel reviewed phase $phase_id and gave avg confidence $panel_avg < $PANEL_THRESHOLD.
+
+Read in cwd : inbox/$phase_id/BRIEF.md, outbox/$phase_id/SUMMARY.md, outbox/$phase_id/CHEF_VERDICT.md, outbox/$phase_id/KAIZEN.md (if present), outbox/$phase_id/PANEL_CHECK.md.
+
+Decide : GO (override the panel and continue) or BLOCK (stop chef-daemon and escalate to user via email).
+
+Output to outbox/$phase_id/ADVISOR_CHECK.md :
+
+# Advisor check for $phase_id
+
+[role: advisor-FR]
+Generated at : <ISO-8601 UTC>
+Panel average that triggered escalation : $panel_avg
+Threshold : $PANEL_THRESHOLD
+
+## Verdict
+<exactly GO or BLOCK on its own line>
+
+## Reasoning
+<2-4 sentences explaining your decision>
+
+If you choose BLOCK, ALSO create outbox/_emails_pending/$(date -u +%Y%m%dT%H%M%SZ)-block-$phase_id.eml with this content :
+
+To: $ESCALATION_EMAIL
+Subject: [BLOCK] $phase_id needs your review (panel=$panel_avg, advisor=BLOCK)
+From: chef-daemon <noreply@bsebench-async-codex>
+
+Phase $phase_id closed with verdict $decision.
+Panel of 3 (Mme Rim + 2 experts) avg confidence : $panel_avg < $PANEL_THRESHOLD threshold.
+Advisor (fresh context) confirmed BLOCK.
+
+Files to review :
+- https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/$phase_id/CHEF_VERDICT.md
+- https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/$phase_id/KAIZEN.md
+- https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/$phase_id/PANEL_CHECK.md
+- https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/$phase_id/ADVISOR_CHECK.md
+
+Action required :
+1. Review at https://github.com/bsebench-org/bsebench-async-codex
+2. Either DELETE the block file outbox/_blocks/$phase_id.block to override (chef-daemon resumes), OR queue a fix-BRIEF in inbox/ that addresses the concerns.
+
+The chef-daemon is paused (no new phases will be picked up by chef OR worker until the block is cleared).
+ADV_EOF
+
+  local adv_log
+  adv_log=$(mktemp)
+  echo "$advisor_prompt" | timeout --kill-after=15s "${PANEL_WALLCLOCK_SEC}s" \
+       codex exec --dangerously-bypass-approvals-and-sandbox \
+       -C "$ASYNC_REPO" - > "$adv_log" 2>&1 || \
+       log "$phase_id advisor codex exit non-zero"
+  rm -f "$adv_log"
+
+  local verdict="BLOCK"  # Conservative default : if advisor failed to write, BLOCK
+  if [[ -f "$ASYNC_REPO/outbox/$phase_id/ADVISOR_CHECK.md" ]] ; then
+    verdict=$(grep -oE '^GO$|^BLOCK$' "$ASYNC_REPO/outbox/$phase_id/ADVISOR_CHECK.md" | head -1)
+    [[ -z "$verdict" ]] && verdict="BLOCK"
+  fi
+
+  if [[ "$verdict" == "BLOCK" ]] ; then
+    mkdir -p "$ASYNC_REPO/outbox/_blocks" "$ASYNC_REPO/outbox/_emails_pending"
+    echo "Phase $phase_id BLOCKED at $(date -Iseconds). Panel avg=$panel_avg, advisor=BLOCK. Email queued at outbox/_emails_pending/. Delete this file to unblock the chef-daemon." > "$ASYNC_REPO/outbox/_blocks/$phase_id.block"
+
+    git add -A "outbox/$phase_id/" "outbox/_blocks/" "outbox/_emails_pending/"
+    git commit -m "block(async): $phase_id BLOCKED (panel=$panel_avg, advisor=BLOCK)
+
+[role: chef-FR]
+
+Panel of 3 returned avg=$panel_avg < $PANEL_THRESHOLD. Advisor confirmed BLOCK. Chef-daemon paused : no new phases picked up until outbox/_blocks/$phase_id.block is removed by the user. Email pending at outbox/_emails_pending/ for $ESCALATION_EMAIL." --quiet 2>/dev/null || true
+    git push origin main --quiet 2>/dev/null || true
+    log "$phase_id BLOCKED — chef-daemon paused"
+  else
+    git add "outbox/$phase_id/ADVISOR_CHECK.md"
+    git commit -m "docs(advisor): $phase_id GO (override panel=$panel_avg)
+
+[role: advisor-FR]
+
+Panel sub-threshold but advisor approved GO with reasoning. Continuing to next iteration." --quiet 2>/dev/null || true
+    git push origin main --quiet 2>/dev/null || true
+    log "$phase_id advisor said GO — continuing"
+  fi
+}
+
+# Check if chef-daemon is paused due to a block file
+chef_is_blocked() {
+  if [[ -d "$ASYNC_REPO/outbox/_blocks" ]] ; then
+    local blocks
+    blocks=$(find "$ASYNC_REPO/outbox/_blocks" -maxdepth 1 -type f -name '*.block' 2>/dev/null | wc -l)
+    [[ "$blocks" -gt 0 ]] && return 0
+  fi
+  return 1
+}
+
 # ------------------------------------------------------------------ main loop
 log "chef-daemon start (interval ${INTERVAL_SEC}s, async_repo=$ASYNC_REPO)"
 
@@ -392,6 +597,13 @@ while true ; do
     exec bash "$SCRIPT_PATH"
   fi
 
+  # Refuse to process new phases while a block file is present.
+  if chef_is_blocked ; then
+    log "chef-daemon paused : outbox/_blocks/ contains $(ls "$ASYNC_REPO/outbox/_blocks" 2>/dev/null | wc -l) block file(s). Waiting for user to unblock."
+    sleep "$INTERVAL_SEC"
+    continue
+  fi
+
   for status_path in inbox/*/STATUS.json ; do
     [[ -f "$status_path" ]] || continue
     phase_id=$(basename "$(dirname "$status_path")")
@@ -401,17 +613,18 @@ while true ; do
     case "$status" in
       done)
         verify_and_merge "$phase_id" "$status_path"
-        # Kaizen retro after verdict is written. Read the verdict back to
-        # discover the decision so we can pass it to run_kaizen.
+        # Kaizen retro then panel check (advisor + email block) after verdict
         if [[ -f "outbox/$phase_id/CHEF_VERDICT.md" ]] ; then
           decision=$(grep -E '^- Decision :' "outbox/$phase_id/CHEF_VERDICT.md" | awk -F': ' '{print $2}' | head -1)
           run_kaizen "$phase_id" "${decision:-unknown}"
+          run_panel_check "$phase_id" "${decision:-unknown}"
         fi
         ;;
       error)
         classify_error "$phase_id" "$status_path"
         if [[ -f "outbox/$phase_id/CHEF_VERDICT.md" ]] ; then
           run_kaizen "$phase_id" "escalated"
+          run_panel_check "$phase_id" "escalated"
         fi
         ;;
       *)
