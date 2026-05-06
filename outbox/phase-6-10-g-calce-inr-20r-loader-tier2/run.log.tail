@@ -1,0 +1,200 @@
++    assert PROFILES == ("DST", "FUDS", "US06", "BJDST")
++    assert TEMPS_C == (0, 25, 45)
++    assert SOC_STARTS == (50, 80)
++    assert DATASET_TAG == "calce_inr_20r"
++    assert CHEMISTRY_TAG == "NMC_CALCE_INR18650_20R"
++
++
++def test_loader_constructor_and_wrapper_name() -> None:
++    loader = CalceInr20RLoader(downloader=lambda _: "/nonexistent")
++    assert loader.wrapper_name == "calce_inr_dyn"
++
++
++def test_loader_rejects_downloader_and_local_cache_root(tmp_path: Path) -> None:
++    with pytest.raises(ValueError, match="Pass either downloader or local_cache_root"):
++        CalceInr20RLoader(downloader=lambda _: "/nonexistent", local_cache_root=tmp_path)
++
++
++def test_loader_available_configs_skip_soc_dimension() -> None:
++    expected = [
++        (profile, float(temp_c))
++        for profile in ("DST", "FUDS", "US06", "BJDST")
++        for temp_c in (0, 25, 45)
++    ]
++    assert CalceInr20RLoader().available_configs() == expected
++    assert len(expected) == 12
++
++
++def test_loader_rejects_invalid_profile() -> None:
++    loader = CalceInr20RLoader(downloader=lambda _: "/nonexistent")
++    with pytest.raises(AdapterNotAvailableError, match="profile 'BCDC'"):
++        loader.load("BCDC", 25.0)
++
++
++def test_loader_rejects_invalid_temperature() -> None:
++    loader = CalceInr20RLoader(downloader=lambda _: "/nonexistent")
++    with pytest.raises(AdapterNotAvailableError, match=r"T_C=40\.0"):
++        loader.load("DST", 40.0)
++
++
++def test_loader_rejects_non_integer_temperature_label() -> None:
++    loader = CalceInr20RLoader(downloader=lambda _: "/nonexistent")
++    with pytest.raises(AdapterNotAvailableError, match=r"T_C=25\.5"):
++        loader.load("DST", 25.5)
++
++
++def test_loader_rejects_invalid_soc_start() -> None:
++    loader = CalceInr20RLoader(downloader=lambda _: "/nonexistent")
++    with pytest.raises(AdapterNotAvailableError, match="soc_start must be one of"):
++        loader.load("DST", 25.0, soc_start=70)
++
++
++@pytest.mark.parametrize(
++    ("profile", "temp_c", "soc_start", "expected_cell_id"),
++    [
++        ("DST", 0, 80, "INR_DST_T0_soc80"),
++        ("FUDS", 25, 50, "INR_FUDS_T25_soc50"),
++        ("BJDST", 45, 80, "INR_BJDST_T45_soc80"),
++    ],
++)
++def test_loader_cell_id_format_for_profiles_temps_and_soc(
++    tmp_path: Path,
++    profile: str,
++    temp_c: int,
++    soc_start: int,
++    expected_cell_id: str,
++) -> None:
++    loader = _loader_for_parquet(
++        tmp_path,
++        profile=profile,
++        temp_c=temp_c,
++        soc_start=soc_start,
++        temperature_c=float(temp_c),
++    )
++    out = loader.load(profile, float(temp_c), soc_start=soc_start)
++    assert out["cell_id"] == expected_cell_id
++
++
++def test_loader_defaults_to_soc80(tmp_path: Path) -> None:
++    loader = _loader_for_parquet(tmp_path, profile="US06", temp_c=25, soc_start=80)
++    out = loader.load("US06", 25.0)
++    assert out["cell_id"] == "INR_US06_T25_soc80"
++
++
++def test_loader_flips_bpx_current_to_discharge_positive(tmp_path: Path) -> None:
++    loader = _loader_for_parquet(tmp_path, current_a=-3.0)
++    out = loader.load("DST", 25.0)
++    assert np.allclose(out["I"], 3.0)
++
++
++def test_loader_rebases_time_to_zero(tmp_path: Path) -> None:
++    loader = _loader_for_parquet(tmp_path, time_start_s=100.0)
++    out = loader.load("DST", 25.0)
++    assert out["t"][0] == 0.0
++    assert np.allclose(out["t"][:3], [0.0, 1.0, 2.0])
++
++
++def test_loader_schema_keys(tmp_path: Path) -> None:
++    loader = _loader_for_parquet(tmp_path)
++    out = loader.load("DST", 25.0)
++    assert set(out) == {
++        "t",
++        "V",
++        "I",
++        "T_meas",
++        "N",
++        "T_amb",
++        "cell_id",
++        "dataset",
++        "chemistry",
++        "source_url",
++    }
++
++
++def test_loader_length_consistency(tmp_path: Path) -> None:
++    loader = _loader_for_parquet(tmp_path, n_samples=17)
++    out = loader.load("DST", 25.0)
++    n = out["N"]
++    assert len(out["t"]) == len(out["V"]) == len(out["I"]) == len(out["T_meas"]) == n
++
++
++def test_loader_metadata_values(tmp_path: Path) -> None:
++    loader = _loader_for_parquet(tmp_path, temperature_c=45.0)
++    out = loader.load("DST", 25.0)
++    assert out["T_amb"] == 25.0
++    assert np.allclose(out["T_meas"], 45.0)
++    assert out["dataset"] == "calce_inr_20r"
++    assert out["chemistry"] == "NMC_CALCE_INR18650_20R"
++    assert out["source_url"] == "https://calce.umd.edu/battery-data"
++
++
++def test_loader_soc50_vs_soc80(tmp_path: Path) -> None:
++    _write_synthetic_parquet(tmp_path / _parquet_filename("US06", 25, 50), current_a=-1.0)
++    _write_synthetic_parquet(tmp_path / _parquet_filename("US06", 25, 80), current_a=-2.0)
++    loader = CalceInr20RLoader(local_cache_root=tmp_path)
++
++    out50 = loader.load("US06", 25.0, soc_start=50)
++    out80 = loader.load("US06", 25.0, soc_start=80)
++
++    assert out50["cell_id"] == "INR_US06_T25_soc50"
++    assert out80["cell_id"] == "INR_US06_T25_soc80"
++    assert np.allclose(out50["I"], 1.0)
++    assert np.allclose(out80["I"], 2.0)
++
++
++def test_loader_downloader_receives_expected_filename(tmp_path: Path) -> None:
++    parquet_path = tmp_path / _parquet_filename("FUDS", 45, 50)
++    _write_synthetic_parquet(parquet_path)
++    calls: list[str] = []
++
++    def downloader(filename: str) -> str:
++        calls.append(filename)
++        return str(parquet_path)
++
++    loader = CalceInr20RLoader(downloader=downloader)
++    out = loader.load("FUDS", 45.0, soc_start=50)
++    assert calls == ["calce_inr_20r_FUDS_T45_soc50.parquet"]
++    assert out["cell_id"] == "INR_FUDS_T45_soc50"
++
++
++@pytest.mark.slow
++def test_loader_calce_inr_20r_dst_t25_paper2b_compat(tmp_path: Path) -> None:
++    raw_root = CALCE_INR_LOCAL_RAW_ROOT
++    raw_zip = raw_root / T_TO_ZIP_PATTERN.format(T=25, profile="DST")
++    if not raw_zip.is_file():
++        pytest.skip(f"local CALCE INR-20R dynamic zip not found at {raw_zip}")
++
++    pytest.importorskip("pandas")
++    pytest.importorskip("openpyxl")
++
++    written = CalceInr20RAdapter(local_root=raw_zip).harmonize(output_dir=tmp_path)
++    assert {"INR_DST_T25_soc50", "INR_DST_T25_soc80"} <= written.keys()
++
++    loader = CalceInr20RLoader(local_cache_root=tmp_path)
++    out80 = loader.load("DST", 25.0)
++    out50 = loader.load("DST", 25.0, soc_start=50)
++
++    assert out80["cell_id"] == "INR_DST_T25_soc80"
++    assert out50["cell_id"] == "INR_DST_T25_soc50"
++    assert out80["chemistry"] == "NMC_CALCE_INR18650_20R"
++    assert out80["N"] > 1000
++    assert out80["t"][0] == 0.0
+
+tokens used
+189,370
+Implémenté et committé.
+
+Commit: `7c294e3 feat(loaders): add calce INR-20R loader`
+
+Changements:
+- Ajout de [calce_inr_20r_loader.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-g-calce-inr-20r-loader-tier2/src/bsebench_datasets/loaders/calce_inr_20r_loader.py:1) avec `CalceInr20RLoader`, `wrapper_name="calce_inr_dyn"`, HF repo, fallback local, SoC par défaut `80`, schema 10 clés, et flip `I = -current_A`.
+- Export lazy ajouté dans [loaders/__init__.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-g-calce-inr-20r-loader-tier2/src/bsebench_datasets/loaders/__init__.py:134).
+- Ajout de [test_loader_calce_inr_20r.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-g-calce-inr-20r-loader-tier2/tests/test_loader_calce_inr_20r.py:1) avec 19 fast tests + 1 slow test adapter réel.
+
+Vérifications passées:
+- `uv run --extra dev pytest -m 'not slow' tests/test_loader_calce_inr_20r.py -q`
+- `uv run --extra dev --with openpyxl pytest -m slow tests/test_loader_calce_inr_20r.py -q`
+- `uv run --extra dev ruff format --check ...`
+- `uv run --extra dev ruff check src/ tests/`
+
+`git status` est clean, scope = 3 fichiers, 1 commit GLASSBOX avec `[role: worker-codex-FR]`, sans `Co-Authored-By Claude`.
