@@ -233,23 +233,67 @@ Verify with `ls -lh ~/.codex/memories/bsebench-async-codex-context.md` after the
 
 ## 7. What to do RIGHT NOW (this final interactive session)
 
+The user wants ZERO additional manual setup steps after pasting this prompt. You handle everything below from within this session :
+
 1. Read this whole prompt.
 2. Run `apply_patch` to save the memory file per §6.
-3. Verify the memory file was written (`ls`, then `head -20`).
-4. Run `git config --global user.name` and `git config --global user.email` and confirm they are `Oussama Akir` and `claude@cosmocomply.com`. If not, set them.
-5. Run `codex --version` and `cat /etc/wsl.conf 2>/dev/null` to confirm runtime + cron-on-boot config.
-6. Print the final acknowledgment :
+3. Verify the memory file was written : `ls -lh ~/.codex/memories/bsebench-async-codex-context.md && head -5 ~/.codex/memories/bsebench-async-codex-context.md`.
+4. Run `git config --global user.name` and `git config --global user.email`. If they are not `Oussama Akir` and `claude@cosmocomply.com`, set them. (You may need to also configure them in `/mnt/c/doctorat/bsebench-org/bsebench-async-codex` and `/mnt/c/doctorat/bsebench-org/bsebench-datasets` clones if they are local-only.)
+5. Run `codex --version` and `bash --version` to confirm runtime.
+6. **Launch the worker daemon yourself.** Run :
 
-```
-READY: codex remote worker armed for chef bsebench-async-codex protocol.
-- memory file saved : ~/.codex/memories/bsebench-async-codex-context.md (size: <bytes>)
-- git config : user.name=Oussama Akir, user.email=claude@cosmocomply.com
-- codex version : 0.129.0-alpha.7
-- WSL2 + cron persisted via /etc/wsl.conf : <yes|no>
-- next : exit this session ; from now on the cron worker will pick up chef's BRIEFs from inbox/<phase-id>/.
-```
+   ```bash
+   chmod +x /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh
+   chmod +x /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/remote-worker.sh
+   nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
+     > /mnt/c/doctorat/bsebench-org/.async-worker.log 2>&1 &
+   disown
+   sleep 3 && pgrep -af worker-daemon.sh
+   ```
 
-Once you print this, the user closes the session. Going forward, the chef → you → chef cycle is fully automated.
+   Verify : the `pgrep -af` should show one row with the daemon's PID + command. The `disown` is critical — it detaches the daemon from this codex session, so when the user closes you, the daemon keeps running.
+
+7. **Auto-respawn-on-shell-login** (so the daemon comes back if WSL2 reboots) :
+
+   ```bash
+   if ! grep -q "worker-daemon.sh" ~/.bashrc 2>/dev/null ; then
+     cat >> ~/.bashrc <<'EOF'
+
+   # auto-start bsebench-async-codex worker daemon if not running
+   if ! pgrep -f worker-daemon.sh > /dev/null 2>&1 ; then
+     nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
+       > /mnt/c/doctorat/bsebench-org/.async-worker.log 2>&1 &
+     disown
+   fi
+   EOF
+     echo "added respawn snippet to ~/.bashrc"
+   fi
+   ```
+
+8. Tail the log briefly to confirm the daemon ticks once :
+
+   ```bash
+   tail -n 20 /mnt/c/doctorat/bsebench-org/.async-worker.log
+   ```
+
+   You should see one or two `[<iso>] tick` lines. If you see `FATAL` or `not found`, abort and surface the error.
+
+9. Print the final acknowledgment :
+
+   ```
+   READY: codex remote worker armed.
+   - memory file : ~/.codex/memories/bsebench-async-codex-context.md (size: <bytes>)
+   - git config : user.name=Oussama Akir, user.email=claude@cosmocomply.com
+   - codex version : 0.129.0-alpha.7
+   - worker daemon PID : <pid>
+   - daemon log : /mnt/c/doctorat/bsebench-org/.async-worker.log
+   - .bashrc respawn snippet : <added|already-present>
+   - next : the user can now close this session. The daemon polls inbox every 60 s.
+            The chef polls outbox every 30 min via its own cron-cloud agent.
+            Both sides are fully automated from now on.
+   ```
+
+Once you print this, the user closes the session. The daemon keeps running. Going forward, the chef → you → chef cycle is fully automated, no human intervention required.
 
 Welcome to the team.
 
