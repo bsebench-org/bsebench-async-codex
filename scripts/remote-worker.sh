@@ -212,12 +212,16 @@ if git rev-parse HEAD >/dev/null 2>&1 ; then
   branch_sha=$(git rev-parse HEAD)
 fi
 
+push_stderr=""
 if [[ $codex_exit -eq 0 ]] && ! git diff --quiet "origin/$base_branch" HEAD 2>/dev/null ; then
-  if git push -u origin "$target_branch" --quiet ; then
+  push_stderr_file=$(mktemp)
+  if git push -u origin "$target_branch" 2>"$push_stderr_file" ; then
     push_result="ok"
   else
     push_result="push-failed"
+    push_stderr=$(cat "$push_stderr_file" 2>/dev/null | head -20)
   fi
+  rm -f "$push_stderr_file"
 fi
 
 # ------------------------------------------------------------------ write outbox
@@ -238,6 +242,10 @@ cat > "outbox/$queued_phase/SUMMARY.md" <<EOF
 - Started : (see STATUS.json ts_started)
 - Finished : $(date -Iseconds)
 
+## Push stderr (if push failed)
+
+$([ "$push_result" = "push-failed" ] && echo -e "\`\`\`\n${push_stderr:-(no stderr captured)}\n\`\`\`" || echo "(push succeeded — no stderr)")
+
 ## Tail of codex stdout (last $LOG_TAIL_LINES lines)
 
 \`\`\`
@@ -246,7 +254,7 @@ $(tail -n 80 "$log_file")
 
 ## Next step for chef
 
-$([ "$push_result" = "ok" ] && echo "git fetch origin && git checkout $target_branch in target_repo. Verify gates. Merge to main if green." || echo "Investigate the failure mode in run.log.tail. Re-queue with corrections if recoverable.")
+$([ "$push_result" = "ok" ] && echo "git fetch origin && git checkout $target_branch in target_repo. Verify gates. Merge to main if green." || echo "Investigate the failure mode in run.log.tail and the push stderr above. Re-queue with corrections if recoverable.")
 EOF
 
 rm -f "$log_file"
