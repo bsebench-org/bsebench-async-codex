@@ -6,9 +6,9 @@
 > ```bash
 > cd ~/bsebench-async-codex
 > codex exec --dangerously-bypass-approvals-and-sandbox \
->   -C C:/doctorat/bsebench-org \
->   --add-dir C:/doctorat/bsebench-org/bsebench-datasets \
->   --add-dir C:/doctorat/bsebench-org/bsebench-async-codex \
+>   -C <REPO_ROOT> \
+>   --add-dir <REPO_ROOT>/bsebench-datasets \
+>   --add-dir <REPO_ROOT>/bsebench-async-codex \
 >   < /path/to/this/BRIEF.md
 > ```
 > The user will save this file under `~/onboarding-codex.md` (or scp from the chef).
@@ -25,17 +25,25 @@ This dispatch is **special** : it onboards you, persists context to your memory 
 
 ## 1. Repo layout on this PC
 
-The user has cloned all `bsebench-org` repositories under `C:\doctorat\bsebench-org\`. Treat this directory as your work root. Posix paths (Git Bash) for the same locations :
+The user has cloned all `bsebench-org` repositories under `C:\doctorat\bsebench-org\` on the Windows filesystem. **Detect your shell runtime first** with `uname -a` and `cat /proc/version 2>/dev/null` ; the path you must use depends on it :
+
+| Runtime | Posix path to the same Windows directory |
+|---|---|
+| **WSL2** (Linux 5.x microsoft-standard-WSL2) | `/mnt/c/doctorat/bsebench-org/` |
+| **Git Bash** (MINGW64) | `/c/doctorat/bsebench-org/` |
+| native Linux/macOS (no Windows) | `$HOME/bsebench-org/` |
+
+For brevity, the rest of this brief uses `<REPO_ROOT>` as the placeholder. Substitute the real path for your runtime everywhere below.
 
 ```
-C:\doctorat\bsebench-org\                   →   /c/doctorat/bsebench-org/
-├── bsebench-datasets\          (public dataset adapters + Tier 2 loaders)
-├── bsebench-runner\            (filter benchmark orchestrator)
-├── bsebench-filters\           (10 ECM-state filters)
-├── bsebench-async-codex\       (this orchestration repo)
-├── bsebench-specs\             (claim registry, ADRs, schemas)
-├── bsebench-stats\             (Friedman+Nemenyi, BMA, ensembling)
-└── _datasets\                  (NEW — you will create this — large raw datasets that don't fit on chef PC)
+<REPO_ROOT>/
+├── bsebench-datasets/          (public dataset adapters + Tier 2 loaders)
+├── bsebench-runner/            (filter benchmark orchestrator)
+├── bsebench-filters/           (10 ECM-state filters)
+├── bsebench-async-codex/       (this orchestration repo)
+├── bsebench-specs/             (claim registry, ADRs, schemas)
+├── bsebench-stats/             (Friedman+Nemenyi, BMA, ensembling)
+└── _datasets/                  (NEW — you will create this — large raw datasets that don't fit on chef PC)
 ```
 
 The chef PC keeps `_datasets/` empty ; this PC hosts the bulk data.
@@ -49,7 +57,7 @@ The cron job runs `~/bsebench-async-codex/scripts/remote-worker.sh` every 60 sec
 1. `git pull` on `bsebench-async-codex`.
 2. Find the first `inbox/<phase-id>/STATUS.json` with `status == "queued"`.
 3. Parse YAML frontmatter from `inbox/<phase-id>/BRIEF.md` :
-   - `target_repo` : absolute path on this PC (e.g., `C:/doctorat/bsebench-org/bsebench-datasets`)
+   - `target_repo` : absolute path on this PC (e.g., `/mnt/c/doctorat/bsebench-org/bsebench-datasets` on WSL2, `/c/doctorat/bsebench-org/bsebench-datasets` on Git Bash)
    - `target_branch` : new feature branch name (e.g., `phase-6-10-calce-a123-dyn`)
    - `base_branch` : usually `main`
    - `add_dir` : list of additional dirs you can read
@@ -147,8 +155,8 @@ After saving memory, perform this task in the **same session** (you have until t
 ### Target directories (create if missing)
 
 ```
-C:/doctorat/bsebench-org/_datasets/calce_a123_lfp_dynamic/
-C:/doctorat/bsebench-org/_datasets/calce_inr18650_20R_dynamic/
+<REPO_ROOT>/_datasets/calce_a123_lfp_dynamic/
+<REPO_ROOT>/_datasets/calce_inr18650_20R_dynamic/
 ```
 
 ### Files to download (20 zips total, ~5-10 GB combined)
@@ -215,7 +223,7 @@ ASYNC-CODEX ONBOARDING COMPLETE
 - memory saved : ~/.codex/memories/bsebench-async-codex-context.md (size: <bytes>)
 - CALCE A123 dynamic : <N>/8 zips downloaded
 - CALCE INR-20R dynamic : <N>/12 zips downloaded
-- log : C:/doctorat/bsebench-org/_datasets/.calce-download-log.txt
+- log : <REPO_ROOT>/_datasets/.calce-download-log.txt
 - next step : user installs the cron worker per scripts/setup-remote.md, then chef queues phase-async-canary
 ```
 
