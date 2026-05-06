@@ -1,0 +1,200 @@
++            tc_dst = tc_arr[mask]
++
++            # Write Parquet via pyarrow (mirror Yao adapter style).
++            table = pa.table(
++                {
++                    "time_s": t_dst,
++                    "voltage_V": v_dst,
++                    "current_A": i_dst,
++                    "temperature_C": tc_dst,
++                }
++            )
++            cell_id = f"A123_T{temp_c}"
++            out_path = output_dir / f"calce_a123_DST_T{temp_c}.parquet"
++            pq.write_table(table, out_path)
++            written[cell_id] = out_path
++
++        return written
+diff --git a/tests/test_adapter_calce_a123_skeleton.py b/tests/test_adapter_calce_a123_skeleton.py
+index 7e47a96cfc040a50c8f721300e2f0d2fa34f1b22..c017e71480831252dc4421160a130ad5e37f64f5
+--- a/tests/test_adapter_calce_a123_skeleton.py
++++ b/tests/test_adapter_calce_a123_skeleton.py
+@@ -1,12 +1,11 @@
+-"""Phase 6.10.a smoke test : CalceA123Adapter skeleton.
++"""Tests for the CALCE A123 adapter.
+ 
+-Verifies the class is importable, has expected constants, and harmonize
+-raises NotImplementedError as advertised. Real harmonize tests land in
+-6.10.b once CSV parsing is implemented.
++Verifies the class metadata and the Phase 6.10.b legacy CSV harmonizer.
+ """
+ 
+ from pathlib import Path
+ 
++import pyarrow.parquet as pq
+ import pytest
+ 
+ from bsebench_datasets.adapters.calce_a123_2014 import (
+@@ -16,11 +15,32 @@
+     CALCE_A123_LEGACY_TEMPS_C,
+     CHEMISTRY_TAG,
+     DATASET_TAG,
++    LEGACY_T_TO_CSV,
+     NOMINAL_CAPACITY_AH,
+     CalceA123Adapter,
+ )
+ 
+ 
++def _write_legacy_csv(
++    root: Path,
++    filename: str = "A123_25C.csv",
++    *,
++    rows: list[tuple[float, float, float, float, int]],
++) -> Path:
++    csv_path = root / filename
++    lines = ["time_s,current_A,voltage_V,temperature_C,step_index"]
++    lines.extend(
++        f"{time_s},{current_a},{voltage_v},{temperature_c},{step_index}"
++        for time_s, current_a, voltage_v, temperature_c, step_index in rows
++    )
++    csv_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
++    return csv_path
++
++
++def _read_table(path: Path):
++    return pq.read_table(str(path))
++
++
+ def test_constants_match_paper2b_canonical() -> None:
+     # Mirror paper2b benchmark_grid_multi.py:472-483
+     assert CALCE_A123_DYN_TEMPS_C == (-10, 0, 10, 20, 25, 30, 40, 50)
+@@ -50,7 +70,105 @@
+     assert adapter.local_root == tmp_path
+ 
+ 
+-def test_harmonize_raises_not_implemented_in_skeleton(tmp_path: Path) -> None:
++def test_harmonize_returns_dict_for_empty_local_root(tmp_path: Path) -> None:
+     adapter = CalceA123Adapter(local_root=tmp_path)
+-    with pytest.raises(NotImplementedError, match=r"Phase 6\.10\.a skeleton"):
+-        adapter.harmonize(output_dir=tmp_path)
++    out_dir = tmp_path / "out"
++
++    written = adapter.harmonize(output_dir=out_dir)
++
++    assert written == {}
++    assert list(out_dir.glob("*.parquet")) == []
++
++
++def test_harmonize_writes_parquet_for_existing_csv(tmp_path: Path) -> None:
++    rows = []
++    for idx in range(20):
++        if idx < 7:
++            step_index = idx + 1
++        else:
++            step_index = 8 + ((idx - 7) % 5)
++        rows.append((10.0 + idx * 0.5, -1.0, 3.3 - idx * 0.01, 25.0, step_index))
++    _write_legacy_csv(tmp_path, rows=rows)
++
++    out_dir = tmp_path / "out"
++    written = CalceA123Adapter(local_root=tmp_path).harmonize(output_dir=out_dir)
++
++    expected_path = out_dir / "calce_a123_DST_T25.parquet"
++    assert written == {"A123_T25": expected_path}
++    assert expected_path.is_file()
++
++    table = _read_table(expected_path)
++    assert table.num_rows == 13
++    assert table.column_names == ["time_s", "voltage_V", "current_A", "temperature_C"]
++    assert table.column("time_s").to_pylist()[0] == pytest.approx(0.0)
++
++
++def test_harmonize_skips_missing_csv(tmp_path: Path) -> None:
++    out_dir = tmp_path / "out"
++
++    written = CalceA123Adapter(local_root=tmp_path).harmonize(output_dir=out_dir)
++
++    assert written == {}
++    assert list(out_dir.glob("*.parquet")) == []
++
++
++def test_harmonize_no_dst_segment(tmp_path: Path) -> None:
++    rows = [(float(idx), 0.0, 3.2, 25.0, (idx % 7) + 1) for idx in range(12)]
++    _write_legacy_csv(tmp_path, rows=rows)
++
++    written = CalceA123Adapter(local_root=tmp_path).harmonize(output_dir=tmp_path / "out")
++
++    assert written == {}
++
++
++def test_harmonize_sign_not_flipped(tmp_path: Path) -> None:
++    rows = [
++        (0.0, 0.0, 3.4, 25.0, 7),
++        (1.0, -1.0, 3.3, 25.0, 8),
++        (2.0, -0.5, 3.2, 25.0, 9),
++        (3.0, 0.25, 3.25, 25.0, 10),
++    ]
++    _write_legacy_csv(tmp_path, rows=rows)
++
++    written = CalceA123Adapter(local_root=tmp_path).harmonize(output_dir=tmp_path / "out")
++    table = _read_table(written["A123_T25"])
++
++    assert table.column("current_A").to_pylist() == pytest.approx([-1.0, -0.5, 0.25])
++
++
++def test_harmonize_zero_bases_time(tmp_path: Path) -> None:
++    rows = [
++        (100.0, 0.0, 3.4, 25.0, 1),
++        (101.0, 0.0, 3.4, 25.0, 2),
++        (102.0, 0.0, 3.4, 25.0, 3),
++        (103.0, 0.0, 3.4, 25.0, 4),
++        (104.0, 0.0, 3.4, 25.0, 7),
++        (200.0, -1.0, 3.3, 25.0, 8),
++        (200.5, -1.0, 3.29, 25.0, 8),
++        (201.5, -1.0, 3.28, 25.0, 9),
++    ]
++    _write_legacy_csv(tmp_path, rows=rows)
++
++    written = CalceA123Adapter(local_root=tmp_path).harmonize(output_dir=tmp_path / "out")
++    table = _read_table(written["A123_T25"])
++
++    assert table.column("time_s").to_pylist() == pytest.approx([0.0, 0.5, 1.5])
++
++
++def test_harmonize_writes_3_temps_when_all_csvs_present(tmp_path: Path) -> None:
++    rows = [
++        (0.0, 0.0, 3.4, 25.0, 7),
++        (1.0, -1.0, 3.3, 25.0, 8),
++        (2.0, -1.0, 3.2, 25.0, 9),
++    ]
++    for csv_name in LEGACY_T_TO_CSV.values():
++        _write_legacy_csv(tmp_path, csv_name, rows=rows)
++
++    written = CalceA123Adapter(local_root=tmp_path).harmonize(output_dir=tmp_path / "out")
++
++    assert written.keys() == {"A123_T0", "A123_T25", "A123_T40"}
++    assert {path.name for path in written.values()} == {
++        "calce_a123_DST_T0.parquet",
++        "calce_a123_DST_T25.parquet",
++        "calce_a123_DST_T40.parquet",
++    }
+
+tokens used
+169,484
+Implemented and committed locally.
+
+Changed:
+- [calce_a123_2014.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-b-calce-legacy-csv-harmonize/src/bsebench_datasets/adapters/calce_a123_2014.py:45): removed `BaseAdapter` shim, added `LEGACY_T_TO_CSV`, implemented legacy CSV harmonize branch.
+- [test_adapter_calce_a123_skeleton.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-6-10-b-calce-legacy-csv-harmonize/tests/test_adapter_calce_a123_skeleton.py:73): replaced skeleton NotImplemented test with legacy harmonize tests, kept original smoke coverage colocated.
+
+Verification:
+- `uv run pytest tests/test_adapter_calce_a123_*.py -v` -> 11 passed
+- `uv run ruff format --check src/bsebench_datasets/adapters/calce_a123_2014.py tests/test_adapter_calce_a123_*.py` -> passed
+- `uv run ruff check src/ tests/` -> passed
+- `grep -n 'BaseAdapter\|ModuleNotFoundError' ...` -> no matches
+- `git status --porcelain` -> clean after commit
+
+Commit:
+- `6f19df9 feat(calce): harmonize legacy A123 CSVs`
+- Author/committer: `Oussama Akir <claude@cosmocomply.com>`
+- No `Co-Authored-By` trailer
+- No push performed.
