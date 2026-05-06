@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [FIX] phase-7-2-zenodo-citation-metadata (panel 73/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T00:15:06+02:00
+
+Phase    : phase-7-2-zenodo-citation-metadata
+Etat     : needs_fix (needs_fix)
+Panel    : 73/100 (seuil 89)
+Quoi     : Phase 7.2 — Zenodo metadata + CITATION.cff
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-2-zenodo-citation-metadata/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-2-zenodo-citation-metadata/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-2-zenodo-citation-metadata/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
