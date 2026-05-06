@@ -1,12 +1,13 @@
 {
   "phase_id": "phase-async-canary",
-  "status": "running",
+  "status": "error",
   "ts_queued": "2026-05-06T10:05:00+02:00",
   "ts_started": "2026-05-06T10:22:27Z",
-  "ts_done": null,
-  "exit_code": null,
+  "ts_done": "2026-05-06T13:10:00Z",
+  "exit_code": -99,
   "worker_id": "france-personal",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-datasets",
   "target_branch": "canary/async-round-trip-2026-05-06",
-  "base_branch": "main"
+  "base_branch": "main",
+  "error_at_line": "pre-trap-crash, root cause unknown — chef force-reset to error; see fix-1"
 }

@@ -1,0 +1,13 @@
+{
+  "phase_id": "phase-async-canary-fix-1",
+  "status": "queued",
+  "ts_queued": "2026-05-06T13:12:00Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-datasets",
+  "target_branch": "canary/async-round-trip-fix-1-2026-05-06",
+  "base_branch": "main",
+  "retry_of": "phase-async-canary"
+}

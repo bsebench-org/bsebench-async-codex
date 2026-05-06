@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# remote-worker.sh — async codex worker. Run via cron every 60 s on the remote PC.
+# remote-worker.sh — async codex worker. Run via cron / worker-daemon every 60 s.
 #
 # Responsibilities :
 #   1. flock-guard : one instance at a time
@@ -11,17 +11,65 @@
 #   7. write outbox/<id>/SUMMARY.md + run.log.tail
 #   8. mark "done" (or "error" on non-zero exit)
 #
-# Idempotency : if worker dies mid-run, the next tick sees STATUS = "running" and
-# skips that phase. Stale-running detection (>2h without ts_done) is a future
-# Phase B feature.
+# Crash safety (added 2026-05-06 after canary diagnostic) : ERR trap writes
+# status=error + pushes BEFORE exiting if any command fails after the phase
+# has been marked running. This prevents phases from getting fossilized in
+# "running" forever when an intermediate step (git fetch, worktree add, ...)
+# fails.
 
-set -euo pipefail
+set -uo pipefail
 
 ASYNC_REPO="${ASYNC_REPO:-$HOME/bsebench-async-codex}"
 WORKER_ID="${WORKER_ID:-france-personal}"
 LOCK_FILE="/tmp/codex-async-worker.lock"
 LOG_TAIL_LINES=200
 DEFAULT_WALLCLOCK_MIN=90
+
+# Initialized later when a phase is picked
+queued_phase=""
+status_file=""
+phase_marked_running=0
+
+# ------------------------------------------------------------------ ERR trap
+# If anything fails after we've marked a phase running, write status=error
+# with a forensic note and push. Without this, the script exits silently and
+# the STATUS stays "running" forever.
+on_error() {
+  local exit_code=$?
+  local lineno="${1:-?}"
+  if [[ "$phase_marked_running" -eq 1 && -n "$queued_phase" && -f "$status_file" ]] ; then
+    cd "$ASYNC_REPO" 2>/dev/null || exit "$exit_code"
+    jq --arg w "$WORKER_ID" --argjson c "$exit_code" --arg ln "$lineno" \
+       '.status="error"|.ts_done=(now|todate)|.exit_code=$c|.worker_id=$w|.error_at_line=$ln' \
+       "$status_file" > "$status_file.tmp" 2>/dev/null && mv "$status_file.tmp" "$status_file"
+    git add "$status_file" 2>/dev/null
+    git commit -m "chore(async): worker crash on $queued_phase at line $lineno (exit $exit_code)" --quiet 2>/dev/null
+    git push origin main --quiet 2>/dev/null || true
+
+    # Best-effort outbox note for forensic visibility
+    mkdir -p "outbox/$queued_phase" 2>/dev/null
+    cat > "outbox/$queued_phase/SUMMARY.md" <<NOTE 2>/dev/null
+# Phase $queued_phase summary (worker crash)
+
+- Worker : $WORKER_ID
+- Crash exit code : $exit_code
+- Crash line in remote-worker.sh : $lineno
+- Pre-crash phase progress : marked running, but a step before "codex exec" failed.
+- Most likely cause : git fetch / git worktree add / cd to target_repo failed.
+
+## Recovery
+
+The chef should re-queue this phase as <phase-id>-fix-1 with the same BRIEF.
+The worker script is now ERR-trap-safe ; the next attempt will surface a clean
+status=error if the same problem recurs.
+NOTE
+    git add "outbox/$queued_phase/" 2>/dev/null
+    git commit -m "chore(async): forensic SUMMARY on $queued_phase crash" --quiet 2>/dev/null
+    git push origin main --quiet 2>/dev/null || true
+  fi
+  exit "$exit_code"
+}
+trap 'on_error $LINENO' ERR
 
 # ------------------------------------------------------------------ flock
 exec 9>"$LOCK_FILE"
@@ -102,6 +150,9 @@ if ! git push origin main --quiet ; then
   git pull --rebase --quiet
   exit 0
 fi
+
+# Arm the ERR trap : from this point on, any failure must mark status=error.
+phase_marked_running=1
 
 # ------------------------------------------------------------------ set up worktree on target repo
 target_repo_dir=$(eval echo "$target_repo")  # expand $HOME, ~, etc.
