@@ -1,0 +1,200 @@
+5. STOP. Do NOT push — the worker pushes for you.
+
+## Acceptance gates
+
+- **G1** : `git log --oneline -1` shows the `test(canary)` commit on `canary/async-round-trip-fix-1-2026-05-06`.
+- **G2** : `git status --porcelain` clean post-commit.
+- **G3** : NO `Co-Authored-By: Claude` trailer.
+- **G4** : Author + committer = `Oussama Akir <claude@cosmocomply.com>`.
+
+That's it. Pure round-trip validation under the patched worker.
+
+## Bonus diagnostic
+
+After your apply_patch + commit succeed (and BEFORE you exit the codex session), run :
+
+```bash
+git status
+git log --oneline -3
+git config user.name && git config user.email
+pwd
+```
+
+Print the output to stdout. The worker will capture it in `outbox/phase-async-canary-fix-1/run.log.tail`. This gives us forensic proof of where the worktree is, which branch is checked out, and that the commit landed correctly.
+
+codex
+I’ll verify the current worktree and branch first, then create the canary file exactly as requested and commit it without pushing.
+exec
+/bin/bash -lc pwd in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+/mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+
+exec
+/bin/bash -lc 'git branch --show-current' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+canary/async-round-trip-fix-1-2026-05-06
+
+exec
+/bin/bash -lc 'git status --porcelain' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 215ms:
+codex
+The worktree is clean and already on `canary/async-round-trip-fix-1-2026-05-06`. I’m going to stamp the canary file now.
+exec
+/bin/bash -lc 'date -u +%Y-%m-%dT%H:%M:%SZ' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+2026-05-06T13:27:12Z
+
+apply patch
+patch: completed
+/mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06/canaries/async-round-trip-fix-1-2026-05-06.txt
+diff --git a/canaries/async-round-trip-fix-1-2026-05-06.txt b/canaries/async-round-trip-fix-1-2026-05-06.txt
+new file mode 100755
+index 0000000000000000000000000000000000000000..7ce7e991338a444817a77f9700614fdcc766ae2c
+--- /dev/null
++++ b/canaries/async-round-trip-fix-1-2026-05-06.txt
+@@ -0,0 +1 @@
++codex async round-trip fix-1 OK at 2026-05-06T13:27:12Z
+
+diff --git a/canaries/async-round-trip-fix-1-2026-05-06.txt b/canaries/async-round-trip-fix-1-2026-05-06.txt
+new file mode 100755
+index 0000000000000000000000000000000000000000..7ce7e991338a444817a77f9700614fdcc766ae2c
+--- /dev/null
++++ b/canaries/async-round-trip-fix-1-2026-05-06.txt
+@@ -0,0 +1 @@
++codex async round-trip fix-1 OK at 2026-05-06T13:27:12Z
+
+codex
+The file is in place with the UTC timestamp. Next I’m checking the local git identity, setting it only if needed, then committing the staged canary file.
+exec
+/bin/bash -lc 'git config user.name' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+Oussama Akir
+
+exec
+/bin/bash -lc 'git config user.email' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+claude@cosmocomply.com
+
+diff --git a/canaries/async-round-trip-fix-1-2026-05-06.txt b/canaries/async-round-trip-fix-1-2026-05-06.txt
+new file mode 100755
+index 0000000000000000000000000000000000000000..7ce7e991338a444817a77f9700614fdcc766ae2c
+--- /dev/null
++++ b/canaries/async-round-trip-fix-1-2026-05-06.txt
+@@ -0,0 +1 @@
++codex async round-trip fix-1 OK at 2026-05-06T13:27:12Z
+
+exec
+/bin/bash -lc 'git add canaries/async-round-trip-fix-1-2026-05-06.txt' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+diff --git a/canaries/async-round-trip-fix-1-2026-05-06.txt b/canaries/async-round-trip-fix-1-2026-05-06.txt
+new file mode 100755
+index 0000000000000000000000000000000000000000..7ce7e991338a444817a77f9700614fdcc766ae2c
+--- /dev/null
++++ b/canaries/async-round-trip-fix-1-2026-05-06.txt
+@@ -0,0 +1 @@
++codex async round-trip fix-1 OK at 2026-05-06T13:27:12Z
+
+exec
+/bin/bash -lc 'git commit -m "test(canary): async-codex round-trip fix-1"' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+diff --git a/canaries/async-round-trip-fix-1-2026-05-06.txt b/canaries/async-round-trip-fix-1-2026-05-06.txt
+new file mode 100755
+index 0000000000000000000000000000000000000000..7ce7e991338a444817a77f9700614fdcc766ae2c
+--- /dev/null
++++ b/canaries/async-round-trip-fix-1-2026-05-06.txt
+@@ -0,0 +1 @@
++codex async round-trip fix-1 OK at 2026-05-06T13:27:12Z
+
+ succeeded in 266ms:
+[canary/async-round-trip-fix-1-2026-05-06 fe1af5d] test(canary): async-codex round-trip fix-1
+ 1 file changed, 1 insertion(+)
+ create mode 100644 canaries/async-round-trip-fix-1-2026-05-06.txt
+
+codex
+The commit was created on the target branch. I’m running the requested diagnostic commands now, then I’ll verify the acceptance gates directly.
+exec
+/bin/bash -lc 'git status
+git log --oneline -3
+git config user.name && git config user.email
+pwd' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+diff --git a/canaries/async-round-trip-fix-1-2026-05-06.txt b/canaries/async-round-trip-fix-1-2026-05-06.txt
+new file mode 100755
+index 0000000000000000000000000000000000000000..7ce7e991338a444817a77f9700614fdcc766ae2c
+--- /dev/null
++++ b/canaries/async-round-trip-fix-1-2026-05-06.txt
+@@ -0,0 +1 @@
++codex async round-trip fix-1 OK at 2026-05-06T13:27:12Z
+
+ succeeded in 353ms:
+On branch canary/async-round-trip-fix-1-2026-05-06
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+fe1af5d test(canary): async-codex round-trip fix-1
+5792706 feat(datasets): add Yao TU Berlin loader
+29a37e5 feat(datasets): add LG HG2 Stroebl loader
+Oussama Akir
+claude@cosmocomply.com
+/mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+
+exec
+/bin/bash -lc 'git log --oneline -1' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+fe1af5d test(canary): async-codex round-trip fix-1
+
+exec
+/bin/bash -lc 'git log -1 --format=%B' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+test(canary): async-codex round-trip fix-1
+
+
+exec
+/bin/bash -lc "git log -1 --format='author=%an <%ae>%ncommitter=%cn <%ce>'" in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+ succeeded in 0ms:
+author=Oussama Akir <claude@cosmocomply.com>
+committer=Oussama Akir <claude@cosmocomply.com>
+
+exec
+/bin/bash -lc 'git status --porcelain' in /mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06
+diff --git a/canaries/async-round-trip-fix-1-2026-05-06.txt b/canaries/async-round-trip-fix-1-2026-05-06.txt
+new file mode 100755
+index 0000000000000000000000000000000000000000..7ce7e991338a444817a77f9700614fdcc766ae2c
+--- /dev/null
++++ b/canaries/async-round-trip-fix-1-2026-05-06.txt
+@@ -0,0 +1 @@
++codex async round-trip fix-1 OK at 2026-05-06T13:27:12Z
+
+ succeeded in 121ms:
+codex
+Created and committed [canaries/async-round-trip-fix-1-2026-05-06.txt](/mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06/canaries/async-round-trip-fix-1-2026-05-06.txt:1).
+
+Commit: `fe1af5d test(canary): async-codex round-trip fix-1`
+
+Acceptance gates passed:
+- `git log --oneline -1`: correct `test(canary)` commit
+- `git status --porcelain`: clean
+- No `Co-Authored-By: Claude` trailer
+- Author and committer: `Oussama Akir <claude@cosmocomply.com>`
+
+I did not push.
+diff --git a/canaries/async-round-trip-fix-1-2026-05-06.txt b/canaries/async-round-trip-fix-1-2026-05-06.txt
+new file mode 100755
+index 0000000000000000000000000000000000000000..7ce7e991338a444817a77f9700614fdcc766ae2c
+--- /dev/null
++++ b/canaries/async-round-trip-fix-1-2026-05-06.txt
+@@ -0,0 +1 @@
++codex async round-trip fix-1 OK at 2026-05-06T13:27:12Z
+
+tokens used
+28,766
+Created and committed [canaries/async-round-trip-fix-1-2026-05-06.txt](/mnt/c/doctorat/bsebench-org/bsebench-datasets-canary/async-round-trip-fix-1-2026-05-06/canaries/async-round-trip-fix-1-2026-05-06.txt:1).
+
+Commit: `fe1af5d test(canary): async-codex round-trip fix-1`
+
+Acceptance gates passed:
+- `git log --oneline -1`: correct `test(canary)` commit
+- `git status --porcelain`: clean
+- No `Co-Authored-By: Claude` trailer
+- Author and committer: `Oussama Akir <claude@cosmocomply.com>`
+
+I did not push.
