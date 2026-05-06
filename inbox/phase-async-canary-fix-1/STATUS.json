@@ -1,9 +1,9 @@
 {
   "phase_id": "phase-async-canary-fix-1",
-  "status": "error",
+  "status": "done",
   "ts_queued": "2026-05-06T13:12:00Z",
   "ts_started": "2026-05-06T13:26:43Z",
-  "ts_done": "2026-05-06T13:27:58Z",
+  "ts_done": "2026-05-06T13:31:52Z",
   "exit_code": 0,
   "worker_id": "france-personal",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-datasets",

@@ -6,7 +6,7 @@
 - Target repo : /mnt/c/doctorat/bsebench-org/bsebench-datasets
 - Target branch : canary/async-round-trip-fix-1-2026-05-06
 - Branch SHA : fe1af5d72f5038d110f1e41ce82544afe2369da1
-- Push result : push-failed
+- Push result : ok
 - Started : (see STATUS.json ts_started)
 - Finished : 2026-05-06T15:27:58+02:00
 
@@ -97,4 +97,4 @@ I did not push.
 
 ## Next step for chef
 
-Investigate the failure mode in run.log.tail. Re-queue with corrections if recoverable.
+git fetch origin && git checkout canary/async-round-trip-fix-1-2026-05-06 in target_repo. Verify gates. Merge to main if green.
