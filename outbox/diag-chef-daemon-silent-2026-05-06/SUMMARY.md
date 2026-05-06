@@ -1,0 +1,104 @@
+# Phase diag-chef-daemon-silent-2026-05-06 summary
+
+- Worker : france-personal
+- Codex exit : 0
+- Wallclock cap : 3 min
+- Target repo : /mnt/c/doctorat/bsebench-org/bsebench-async-codex
+- Target branch : diag/chef-daemon-silent-2026-05-06
+- Branch SHA : 0eded138d65642e4868d9d68b01129113e38a310
+- Push result : not-attempted
+- Started : (see STATUS.json ts_started)
+- Finished : 2026-05-06T21:58:54+02:00
+
+## Push stderr (if push failed)
+
+(push succeeded — no stderr)
+
+## Tail of codex stdout (last 200 lines)
+
+```
+nothing to commit, working tree clean
+
+=== 8. Time check ===
+2026-05-06T19:58:16Z
+2026-05-06T21:58:16+02:00
+tokens used
+48,382
+=== 1. Process state ===
+oakir      31179     442  0 20:47 pts/2    00:00:00 bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh
+oakir      33395     442  0 21:16 pts/2    00:00:00 node /usr/bin/codex
+oakir      33402   33395  0 21:16 pts/2    00:00:03 /usr/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex/codex
+oakir      35145   31179  0 21:30 pts/2    00:00:00 bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/chef-daemon.sh
+oakir      36257   31179  0 21:57 pts/2    00:00:00 bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/remote-worker.sh
+oakir      36318   36257  0 21:57 pts/2    00:00:00 timeout --kill-after=30s 180s codex exec --dangerously-bypass-approvals-and-sandbox -c model="gpt-5.5" -c model_reasoning_effort="xhigh" -C /mnt/c/doctorat/bsebench-org/bsebench-async-codex-diag/chef-daemon-silent-2026-05-06
+oakir      36319   36318  0 21:57 pts/2    00:00:00 node /usr/bin/codex exec --dangerously-bypass-approvals-and-sandbox -c model="gpt-5.5" -c model_reasoning_effort="xhigh" -C /mnt/c/doctorat/bsebench-org/bsebench-async-codex-diag/chef-daemon-silent-2026-05-06
+oakir      36326   36319  2 21:57 pts/2    00:00:00 /usr/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex/codex exec --dangerously-bypass-approvals-and-sandbox -c model="gpt-5.5" -c model_reasoning_effort="xhigh" -C /mnt/c/doctorat/bsebench-org/bsebench-async-codex-diag/chef-daemon-silent-2026-05-06
+
+=== 2. chef-daemon running-state file ===
+35145 f9ba2f4bf321d56481f8f4d49a3d8fcf5c2b4bfda779796d55cdcdbdd120f16a
+  file mtime : 2026-05-06 21:30:25.093495285 +0200
+
+=== 3. Disk SHA of chef-daemon.sh ===
+f9ba2f4bf321d56481f8f4d49a3d8fcf5c2b4bfda779796d55cdcdbdd120f16a  /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/chef-daemon.sh
+
+=== 4. chef-daemon log tail ===
+nohup: ignoring input
+  log file size : 22 bytes
+  log mtime : 2026-05-06 20:47:32.460420200 +0200
+
+=== 5. worker log tail (recent ticks + meta-supervision) ===
+[2026-05-06T21:31:25+02:00] tick
+[2026-05-06T21:32:25+02:00] tick
+[2026-05-06T21:33:26+02:00] tick
+[2026-05-06T21:34:27+02:00] tick
+[2026-05-06T21:35:28+02:00] tick
+[2026-05-06T21:36:29+02:00] tick
+[2026-05-06T21:37:30+02:00] tick
+[2026-05-06T21:38:31+02:00] tick
+[2026-05-06T21:39:31+02:00] tick
+[2026-05-06T21:40:32+02:00] tick
+[2026-05-06T21:41:33+02:00] tick
+[2026-05-06T21:42:34+02:00] tick
+[2026-05-06T21:43:35+02:00] tick
+[2026-05-06T21:44:35+02:00] tick
+[2026-05-06T21:45:36+02:00] tick
+[2026-05-06T21:46:37+02:00] tick
+[2026-05-06T21:47:38+02:00] tick
+[2026-05-06T21:48:39+02:00] tick
+[2026-05-06T21:49:39+02:00] tick
+[2026-05-06T21:50:40+02:00] tick
+[2026-05-06T21:51:41+02:00] tick
+[2026-05-06T21:52:42+02:00] tick
+[2026-05-06T21:53:43+02:00] tick
+[2026-05-06T21:54:44+02:00] tick
+[2026-05-06T21:55:44+02:00] tick
+[2026-05-06T21:56:45+02:00] tick
+[2026-05-06T21:57:46+02:00] tick
+Preparing worktree (new branch 'diag/chef-daemon-silent-2026-05-06')
+branch 'diag/chef-daemon-silent-2026-05-06' set up to track 'origin/main'.
+HEAD is now at 0eded13 chore(async): start diag-chef-daemon-silent-2026-05-06 on france-personal
+
+=== 6. Lock file state ===
+-rw-r--r-- 1 oakir oakir 0 May  6 21:30 /tmp/codex-async-chef.lock
+-rw-r--r-- 1 oakir oakir 0 May  6 21:57 /tmp/codex-async-worker-france-personal.lock
+
+=== 7. Async repo state on this PC ===
+0eded13 chore(async): start diag-chef-daemon-silent-2026-05-06 on france-personal
+05daf13 diag(async): chef-daemon silent on 6.10.d/e/f post-verdict cascade
+1db220a feat(async): phase-6-10-f-calce-inr-20r-adapter done (exit 0)
+6c21aab chore(async): start phase-6-10-f-calce-inr-20r-adapter on france-personal
+4521382 feat(scale): research roadmap + gpt-5.5-xhigh + multi-worker + 6.10.f
+---
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+
+=== 8. Time check ===
+2026-05-06T19:58:16Z
+2026-05-06T21:58:16+02:00
+```
+
+## Next step for chef
+
+Investigate the failure mode in run.log.tail and the push stderr above. Re-queue with corrections if recoverable.
