@@ -1,0 +1,200 @@
+-- Live Tier 2 canonical Parquet mirrors: Severson 2019 and Oxford Birkl 2017.
+-- Prospect catalog: 33 source/family records, 222 named datasets or variants indexed.
++```text
++source publication / data portal
++              |
++              v
++Tier 1 raw mirror and manifest
++              |
++       adapter / harmonizer
++              |
++              v
++Tier 2 canonical Parquet
++              |
++          Tier2Loader
++              |
++              v
++{t, V, I, T_meas} for filters
++```
++
++## Conventions
+ 
+-## Install (development)
++Tier 2 Parquet files follow BPX 1.1 sign convention: `current_A > 0` is charge and `current_A < 0` is discharge. Loader output keeps the BSEBench runner convention used by the current filter stack: `I > 0` means discharge. This is why loaders flip the sign when the Tier 2 Parquet source is BPX-aligned.
+ 
++The canonical time-series schema uses SI units and explicit column names: `time_s`, `voltage_V`, `current_A`, `temperature_C`, plus optional truth or capacity fields such as `capacity_Ah`, `soc_truth`, and `soh_truth` where a source provides them. Loader output is intentionally smaller: one-dimensional NumPy arrays `t`, `V`, `I`, `T_meas`, an integer `N`, ambient `T_amb`, and provenance fields such as `cell_id`, `dataset`, and `chemistry`.
++
++`cell_id` values are stable forensic identifiers. Examples include `B0005` for NASA PCoE, `pan_US06_T25` for Panasonic, `Yao-BCDC-T25` for Yao, `lg_P065_rep1_S01` for LG HG2, `A123_T25` for CALCE legacy, and `A123_FUDS_T25_cell0` for CALCE A123 dynamic.
++
++## Examples
++
++Three standalone scripts are included:
++
+ ```bash
+-git clone https://github.com/bsebench-org/bsebench-datasets
+-cd bsebench-datasets
+-uv sync --all-extras
+-uv run pytest
++python examples/01_load_nasa_pcoe_2007.py
++python examples/02_load_panasonic_us06.py
++python examples/03_load_yao_bcdc.py
+ ```
+ 
+-## Roadmap
++Each script loads one Tier 2 dataset config, prints array shapes, and reports simple time, voltage, and current statistics.
++
++## License
+ 
+-- **v0.1.0a0** — Foundation (manifest schema, adapter ABC, tests).
+-- **v0.2.0a0** — Live manifests, Severson/Oxford Tier 2, and public prospect catalog. Current.
+-- **v0.3.0** — Promote the highest-priority CC-BY/open prospects to Tier 1 manifests.
+-- **v1.0.0** — >= 10 datasets registered, schema frozen, public release.
++BSEBench-authored dataset metadata and harmonized packaging are released under CC-BY-4.0 for public reuse. Source data retains the upstream license recorded in each manifest; examples include CC-BY-4.0, CC0-1.0, ODbL-1.0, and CALCE portal terms. Code in this repository is BSD-3-Clause; see `LICENSE`.
+ 
+-## License
++## Citation
+ 
+-- Code : BSD-3-Clause (see `LICENSE`)
+-- Data : retains original license per dataset (recorded in each manifest)
++If you use this repository, cite the BSEBench datasets release:
++
++```bibtex
++@dataset{bsebench_datasets_2026,
++  title     = {bsebench-datasets: Curated battery datasets for state-estimation benchmarks},
++  author    = {Akir, Oussama and BSEBench Authors},
++  year      = {2026},
++  publisher = {Zenodo},
++  doi       = {10.5281/zenodo.TODO},
++  url       = {https://github.com/bsebench-org/bsebench-datasets}
++}
++```
++
++Also cite the original dataset publications listed in the relevant manifest files.
++
++## Roadmap
++
++The active research roadmap lives in [`bsebench-async-codex/docs/RESEARCH-ROADMAP-2026-05-06.md`](https://github.com/bsebench-org/bsebench-async-codex/blob/main/docs/RESEARCH-ROADMAP-2026-05-06.md). Near-term dataset work focuses on landing CALCE INR-20R Tier 2 support, expanding aging coverage, and keeping every public benchmark claim traceable to a loader, manifest, and immutable data artifact.
+diff --git a/examples/01_load_nasa_pcoe_2007.py b/examples/01_load_nasa_pcoe_2007.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..99c5efd4a32af4825bf97ce5c49bc75aadf571d6
+--- /dev/null
++++ b/examples/01_load_nasa_pcoe_2007.py
+@@ -0,0 +1,27 @@
++from __future__ import annotations
++
++import numpy as np
++
++from bsebench_datasets.loaders.nasa_pcoe_loader import NasaPcoeLoader
++
++
++def _stats(values: np.ndarray) -> str:
++    return (
++        f"min={np.nanmin(values):.3f}, mean={np.nanmean(values):.3f}, max={np.nanmax(values):.3f}"
++    )
++
++
++def main() -> None:
++    trace = NasaPcoeLoader().load("CC-discharge", 24.0)
++    time_s = trace["t"]
++    voltage_v = trace["V"]
++    current_a = trace["I"]
++
++    print(f"dataset=NASA PCoE 2007 cell_id={trace['cell_id']} samples={trace['N']}")
++    print(f"t shape={time_s.shape}, {_stats(time_s)} s")
++    print(f"V shape={voltage_v.shape}, {_stats(voltage_v)} V")
++    print(f"I shape={current_a.shape}, {_stats(current_a)} A discharge-positive")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/examples/02_load_panasonic_us06.py b/examples/02_load_panasonic_us06.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..e2e67878e197b3ef34a00a57ebeb3ae2a2e10461
+--- /dev/null
++++ b/examples/02_load_panasonic_us06.py
+@@ -0,0 +1,27 @@
++from __future__ import annotations
++
++import numpy as np
++
++from bsebench_datasets.loaders.panasonic_kollmeyer_loader import PanasonicKollmeyerLoader
++
++
++def _stats(values: np.ndarray) -> str:
++    return (
++        f"min={np.nanmin(values):.3f}, mean={np.nanmean(values):.3f}, max={np.nanmax(values):.3f}"
++    )
++
++
++def main() -> None:
++    trace = PanasonicKollmeyerLoader().load("US06", 25.0)
++    time_s = trace["t"]
++    voltage_v = trace["V"]
++    current_a = trace["I"]
++
++    print(f"dataset=Panasonic Kollmeyer 2018 cell_id={trace['cell_id']} samples={trace['N']}")
++    print(f"t shape={time_s.shape}, {_stats(time_s)} s")
++    print(f"V shape={voltage_v.shape}, {_stats(voltage_v)} V")
++    print(f"I shape={current_a.shape}, {_stats(current_a)} A discharge-positive")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/examples/03_load_yao_bcdc.py b/examples/03_load_yao_bcdc.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..39527d88653900f292ec0fa5d8ab996a1e5d3f0f
+--- /dev/null
++++ b/examples/03_load_yao_bcdc.py
+@@ -0,0 +1,27 @@
++from __future__ import annotations
++
++import numpy as np
++
++from bsebench_datasets.loaders.yao_tu_berlin_2024_loader import YaoTuBerlin2024Loader
++
++
++def _stats(values: np.ndarray) -> str:
++    return (
++        f"min={np.nanmin(values):.3f}, mean={np.nanmean(values):.3f}, max={np.nanmax(values):.3f}"
++    )
++
++
++def main() -> None:
++    trace = YaoTuBerlin2024Loader().load("BCDC", 25.0)
++    time_s = trace["t"]
++    voltage_v = trace["V"]
++    current_a = trace["I"]
++
++    print(f"dataset=Yao TU Berlin 2024 cell_id={trace['cell_id']} samples={trace['N']}")
++    print(f"t shape={time_s.shape}, {_stats(time_s)} s")
++    print(f"V shape={voltage_v.shape}, {_stats(voltage_v)} V")
++    print(f"I shape={current_a.shape}, {_stats(current_a)} A discharge-positive")
++
++
++if __name__ == "__main__":
++    main()
+
+tokens used
+143,806
+Done in `phase-7-1-bsebench-readme-examples`.
+
+Commit: `b2dec374b80a7652c9be427e3a92ee84b33f39e5`  
+Scope: 4 files only:
+- [README.md](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-1-bsebench-readme-examples/README.md)
+- [examples/01_load_nasa_pcoe_2007.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-1-bsebench-readme-examples/examples/01_load_nasa_pcoe_2007.py)
+- [examples/02_load_panasonic_us06.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-1-bsebench-readme-examples/examples/02_load_panasonic_us06.py)
+- [examples/03_load_yao_bcdc.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-1-bsebench-readme-examples/examples/03_load_yao_bcdc.py)
+
+Verification:
+- `uv run --extra dev ruff format --check ...` passed
+- `uv run --extra dev ruff check ...` passed
+- `uv run --all-extras pytest -m "not slow"` passed: `203 passed, 28 deselected`
+- `git status` clean, branch ahead by 1 commit
+- No `Co-Authored-By: Claude` trailer
+
+Caveat: I smoke-ran the three examples, but Hugging Face returned `401 Unauthorized` for the NASA, Panasonic, and Yao Tier 2 dataset repos. The scripts use the shipped loaders correctly; they will execute once the mirrors are public or an HF token with access is present.
+
+Style references checked: PyBaMM README and BatteryML README/dataprepare:
+- https://github.com/pybamm-team/PyBaMM
+- https://github.com/microsoft/BatteryML
+- https://github.com/microsoft/BatteryML/blob/main/dataprepare.md
