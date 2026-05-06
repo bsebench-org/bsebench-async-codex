@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [ESCALATED] phase-6-10-h-bsebench-runner-registry-swap (panel 11/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T00:49:04+02:00
+
+Phase    : phase-6-10-h-bsebench-runner-registry-swap
+Etat     : escalated (escalated)
+Panel    : 11/100 (seuil 89)
+Quoi     : Phase 6.10.h — bsebench-runner registry swap (stubs → real loaders)
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-h-bsebench-runner-registry-swap/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-h-bsebench-runner-registry-swap/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-h-bsebench-runner-registry-swap/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
