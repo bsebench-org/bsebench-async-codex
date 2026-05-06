@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [FIX] phase-6-11-d-friedman-nemenyi-stats-fix-1 (panel 74/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T01:31:13+02:00
+
+Phase    : phase-6-11-d-friedman-nemenyi-stats-fix-1
+Etat     : needs_fix (needs_fix)
+Panel    : 74/100 (seuil 89)
+Quoi     : Phase 6.11.d fix-1 - Friedman + Nemenyi statistical test
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-d-friedman-nemenyi-stats-fix-1/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-d-friedman-nemenyi-stats-fix-1/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-d-friedman-nemenyi-stats-fix-1/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
