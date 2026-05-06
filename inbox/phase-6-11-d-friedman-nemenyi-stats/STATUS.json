@@ -1,1 +1,12 @@
-{"phase_id":"phase-6-11-d-friedman-nemenyi-stats","status":"queued","ts_queued":"2026-05-06T21:06:00Z","ts_started":null,"ts_done":null,"exit_code":null,"worker_id":null,"target_repo":"/mnt/c/doctorat/bsebench-org/bsebench-stats","target_branch":"phase-6-11-d-friedman-nemenyi","base_branch":"main"}
+{
+  "phase_id": "phase-6-11-d-friedman-nemenyi-stats",
+  "status": "running",
+  "ts_queued": "2026-05-06T21:06:00Z",
+  "ts_started": "2026-05-06T21:43:47Z",
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": "france-personal",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
+  "target_branch": "phase-6-11-d-friedman-nemenyi",
+  "base_branch": "main"
+}
