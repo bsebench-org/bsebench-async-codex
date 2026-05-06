@@ -217,6 +217,72 @@ See `docs/FAILURE-MODES.md` for the full matrix. Quick reference :
 | BRIEF malformed | worker writes status=error with exit_code=-2 ; chef rewrites BRIEF |
 | target_repo missing on worker | exit_code=-3 ; chef tells user to clone the missing repo |
 
+## Commit format — GLASSBOX (mandatory for every actor)
+
+Every commit on `bsebench-async-codex`, `bsebench-datasets`, or any target repo MUST use the glassbox format. The body starts with a `[role: ...]` tag identifying the author actor, followed by Context / Objective / Problem / Result sections. This makes the history forensically readable : at any point in 6 months, you can grep the log and see which actor wrote what, why, and what evidence backs the claim.
+
+### Roles
+
+| Tag | Actor | Where it runs |
+|---|---|---|
+| `claude-TN` | Claude Opus / Sonnet (the chef on the user's primary PC, Tunisia) | Claude Code conversation |
+| `codex-FR` | Codex CLI in interactive mode (rare ; user-driven) | France personal PC, WSL2 |
+| `worker-FR` | `remote-worker.sh` automated commits (start, error, done) | France PC, daemon |
+| `chef-FR` | `chef-daemon.sh` automated commits (verdict) | France PC, daemon |
+| `worker-codex-FR` | `codex exec` dispatched by the worker (the actual feature work) | France PC, sandboxed under bypass-flag |
+
+### Format (full — for substantive commits)
+
+```
+<type>(<scope>): <subject — imperative, ≤ 50 chars>
+
+[role: <one of claude-TN | codex-FR | worker-codex-FR | worker-FR | chef-FR>]
+
+## Context
+1-3 sentences : what state of the system triggered this work.
+
+## Objective
+1-2 sentences : what success looks like for this commit.
+
+## Problem
+1-3 sentences : the blocker / bug / requirement / gap being addressed.
+
+## Result
+- bullet 1 : concrete deliverable (file added, function changed, etc.)
+- bullet 2 : concrete deliverable
+- bullet 3 : evidence (test pass count, ruff exit, SHA, bytes-changed, etc.)
+
+Refs:
+- <ADR / claim / prior commit / file path / issue link>
+
+Verified-By: <command or empirical signal that supports the Result section>
+```
+
+### Format (lite — for daemon auto-transitions)
+
+Status-change commits from `worker-FR` and `chef-FR` are short and templated. They use the lite format :
+
+```
+<type>(<scope>): <subject>
+
+[role: <worker-FR | chef-FR>]
+
+<one-line description of the transition + relevant key-value facts>
+```
+
+Examples :
+- `chore(async): start phase-X on france-personal\n\n[role: worker-FR]\n\nWorker took the lock at 2026-05-06T13:36:06Z, marked phase-X status=running, parsed YAML frontmatter (target_repo=..., target_branch=...).`
+- `chore(async): chef verdict approved on phase-X\n\n[role: chef-FR]\n\nGates green (5 fast tests, ruff format/check ok, author OK), merged X@abc1234 -> main, branch deleted.`
+
+### Anti-patterns (these will be flagged in chef verification)
+
+- Missing `[role: ...]` tag.
+- Generic body like "Update X" or "Fix bug" without sections.
+- `Co-Authored-By: Claude` trailer (project mandate, see CHEF.md §3.4).
+- Hidden numerical claims ("12% improvement") without `Verified-By:`.
+
+The chef-daemon's verify step DOES NOT currently enforce the glassbox format (V1 only checks author + Co-Authored-By + scope). V2 will pattern-match the `[role: ...]` tag presence as part of the auto-merge matrix.
+
 ## Polling cadences
 
 - worker → bsebench-async-codex : every 60 s (cron).

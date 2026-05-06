@@ -43,7 +43,11 @@ on_error() {
        '.status="error"|.ts_done=(now|todate)|.exit_code=$c|.worker_id=$w|.error_at_line=$ln' \
        "$status_file" > "$status_file.tmp" 2>/dev/null && mv "$status_file.tmp" "$status_file"
     git add "$status_file" 2>/dev/null
-    git commit -m "chore(async): worker crash on $queued_phase at line $lineno (exit $exit_code)" --quiet 2>/dev/null
+    git commit -m "chore(async): worker crash on $queued_phase
+
+[role: worker-FR]
+
+ERR trap fired at remote-worker.sh:$lineno with exit $exit_code AFTER phase had been marked running. Forensic SUMMARY.md written to outbox/ before exit." --quiet 2>/dev/null
     git push origin main --quiet 2>/dev/null || true
 
     # Best-effort outbox note for forensic visibility
@@ -64,7 +68,11 @@ The worker script is now ERR-trap-safe ; the next attempt will surface a clean
 status=error if the same problem recurs.
 NOTE
     git add "outbox/$queued_phase/" 2>/dev/null
-    git commit -m "chore(async): forensic SUMMARY on $queued_phase crash" --quiet 2>/dev/null
+    git commit -m "chore(async): forensic SUMMARY on $queued_phase
+
+[role: worker-FR]
+
+Companion to the ERR trap commit above : SUMMARY.md captures the pre-crash state for chef diagnosis." --quiet 2>/dev/null
     git push origin main --quiet 2>/dev/null || true
   fi
   exit "$exit_code"
@@ -110,7 +118,11 @@ if [[ ! -f "$brief" ]] ; then
      "$status_file" > "$status_file.tmp"
   mv "$status_file.tmp" "$status_file"
   git add "$status_file"
-  git commit -m "chore(async): malformed inbox $queued_phase" --quiet
+  git commit -m "chore(async): malformed inbox $queued_phase
+
+[role: worker-FR]
+
+BRIEF.md missing or unreadable in inbox/$queued_phase/. Status set to error, exit_code=-1." --quiet
   git push origin main --quiet
   exit 0
 fi
@@ -127,7 +139,11 @@ if [[ -z "$target_repo" || -z "$target_branch" ]] ; then
      "$status_file" > "$status_file.tmp"
   mv "$status_file.tmp" "$status_file"
   git add "$status_file"
-  git commit -m "chore(async): missing frontmatter $queued_phase" --quiet
+  git commit -m "chore(async): missing frontmatter $queued_phase
+
+[role: worker-FR]
+
+BRIEF.md present but missing target_repo or target_branch in YAML frontmatter. Status=error, exit_code=-2." --quiet
   git push origin main --quiet
   exit 0
 fi
@@ -144,7 +160,11 @@ jq --arg w "$WORKER_ID" --arg tr "$target_repo" --arg tb "$target_branch" --arg 
    "$status_file" > "$status_file.tmp"
 mv "$status_file.tmp" "$status_file"
 git add "$status_file"
-git commit -m "chore(async): start $queued_phase on $WORKER_ID" --quiet
+git commit -m "chore(async): start $queued_phase on $WORKER_ID
+
+[role: worker-FR]
+
+Picked up status=queued, marked running at $(date -Iseconds), parsed YAML frontmatter (target_repo=$target_repo, target_branch=$target_branch, base_branch=$base_branch, hard_wallclock_min=$hard_wallclock_min)." --quiet
 if ! git push origin main --quiet ; then
   # push raced with another worker — abandon and retry next tick
   git pull --rebase --quiet
@@ -162,7 +182,11 @@ if [[ ! -d "$target_repo_dir/.git" ]] ; then
      "$status_file" > "$status_file.tmp"
   mv "$status_file.tmp" "$status_file"
   git add "$status_file"
-  git commit -m "chore(async): target_repo not found $target_repo_dir" --quiet
+  git commit -m "chore(async): target_repo not found $target_repo_dir
+
+[role: worker-FR]
+
+Phase $queued_phase BRIEF specifies target_repo $target_repo_dir but it does not exist on this PC. Status=error, exit_code=-3." --quiet
   git push origin main --quiet
   exit 0
 fi
@@ -270,7 +294,11 @@ jq --argjson c $codex_exit --arg s "$final_status" \
 mv "$status_file.tmp" "$status_file"
 
 git add "$status_file" "outbox/$queued_phase/"
-git commit -m "feat(async): $queued_phase ${final_status} (exit $codex_exit)" --quiet
+git commit -m "feat(async): $queued_phase ${final_status} (exit $codex_exit)
+
+[role: worker-FR]
+
+Codex run finished : exit_code=$codex_exit, push_result=$push_result, branch_sha=${branch_sha:-none}, wallclock_cap=${hard_wallclock_min}min. SUMMARY.md + run.log.tail written to outbox/. Final status=$final_status. Chef-daemon will pick this up for verify-and-merge or classify-and-recover at its next tick." --quiet
 git push origin main --quiet
 
 exit 0

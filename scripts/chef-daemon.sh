@@ -193,7 +193,7 @@ write_verdict() {
 
 - Decision : $decision
 - Decided at : $(date -Iseconds)
-- Decided by : chef-daemon (automated, France PC)
+- Decided by : chef-daemon (automated, France PC) [role: chef-FR]
 
 ## Re-verification on chef PC
 
@@ -209,7 +209,11 @@ $( [[ -n "$gate_evidence" ]] && echo -e "## Gate evidence\n\n\`\`\`\n$gate_evide
 VERDICT
 
   git add "$out"
-  git commit -m "chore(async): chef verdict $decision on $phase_id" --quiet 2>/dev/null
+  git commit -m "chore(async): chef verdict $decision on $phase_id
+
+[role: chef-FR]
+
+Chef-daemon decision : $decision. Summary : $summary. Action taken per CHEF.md §6 auto-merge matrix." --quiet 2>/dev/null
   git push origin main --quiet 2>/dev/null || log "verdict push failed (will retry next tick)"
 }
 

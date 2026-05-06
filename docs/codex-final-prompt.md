@@ -122,12 +122,43 @@ When in doubt, grep paper2b's canonical wrapper at `/mnt/c/doctorat/these_lfp_20
 
 If a BRIEF asks for additional keys (e.g., `test_id` for paper2b-compat audit), include them — but the 10 above are the floor.
 
-### 3.4 Commit discipline
+### 3.4 Commit discipline (GLASSBOX format — mandatory)
 
 - Conventional commits format : `<type>(<scope>): <subject>` with subject ≤ 50 chars.
 - Author and committer : **`Oussama Akir <claude@cosmocomply.com>`** — verify with `git config user.name` and `git config user.email` ; set them if missing before your first commit in a new worktree.
 - **NO `Co-Authored-By: Claude` trailer.** This is a hard project mandate from the user. Never add it under any circumstance, even if the global commit guidelines suggest it.
-- Body explains WHY, not WHAT. Cite empirical findings (smoking-gun commands), gate evidence (test counts, ruff results), references to ADR / claim_NN if applicable.
+- Body MUST start with the role tag `[role: worker-codex-FR]` so the chef can grep history by actor.
+- Body MUST contain four sections : `## Context`, `## Objective`, `## Problem`, `## Result`. Cite empirical findings (smoking-gun commands), gate evidence (test counts, ruff results), references to ADR / claim_NN. See `docs/PROTOCOL.md` §"Commit format — GLASSBOX" for the full spec + examples.
+
+**Glassbox commit template** — paste into your scratchpad before each commit :
+
+```
+<type>(<scope>): <subject>
+
+[role: worker-codex-FR]
+
+## Context
+<1-3 sentences : what state of the BRIEF / repo triggered this commit>
+
+## Objective
+<1-2 sentences : what this specific commit ships>
+
+## Problem
+<1-3 sentences : the blocker / requirement / gap being closed>
+
+## Result
+- <concrete deliverable 1>
+- <concrete deliverable 2>
+- <evidence : test count, ruff exit, file size, etc.>
+
+Refs:
+- <BRIEF source-of-truth file:line>
+- <prior commit SHA if related>
+
+Verified-By: <command or empirical signal>
+```
+
+If you make multiple commits in a single dispatch (per CHEF.md §10 granularity), each commit follows this format ; the Subject + Result vary per commit, but the role tag is always `worker-codex-FR`.
 
 ### 3.5 ADR 0014 pre-flight checklist (read before writing any code)
 
