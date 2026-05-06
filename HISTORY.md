@@ -133,3 +133,5 @@
 ---
 
 > **Next session pickup point** : queue Phase 6.10.c (zip-bundle parsing : `A123_DST-US06-FUDS-{T}C.zip` × 8 T × 3 profiles). Source-of-truth : paper2b `benchmark_grid_multi.py:502-585` `load_calce_a123_dynamic_wrapper`. Granularity : ≤ 200 LOC + 5 fast tests, one mini-BRIEF per granularity rule (CHEF.md §10).
+
+- **22:20 UTC** | [actor: codex-FR] | [FIX] | infra-block | cleared `phase-restart-chef-daemon-v2-bootstrap` block after preserving a retrospective forensic summary. Root cause was missing worker SUMMARY/run.log.tail plus an obsolete two-daemon expectation; live architecture intentionally has two workers plus one chef.

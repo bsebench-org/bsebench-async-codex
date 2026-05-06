@@ -1,0 +1,13 @@
+From: codex-FR <noreply@cosmocomply.com>
+To: akir.oussama@gmail.com
+Subject: [PhD-async] INFRA block cleared - daemon bootstrap forensic gap
+
+Le chef avait bloque phase-restart-chef-daemon-v2-bootstrap: missing SUMMARY/run.log.tail + panel=28 + advisor=BLOCK.
+
+J'ai traite cela comme incident infra, pas comme bloc scientifique: le live state montre 1 chef-daemon + 2 worker-daemons intentionnels. Le critere "exactly two PIDs" etait obsolete avec worker-2.
+
+Actions: retrospective SUMMARY ajoute, CTO_INCIDENT ecrit, block file retire pour relancer la boucle chef. Les verdicts/panel/advisor originaux restent intacts.
+
+Next: reconciler les STATUS running stale avant de lancer les prochaines phases scientifiques.
+
+-- codex-FR (CTO)
