@@ -1,0 +1,10 @@
+{
+  "phase_id": "phase-6-11-b-chi2-multi-cfg-sweep-fix-1",
+  "status": "queued",
+  "ts_queued": "2026-05-06T23:04:03Z",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-runner",
+  "target_branch": "phase-6-11-b-chi2-multi-cfg-sweep-fix-1",
+  "base_branch": "main",
+  "retry_of": "phase-6-11-b-chi2-multi-cfg-sweep",
+  "hard_wallclock_min": 60
+}

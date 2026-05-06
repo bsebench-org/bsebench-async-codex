@@ -1,0 +1,18 @@
+To: akir.oussama@gmail.com
+Subject: [BSEBench CTO] merged validated fixes; requeued phase 6.11.b
+Date: Wed, 06 May 2026 23:04:03 +0000
+From: codex-FR <noreply@bsebench.local>
+
+CTO override summary:
+
+- Merged bsebench-datasets main to a941b4a after clean validation and
+  independent GO for phase-7-4-github-actions-ci-fix-1.
+- Merged bsebench-runner main to 34acb8b after clean validation and
+  independent GO for phase-6-10-h-bsebench-runner-registry-swap-fix-1.
+- Cleared obsolete blocks for phase-7-4-github-actions-ci and
+  phase-6-11-b-chi2-multi-cfg-sweep.
+- Requeued phase-6-11-b-chi2-multi-cfg-sweep-fix-1 now that real runner
+  loaders are on main.
+
+Do not edit the active async clone while daemons are running; use the CTO report
+clone or a clean worktree for manual interventions.
