@@ -240,15 +240,24 @@ The user wants ZERO additional manual setup steps after pasting this prompt. You
 3. Verify the memory file was written : `ls -lh ~/.codex/memories/bsebench-async-codex-context.md && head -5 ~/.codex/memories/bsebench-async-codex-context.md`.
 4. Run `git config --global user.name` and `git config --global user.email`. If they are not `Oussama Akir` and `claude@cosmocomply.com`, set them. (You may need to also configure them in `/mnt/c/doctorat/bsebench-org/bsebench-async-codex` and `/mnt/c/doctorat/bsebench-org/bsebench-datasets` clones if they are local-only.)
 5. Run `codex --version` and `bash --version` to confirm runtime.
-6. **Launch the worker daemon yourself.** Run :
+6. **Launch BOTH daemons yourself** (worker + chef — they run side by side, different `flock` locks). Run :
 
    ```bash
    chmod +x /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh
    chmod +x /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/remote-worker.sh
+   chmod +x /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/chef-daemon.sh
+
+   # Worker daemon : processes inbox/queued -> codex exec -> outbox/done
    nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
      > /mnt/c/doctorat/bsebench-org/.async-worker.log 2>&1 &
    disown
-   sleep 3 && pgrep -af worker-daemon.sh
+
+   # Chef daemon : verifies outbox/done, merges, writes CHEF_VERDICT.md
+   nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/chef-daemon.sh \
+     > /mnt/c/doctorat/bsebench-org/.async-chef.log 2>&1 &
+   disown
+
+   sleep 3 && pgrep -af 'worker-daemon.sh\|chef-daemon.sh'
    ```
 
    Verify : the `pgrep -af` should show one row with the daemon's PID + command. The `disown` is critical — it detaches the daemon from this codex session, so when the user closes you, the daemon keeps running.
@@ -263,6 +272,11 @@ The user wants ZERO additional manual setup steps after pasting this prompt. You
    if ! pgrep -f worker-daemon.sh > /dev/null 2>&1 ; then
      nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
        > /mnt/c/doctorat/bsebench-org/.async-worker.log 2>&1 &
+     disown
+   fi
+   if ! pgrep -f chef-daemon.sh > /dev/null 2>&1 ; then
+     nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/chef-daemon.sh \
+       > /mnt/c/doctorat/bsebench-org/.async-chef.log 2>&1 &
      disown
    fi
    EOF
