@@ -1,12 +1,13 @@
 {
   "phase_id": "phase-deploy-chef-daemon",
-  "status": "running",
+  "status": "error",
   "ts_queued": "2026-05-06T14:10:30Z",
   "ts_started": "2026-05-06T16:11:29Z",
-  "ts_done": null,
-  "exit_code": null,
+  "ts_done": "2026-05-06T16:16:33Z",
+  "exit_code": 124,
   "worker_id": "france-personal",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
   "target_branch": "deploy/chef-daemon-2026-05-06",
-  "base_branch": "main"
+  "base_branch": "main",
+  "error_at_line": "199"
 }
