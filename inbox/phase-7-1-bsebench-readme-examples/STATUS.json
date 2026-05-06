@@ -1,11 +1,11 @@
 {
   "phase_id": "phase-7-1-bsebench-readme-examples",
-  "status": "queued",
+  "status": "running",
   "ts_queued": "2026-05-06T20:16:00Z",
-  "ts_started": null,
+  "ts_started": "2026-05-06T20:45:34Z",
   "ts_done": null,
   "exit_code": null,
-  "worker_id": null,
+  "worker_id": "france-personal",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-datasets",
   "target_branch": "phase-7-1-bsebench-readme-examples",
   "base_branch": "main"
