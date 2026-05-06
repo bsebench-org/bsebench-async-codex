@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [OK] phase-6-10-h-bsebench-runner-registry-swap-fix-1 (panel 91/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T01:12:24+02:00
+
+Phase    : phase-6-10-h-bsebench-runner-registry-swap-fix-1
+Etat     : approved (approved)
+Panel    : 91/100 (seuil 89)
+Quoi     : Phase 6.10.h fix-1 — bsebench-runner registry swap
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-h-bsebench-runner-registry-swap-fix-1/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-h-bsebench-runner-registry-swap-fix-1/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-10-h-bsebench-runner-registry-swap-fix-1/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
