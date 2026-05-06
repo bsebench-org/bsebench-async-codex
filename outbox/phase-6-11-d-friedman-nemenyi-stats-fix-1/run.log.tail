@@ -1,0 +1,200 @@
++        "average_ranks": average_ranks,
++        "n_configs": int(n_configs),
++        "n_filters": int(n_filters),
++        "df": int(n_filters - 1),
++    }
++
++
++def nemenyi_test(ranks: np.ndarray, n_configs: int, alpha: float = 0.05) -> dict[str, object]:
++    """Run all-pairs Nemenyi post-hoc comparisons from rank data.
++
++    Parameters
++    ----------
++    ranks
++        Numeric 2D rank matrix with shape ``(n_configs, n_filters)``.
++    n_configs
++        Number of configurations/datasets/blocks used to produce ``ranks``.
++        Must match ``ranks.shape[0]``.
++    alpha
++        Family-wise significance level for all pairwise comparisons.
++
++    Returns
++    -------
++    dict
++        Contains ``critical_difference`` and ``pairwise_significant``, a
++        symmetric boolean matrix whose diagonal is always false.
++    """
++    rank_matrix = _as_finite_2d_array(ranks, "ranks")
++    n_rank_rows, n_filters = rank_matrix.shape
++
++    try:
++        n = int(n_configs)
++    except (TypeError, ValueError) as exc:
++        raise ValueError("n_configs must be an integer") from exc
++    if n != n_configs:
++        raise ValueError("n_configs must be an integer")
++    if n != n_rank_rows:
++        raise ValueError("n_configs must match ranks.shape[0]")
++    if n < 2:
++        raise ValueError("Nemenyi test requires at least 2 configs")
++    if n_filters < 2:
++        raise ValueError("Nemenyi test requires at least 2 filters")
++
++    try:
++        alpha_value = float(alpha)
++    except (TypeError, ValueError) as exc:
++        raise ValueError("alpha must be a finite number in (0, 1)") from exc
++    if not math.isfinite(alpha_value) or not 0.0 < alpha_value < 1.0:
++        raise ValueError("alpha must be a finite number in (0, 1)")
++
++    average_ranks = rank_matrix.mean(axis=0)
++    q_alpha = float(studentized_range.isf(alpha_value, n_filters, np.inf) / np.sqrt(2.0))
++    critical_difference = float(q_alpha * np.sqrt(n_filters * (n_filters + 1) / (6.0 * n)))
++    rank_differences = np.abs(average_ranks[:, np.newaxis] - average_ranks[np.newaxis, :])
++    pairwise_significant = rank_differences >= critical_difference
++    np.fill_diagonal(pairwise_significant, False)
++
++    return {
++        "critical_difference": critical_difference,
++        "pairwise_significant": pairwise_significant,
++        "significant": pairwise_significant,
++        "average_ranks": average_ranks,
++        "rank_differences": rank_differences,
++        "q_alpha": q_alpha,
++        "alpha": alpha_value,
++        "n_configs": int(n),
++        "n_filters": int(n_filters),
++    }
+diff --git a/tests/test_friedman_nemenyi.py b/tests/test_friedman_nemenyi.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..5e894c785edd7ab404e107ee40830c9d23f80d08
+--- /dev/null
++++ b/tests/test_friedman_nemenyi.py
+@@ -0,0 +1,110 @@
++from __future__ import annotations
++
++import numpy as np
++import pytest
++
++from bsebench_stats.friedman_nemenyi import friedman_test, nemenyi_test
++
++
++@pytest.mark.fast
++def test_friedman_test_3x3_synthetic_sanity():
++    rmse = np.array(
++        [
++            [0.10, 0.20, 0.30],
++            [0.20, 0.10, 0.30],
++            [0.10, 0.30, 0.20],
++        ]
++    )
++
++    result = friedman_test(rmse)
++
++    np.testing.assert_allclose(
++        result["ranks"],
++        np.array(
++            [
++                [1.0, 2.0, 3.0],
++                [2.0, 1.0, 3.0],
++                [1.0, 3.0, 2.0],
++            ]
++        ),
++    )
++    np.testing.assert_allclose(result["average_ranks"], np.array([4.0 / 3.0, 2.0, 8.0 / 3.0]))
++    assert result["chi2"] == pytest.approx(2.6666666666666643)
++    assert result["p_value"] == pytest.approx(0.26359713811572705)
++    assert result["n_configs"] == 3
++    assert result["n_filters"] == 3
++
++
++@pytest.mark.fast
++def test_friedman_test_5x4_synthetic_sanity():
++    rmse = np.array(
++        [
++            [1.0, 2.0, 3.0, 4.0],
++            [1.0, 3.0, 2.0, 4.0],
++            [2.0, 1.0, 3.0, 4.0],
++            [1.0, 2.0, 4.0, 3.0],
++            [1.0, 2.0, 3.0, 4.0],
++        ]
++    )
++
++    result = friedman_test(rmse)
++
++    np.testing.assert_allclose(result["average_ranks"], np.array([1.2, 2.0, 3.0, 3.8]))
++    assert result["chi2"] == pytest.approx(11.64)
++    assert result["p_value"] == pytest.approx(0.008723836058328946)
++
++
++@pytest.mark.fast
++def test_friedman_test_all_equal_is_non_significant():
++    result = friedman_test(np.ones((4, 3)))
++
++    assert result["chi2"] == 0.0
++    assert result["p_value"] == 1.0
++    np.testing.assert_allclose(result["ranks"], np.full((4, 3), 2.0))
++    np.testing.assert_allclose(result["average_ranks"], np.full(3, 2.0))
++
++
++@pytest.mark.fast
++def test_friedman_test_clearly_separated_filters_small_p_value():
++    rmse = np.tile(np.array([1.0, 2.0, 3.0, 4.0]), (12, 1))
++
++    result = friedman_test(rmse)
++
++    assert result["chi2"] == pytest.approx(36.0)
++    assert result["p_value"] < 1e-6
++    np.testing.assert_allclose(result["average_ranks"], np.array([1.0, 2.0, 3.0, 4.0]))
++
++
++@pytest.mark.fast
++def test_nemenyi_pairwise_matrix_shape_symmetry_and_diagonal():
++    ranks = np.tile(np.array([1.0, 2.0, 3.0, 4.0]), (20, 1))
++
++    result = nemenyi_test(ranks, n_configs=20)
++    significant = result["pairwise_significant"]
++
++    assert result["critical_difference"] == pytest.approx(1.0488028292894491)
++    assert significant.shape == (4, 4)
++    assert significant.dtype == bool
++    np.testing.assert_array_equal(significant, significant.T)
++    assert not np.any(np.diag(significant))
++    assert not significant[0, 1]
++    assert significant[0, 2]
++    assert significant[0, 3]
++
++
++@pytest.mark.fast
++def test_invalid_shape_or_insufficient_data_raises_clear_error():
++    with pytest.raises(ValueError, match="2D"):
++        friedman_test(np.array([1.0, 2.0, 3.0]))
++    with pytest.raises(ValueError, match="at least 2 configs"):
++        friedman_test(np.ones((1, 3)))
++    with pytest.raises(ValueError, match="at least 3 filters"):
++        friedman_test(np.ones((3, 2)))
++    with pytest.raises(ValueError, match="finite"):
++        friedman_test(np.array([[1.0, 2.0, np.nan], [1.0, 2.0, 3.0]]))
++    with pytest.raises(ValueError, match=r"match ranks\.shape"):
++        nemenyi_test(np.ones((3, 3)), n_configs=4)
++    with pytest.raises(ValueError, match="at least 2 filters"):
++        nemenyi_test(np.ones((3, 1)), n_configs=3)
++    with pytest.raises(ValueError, match="alpha"):
++        nemenyi_test(np.ones((3, 3)), n_configs=3, alpha=1.0)
+
+tokens used
+116,187
+Implemented and committed `e32b72d` (`GLASSBOX: add Friedman Nemenyi stats API`) with `[role: worker-codex-FR]` and no Claude trailer.
+
+Changed:
+- [friedman_nemenyi.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-6-11-d-friedman-nemenyi-stats-fix-1/src/bsebench_stats/friedman_nemenyi.py:1): added `friedman_test` and `nemenyi_test`.
+- [__init__.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-6-11-d-friedman-nemenyi-stats-fix-1/src/bsebench_stats/__init__.py:1): exported the new public functions.
+- [test_friedman_nemenyi.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-6-11-d-friedman-nemenyi-stats-fix-1/tests/test_friedman_nemenyi.py:1): added 6 focused fast tests.
+
+Acceptance gates passed:
+- `uv run pytest tests/test_friedman_nemenyi.py -q --tb=short`: 6 passed
+- `uv run pytest -m "not slow" --tb=short`: 18 passed
+- `uv run ruff format --check .`: passed
+- `uv run ruff check .`: passed
+
+Worktree is clean and the branch is ahead by 1 commit. I used Demšar 2006 from JMLR for the Friedman/Nemenyi formulas: https://www.jmlr.org/papers/volume7/demsar06a/demsar06a.pdf
