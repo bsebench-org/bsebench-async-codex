@@ -123,9 +123,68 @@ git commit -m "chore(workers): register france-personal worker"
 git push origin main
 ```
 
-## 6. Configure Task Scheduler (Windows)
+## 6. Start the worker daemon (recommended — userspace, no sudo, no cron)
 
-Open PowerShell as Admin and create a task that runs every 1 minute :
+The simplest and most portable option. One bash process loops in the background and calls `remote-worker.sh` every 60 s. No `sudo apt install cron`, no `/etc/wsl.conf`, no Task Scheduler.
+
+```bash
+cd /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts
+chmod +x worker-daemon.sh remote-worker.sh
+
+nohup bash worker-daemon.sh > ~/.async-worker.log 2>&1 &
+echo "worker daemon started, PID $!"
+```
+
+Verify :
+
+```bash
+ps -ef | grep worker-daemon.sh | grep -v grep    # should show 1 row
+tail -f ~/.async-worker.log                       # tick lines every 60 s
+```
+
+To stop :
+
+```bash
+pkill -f worker-daemon.sh
+```
+
+To auto-start the daemon on every new shell (optional, append to `~/.bashrc`) :
+
+```bash
+cat >> ~/.bashrc <<'EOF'
+
+# auto-start bsebench-async-codex worker daemon if not running
+if ! pgrep -f worker-daemon.sh > /dev/null 2>&1 ; then
+  nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
+    > ~/.async-worker.log 2>&1 &
+  disown
+fi
+EOF
+```
+
+This pattern survives WSL2 reboots without `/etc/wsl.conf` ; the next time you open a WSL terminal, the daemon respawns if it's not already running.
+
+## 6-bis. System cron / Task Scheduler (alternative — only if you need the worker to run without ANY shell open)
+
+The userspace daemon (§6) is enough for ~99 % of cases. Use system-level scheduling only if you want the worker to keep running when no WSL2 / Git-Bash / shell session exists at all (e.g., user logged out completely on a server).
+
+### Linux / macOS / WSL2 cron :
+
+```bash
+sudo apt install -y cron && sudo service cron start
+
+( crontab -l 2>/dev/null ; \
+  echo "* * * * * cd /mnt/c/doctorat/bsebench-org/bsebench-async-codex && WORKER_ID=france-personal ASYNC_REPO=/mnt/c/doctorat/bsebench-org/bsebench-async-codex bash scripts/remote-worker.sh >> /mnt/c/doctorat/bsebench-org/.async-worker.log 2>&1" \
+) | crontab -
+
+# WSL2 only : persist cron daemon across WSL2 reboots
+sudo bash -c 'cat > /etc/wsl.conf <<EOF
+[boot]
+command="service cron start"
+EOF'
+```
+
+### Windows Task Scheduler (PowerShell as Admin) :
 
 ```powershell
 $bash = "C:\Program Files\Git\bin\bash.exe"
@@ -136,29 +195,6 @@ $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
   -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration ([TimeSpan]::MaxValue)
 Register-ScheduledTask -TaskName "BSEBenchAsyncCodexWorker" `
   -Action $action -Trigger $trigger -RunLevel Highest -User $env:USERNAME
-```
-
-Verify :
-
-```powershell
-Get-ScheduledTask -TaskName "BSEBenchAsyncCodexWorker"
-```
-
-Tail the worker log (Git Bash) :
-
-```bash
-tail -f /c/doctorat/bsebench-org/.async-worker.log
-```
-
-## 6-bis. Configure cron (Linux/macOS — alternative to 6)
-
-```bash
-( crontab -l 2>/dev/null ; \
-  echo "* * * * * cd \$HOME/bsebench-async-codex && WORKER_ID=france-personal ASYNC_REPO=\$HOME/bsebench-async-codex bash scripts/remote-worker.sh >> \$HOME/.async-worker.log 2>&1" \
-) | crontab -
-
-crontab -l | grep remote-worker.sh
-tail -f ~/.async-worker.log
 ```
 
 ## 7. Smoke test
