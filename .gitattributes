@@ -1,0 +1,11 @@
+# Force LF line endings on shell scripts, regardless of git core.autocrlf
+# value on the cloning machine. Prevents "bad interpreter: /usr/bin/env\r"
+# errors when the worker runs from a Windows clone.
+*.sh        text eol=lf
+*.bash      text eol=lf
+
+# Markdown stays auto so users can edit comfortably on each platform.
+*.md        text eol=auto
+
+# JSON state files : LF for jq compatibility on all platforms.
+*.json      text eol=lf
