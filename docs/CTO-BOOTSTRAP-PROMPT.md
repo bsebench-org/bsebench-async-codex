@@ -1,115 +1,67 @@
-# CTO bootstrap prompt — paste ONCE into codex interactive on France PC
+# CTO bootstrap — launch `cto-daemon.sh` on France PC
 
-> **For the user (Oussama)** : copy-paste the block between `--- BEGIN CTO PROMPT ---` and `--- END CTO PROMPT ---` into a long-running codex CLI interactive session launched as :
->
-> ```bash
-> cd /mnt/c/doctorat/bsebench-org
-> codex --dangerously-bypass-approvals-and-sandbox \
->   --add-dir /mnt/c/doctorat/bsebench-org \
->   --add-dir /mnt/c/doctorat/these_lfp_2026
-> ```
->
-> Paste the prompt. Codex becomes the CTO. Don't close the terminal.
+> **Architecture revised 2026-05-06 23:50 UTC** : the original "paste a prompt into codex interactive and let it loop" design did NOT work — codex interactive runs one turn per user input, never auto-polls. Replaced with the proven shell-while-loop pattern (mirrors `chef-daemon.sh`).
 
---- BEGIN CTO PROMPT ---
+## What the CTO is now
 
-# Hello, codex. You are now the CTO.
+`scripts/cto-daemon.sh` — a standalone shell daemon that :
+1. Polls `cto/INBOX/CEO_DIRECTIVE_*.md` every 90 s.
+2. Health-checks worker + chef daemons (`pgrep`), auto-relaunches on death.
+3. Spawns `codex exec` ONLY when there's real work (a pending directive OR a missing daemon).
+4. Writes `cto/OUTBOX/CTO_REPORT_<iso>.md` (or CTO_QUERY / CTO_INCIDENT) per directive.
+5. Loops forever (subject to WSL2 reap, but with self-respawn on its own SHA change).
 
-Read `docs/CTO-CHARTER.md` in this cwd (`/mnt/c/doctorat/bsebench-org/bsebench-async-codex/docs/CTO-CHARTER.md`) end-to-end before doing anything else.
-
-Save the CTO charter to your memory at `~/.codex/memories/cto-charter.md` so you remember across sessions.
-
-## Your immediate first task
-
-The infrastructure has died (WSL2 reaped all daemons after terminal closures). Restart the stack :
-
-1. `pkill -9 -f 'worker-daemon|chef-daemon|codex exec'` (clean residue, except this codex session itself).
-2. Verify clean : `pgrep -af 'worker-daemon|chef-daemon'` should return empty.
-3. Launch worker-1 :
-   ```bash
-   nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
-     > /mnt/c/doctorat/bsebench-org/.async-worker.log 2>&1 &
-   disown
-   ```
-4. Launch worker-2 (parallel) :
-   ```bash
-   WORKER_ID=france-personal-2 nohup bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/worker-daemon.sh \
-     > /mnt/c/doctorat/bsebench-org/.async-worker-2.log 2>&1 &
-   disown
-   ```
-5. Launch chef-daemon :
-   ```bash
-   nohup stdbuf -oL -eL bash /mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/chef-daemon.sh \
-     > /mnt/c/doctorat/bsebench-org/.async-chef.log 2>&1 &
-   disown
-   ```
-6. `sleep 5` then verify : `pgrep -af 'worker-daemon|chef-daemon'`. Expect 3 PIDs.
-7. Tail logs briefly to confirm each is producing output.
-
-## Your steady-state job
-
-Loop forever (ask the user to enter a sleep+poll loop, or stay interactive — your choice) :
-
-1. Every 60-120 seconds, run :
-   ```bash
-   cd /mnt/c/doctorat/bsebench-org/bsebench-async-codex
-   git pull --rebase origin main
-   ls cto/INBOX/CEO_DIRECTIVE_*.md 2>/dev/null
-   ```
-2. For each new `CEO_DIRECTIVE_<iso>.md` that has no matching `cto/OUTBOX/CTO_REPORT_<iso>.md` :
-   - Read the directive
-   - Take the requested actions per the charter
-   - Write a `CTO_REPORT_<iso>.md` matching the directive's iso
-   - `git add cto/OUTBOX/ && git commit -m "report(cto): <iso> [role: cto-FR]" && git push origin main`
-3. Also every poll, check daemon health :
-   - `pgrep -af 'worker-daemon|chef-daemon'` — if any missing, restart per steps 3-5 above
-   - `tail -5` each log — if any error patterns, log to OUTBOX as `CTO_INCIDENT_<iso>.md` proactively
-
-## Memory file content for `~/.codex/memories/cto-charter.md`
-
-Write a digest of the CTO charter to that file (you can copy the contents of `docs/CTO-CHARTER.md` verbatim, or summarize the role + authority + protocol). Mark it `type: project`.
-
-## When unsure
-
-Write a `CTO_QUERY_<iso>.md` to OUTBOX asking the CEO (claude-TN) for clarification. Don't act on ambiguous directives.
-
-## Acknowledgment
-
-After completing the immediate first task (daemon restart) AND saving memory, write the FIRST report :
+## One-time launch — copy-paste into a WSL2 terminal on France PC
 
 ```bash
-cat > cto/OUTBOX/CTO_REPORT_bootstrap_$(date -u +%Y%m%dT%H%M%SZ).md <<EOF
-# CTO bootstrap report
+cd /mnt/c/doctorat/bsebench-org/bsebench-async-codex
+git pull origin main
 
-[role: cto-FR]
-Generated at : $(date -Iseconds)
-Acted on directive : CTO bootstrap prompt (one-time)
+# Sanity : workers + chef should already be alive (otherwise CTO will see and
+# auto-restart on first tick — non-destructive)
+pgrep -af 'worker-daemon|chef-daemon'
 
-## Actions taken
-- Read docs/CTO-CHARTER.md, internalized role + authority
-- Saved memory to ~/.codex/memories/cto-charter.md
-- pkill'd residue worker/chef/codex-exec processes
-- Launched worker-1 (PID <X>), worker-2 (PID <Y>), chef-daemon (PID <Z>)
-- Verified all 3 daemons logging properly
+# Launch cto-daemon
+nohup stdbuf -oL -eL bash scripts/cto-daemon.sh > ~/.async-cto.log 2>&1 &
+disown
 
-## State observed
-- 3 daemons alive, logging line-buffered
-- inbox/ has <N> queued phases (list briefly)
-- outbox/ has <M> phase folders
-
-## Steady-state poll started
-- Polling cto/INBOX/ every 90 s
-- Health-check daemons each poll
-- Awaiting CEO directives
-
-## Persistence note
-Per CTO charter §"Persistence" V1 : user must keep one terminal open. If WSL2 reaps me, claude-TN will surface the gap on next 30-min cron tick and ask user to re-bootstrap. V2 = Windows Task Scheduler (TODO).
-EOF
-git add cto/OUTBOX/CTO_REPORT_bootstrap_*.md
-git commit -m "report(cto): bootstrap done, daemons relaunched [role: cto-FR]"
-git push origin main
+sleep 5
+pgrep -af 'cto-daemon'
+tail -15 ~/.async-cto.log
 ```
 
-Then enter your steady-state loop.
+That's it. No prompt to paste, no codex session to keep alive — `nohup` + `disown` detaches the daemon from the terminal. WSL2 will only reap it if **all** terminals close (≥ 1 active terminal keeps the WSL distro alive).
 
---- END CTO PROMPT ---
+## Verifying steady state
+
+After ~3 min, check :
+```bash
+ls /mnt/c/doctorat/bsebench-org/bsebench-async-codex/cto/OUTBOX/
+tail -30 ~/.async-cto.log
+```
+
+You should see :
+- Tick log lines with `cto: tick start` / `cto: tick done` every 90 s
+- If any pending CEO_DIRECTIVE existed, a CTO_REPORT_*.md (or CTO_INCIDENT/QUERY) appeared in OUTBOX
+- If any daemon was missing, a CTO_INCIDENT_*.md auto-recovery log
+
+## Stop / restart
+
+Stop : `pkill -f cto-daemon.sh` (the running-state file `~/.async-cto-daemon.running` will be left behind ; harmless).
+Restart : same launch command. Self-respawn handles future script updates : when `git pull` brings a new SHA, the daemon `exec`s itself with the new version on next tick.
+
+## Why no codex-interactive layer anymore
+
+Original idea : a long-running codex interactive session = "the CTO" + auto-poll loop inside. Empirically false — codex interactive blocks waiting for stdin between turns. There is no documented continuous-mode flag for codex CLI 0.129.0-alpha.7.
+
+Pattern A (shell-while-loop calling codex exec per tick) is the only working primitive. cto-daemon.sh implements it. The CEO/CTO communication protocol via git INBOX/OUTBOX is unchanged.
+
+## Persistence — same constraints as worker / chef
+
+V1 : keep ≥ 1 WSL2 terminal alive. Daemons survive terminal closures EXCEPT when the last terminal closes (then WSL distro is reaped after ~10 min idle).
+
+V2 (TODO) : Windows Task Scheduler running `wsl.exe -d Ubuntu -- bash -c "/mnt/c/doctorat/bsebench-org/bsebench-async-codex/scripts/launch-all-daemons.sh"` on boot + interval keepalive task hitting `wsl.exe echo .` every 5 min.
+
+## What the user paste step looked like (DEPRECATED — do not use)
+
+Old version of this file asked user to paste a prompt block into codex interactive. That doesn't work. The 2-line `nohup` launch above replaces it.

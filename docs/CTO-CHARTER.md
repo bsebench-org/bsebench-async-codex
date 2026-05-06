@@ -24,7 +24,17 @@ The CTO **CANNOT** :
 
 ## Tooling
 
-The CTO is a `codex` interactive session (NOT `codex exec`) launched once by the user with `--dangerously-bypass-approvals-and-sandbox` + `--add-dir` for full repo visibility. It uses `apply_patch`, `Bash`, `Read`, `Write` tools natively. Memory at `~/.codex/memories/` for context across long sessions.
+> **Revised 2026-05-06 23:50 UTC**: original design was "codex interactive long-running session". Empirically broken — codex interactive does not auto-poll. Replaced with the shell-while-loop pattern (mirrors `chef-daemon.sh`).
+
+The CTO is `scripts/cto-daemon.sh` — a shell daemon that loops every 90 s, performs cheap shell health-checks, and spawns `codex exec` ONLY when there's real work (a pending CEO_DIRECTIVE OR a missing daemon). Each `codex exec` invocation is stateless ; persistent state lives in git (cto/INBOX, cto/OUTBOX, ~/.async-cto-daemon.running).
+
+Launch (one-time on France PC, see `CTO-BOOTSTRAP-PROMPT.md`):
+```bash
+nohup stdbuf -oL -eL bash scripts/cto-daemon.sh > ~/.async-cto.log 2>&1 &
+disown
+```
+
+Inside each codex-exec tick the model uses `Bash`, `apply_patch`, `Read`, `Write` tools (full sandbox bypass + `--add-dir` to repos). Memory across ticks is via files in `cto/OUTBOX/` and the running-state file `~/.async-cto-daemon.running`.
 
 ## Communication channel — `cto/INBOX/` ↔ `cto/OUTBOX/`
 
@@ -103,8 +113,8 @@ When CTO needs code work done (rare for infra ; happens for "fix this script" or
 
 ## Persistence
 
-V1 (current) : user keeps a terminal with codex interactive open. WSL2 stays alive as long as ≥ 1 terminal is connected.
-V2 (future) : Windows Task Scheduler runs `wsl.exe -- codex --bypass --add-dir ...` and feeds it bootstrapping prompt + auto-restart on crash.
+V1 (current) : user keeps ≥ 1 WSL2 terminal alive. cto-daemon (along with worker, chef) survives terminal closures except when ALL terminals close (then WSL distro reaped after ~10 min idle). cto-daemon has self-respawn on its own SHA change (same primitive as chef-daemon).
+V2 (future) : Windows Task Scheduler runs `wsl.exe -d Ubuntu -- bash -c "/path/to/launch-all-daemons.sh"` on boot + a 5-min `wsl.exe echo .` keepalive task to prevent idle reap.
 
 ## Why this architecture
 

@@ -64,14 +64,17 @@ claude-TN does NOT poll for CTO_REPORT freshness in real time. The 30-min cron i
 
 ## CTO routine usage
 
-Typical codex CLI session on France PC :
+Typical `cto-daemon.sh` shell loop on France PC :
 
-1. Loop forever (90 s interval).
+1. Tick every 90 s (`CTO_INTERVAL_SEC` env override).
 2. `git pull --rebase origin main`.
-3. `ls cto/INBOX/CEO_DIRECTIVE_*.md` — find any without matching CTO_REPORT.
-4. For each new directive : read, act, write report, commit + push.
-5. Health-check daemons : `pgrep -af 'worker-daemon|chef-daemon'`. Auto-restart any missing.
-6. Tail-check logs : if error patterns surface, write `CTO_INCIDENT_<iso>.md` proactively.
+3. Self-respawn check : if disk SHA != boot SHA, `exec` self with new version.
+4. `pgrep -af 'worker-daemon|chef-daemon'` — relaunch any missing AND write proactive `CTO_INCIDENT_<iso>.md`.
+5. `ls cto/INBOX/CEO_DIRECTIVE_*.md` — find any without matching CTO_REPORT or CTO_QUERY.
+6. For each pending directive : `codex exec` with the directive content + system snapshot + CTO charter as prompt. Codex writes report, commits, pushes (within a 300 s wallclock guard).
+7. Sleep INTERVAL_SEC. Repeat.
+
+Cheap shell ticks (no codex spawn) when no directive pending and no daemon down — keeps token cost minimal.
 
 ## Allowed CEO directive types
 
