@@ -35,6 +35,25 @@
 
 set -uo pipefail
 
+# Force line-buffered stdout/stderr so log lines appear immediately when
+# the parent (worker-daemon's nohup launch, or manual nohup) doesn't pass
+# through stdbuf. Self-protective : works regardless of how we were
+# launched. Insurance for the 2026-05-06 bug where chef-daemon was alive
+# but silent for 1h27 due to glibc block-buffering.
+if command -v stdbuf >/dev/null 2>&1 ; then
+  # Already in a stdbuf wrapper if our parent passed it. Otherwise this
+  # exec re-launches us through stdbuf for line buffering.
+  if [[ "${CHEF_STDBUF_WRAPPED:-0}" != "1" ]] ; then
+    export CHEF_STDBUF_WRAPPED=1
+    exec stdbuf -oL -eL bash "$0" "$@"
+  fi
+fi
+
+# Earliest possible log line — confirms script execution reached this
+# point. If `.async-chef.log` is empty post-launch, the issue is upstream
+# of this line (file-system, disk full, fork failure).
+echo "[$(date -Iseconds)] chef-daemon: BOOT entered script body (PID=$$, stdbuf_wrapped=${CHEF_STDBUF_WRAPPED:-0})"
+
 ASYNC_REPO="${ASYNC_REPO:-$HOME/bsebench-async-codex}"
 LOCK_FILE="/tmp/codex-async-chef.lock"
 INTERVAL_SEC="${CHEF_INTERVAL_SEC:-60}"
@@ -47,18 +66,23 @@ KAIZEN_WALLCLOCK_SEC="${KAIZEN_WALLCLOCK_SEC:-180}"
 # take effect without manual restart.
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 SCRIPT_SHA_AT_START=$(sha256sum "$SCRIPT_PATH" 2>/dev/null | cut -d' ' -f1)
+echo "[$(date -Iseconds)] chef-daemon: BOOT script_sha=$SCRIPT_SHA_AT_START"
 
 # Write running-state file so the worker daemon (meta-supervisor) can detect
 # a stale chef-daemon version and trigger a restart. Format : single line
 # "PID SHA". Worker-daemon reads this and compares SHA to disk-SHA each tick.
 RUNNING_STATE_FILE="$HOME/.async-chef-daemon.running"
 echo "$$ $SCRIPT_SHA_AT_START" > "$RUNNING_STATE_FILE" 2>/dev/null || true
+echo "[$(date -Iseconds)] chef-daemon: BOOT running-state file written"
 
 # ------------------------------------------------------------------ flock
+echo "[$(date -Iseconds)] chef-daemon: BOOT attempting flock $LOCK_FILE"
 exec 9>"$LOCK_FILE"
 if ! flock -n 9 ; then
+  echo "[$(date -Iseconds)] chef-daemon: BOOT flock failed (another chef alive) — exiting"
   exit 0
 fi
+echo "[$(date -Iseconds)] chef-daemon: BOOT flock acquired"
 
 # ------------------------------------------------------------------ helpers
 

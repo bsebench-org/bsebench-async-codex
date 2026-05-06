@@ -108,7 +108,14 @@ ensure_chef_daemon_fresh() {
     pkill -f chef-daemon.sh 2>/dev/null || true
     sleep 1
     chmod +x "$chef_script" 2>/dev/null || true
-    nohup bash "$chef_script" > "$HOME/.async-chef.log" 2>&1 &
+    # `stdbuf -oL -eL` forces line-buffered stdout/stderr so chef-daemon
+    # log lines appear immediately in .async-chef.log instead of being
+    # block-buffered by glibc (which kept us blind for 1h+ on 2026-05-06).
+    if command -v stdbuf >/dev/null 2>&1 ; then
+      nohup stdbuf -oL -eL bash "$chef_script" > "$HOME/.async-chef.log" 2>&1 &
+    else
+      nohup bash "$chef_script" > "$HOME/.async-chef.log" 2>&1 &
+    fi
     disown 2>/dev/null || true
     echo "[$(date -Iseconds)] worker: chef-daemon launched (disk_sha=$disk_sha)"
   fi
