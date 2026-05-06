@@ -1,12 +1,33 @@
 #!/usr/bin/env bash
 # preflight-check.sh — verify all worker dependencies are present.
 # Run once on the remote PC before registering the worker.
+#
+# Path detection : auto-resolves the bsebench-org repo root based on
+# the runtime (WSL2, Git Bash on Windows, native Linux/macOS). Override
+# with BSEBENCH_REPO_ROOT env var if your layout differs.
 
 set -uo pipefail
 
 echo "=== bsebench-async-codex worker preflight ==="
 echo "Date : $(date -Iseconds)"
 echo "OS   : $(uname -s) $(uname -r 2>/dev/null || true)"
+
+# Detect runtime + canonical repo root
+if [[ -n "${BSEBENCH_REPO_ROOT:-}" ]] ; then
+  REPO_ROOT="$BSEBENCH_REPO_ROOT"
+  RUNTIME_KIND="custom (BSEBENCH_REPO_ROOT)"
+elif grep -qi microsoft /proc/version 2>/dev/null ; then
+  REPO_ROOT="/mnt/c/doctorat/bsebench-org"
+  RUNTIME_KIND="WSL2"
+elif [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* ]] ; then
+  REPO_ROOT="/c/doctorat/bsebench-org"
+  RUNTIME_KIND="Git Bash (Windows)"
+else
+  REPO_ROOT="$HOME/bsebench-org"
+  RUNTIME_KIND="native Linux/macOS"
+fi
+echo "Runtime : $RUNTIME_KIND"
+echo "Repo root checked : $REPO_ROOT"
 echo
 
 ok=0
@@ -70,13 +91,13 @@ else
 fi
 echo
 
-echo "Repo presence (under C:\\doctorat\\bsebench-org\\) :"
+echo "Repo presence (under $REPO_ROOT) :"
 for r in bsebench-datasets bsebench-async-codex ; do
-  if [[ -d "/c/doctorat/bsebench-org/$r/.git" ]] ; then
+  if [[ -d "$REPO_ROOT/$r/.git" ]] ; then
     echo "  [OK]   $r"
     ok=$((ok + 1))
   else
-    echo "  [FAIL] $r not cloned at /c/doctorat/bsebench-org/$r"
+    echo "  [FAIL] $r not cloned at $REPO_ROOT/$r"
     fail=$((fail + 1))
   fi
 done
