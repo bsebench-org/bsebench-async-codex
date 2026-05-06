@@ -69,7 +69,7 @@ For the duration of this brief, you have authority to :
 ✅ **Append to `HISTORY.md`** narrative ledger.
 ✅ **Push commits to main** on bsebench-* repos AND bsebench-async-codex repo.
 ✅ **Send progress emails** by writing files to `outbox/_emails_pending/<iso>-<topic>.eml`.
-✅ **Consult Anthropic Claude API** via curl with `ANTHROPIC_API_KEY` env var (if set on the system) for second-opinion when stuck. Cost ≤ $5/day budget.
+✅ **Consult Anthropic Claude API** via curl with `ANTHROPIC_API_KEY` env var (if set on the system ; check with `echo "$ANTHROPIC_API_KEY" | head -c 10` — if empty, this channel is unavailable, skip it) for second-opinion when stuck. **Cost limit : $5/day cumulative** (single canonical number, used identically in §4 and §10).
 ✅ **Use codex exec freelance pattern** to spawn fresh sessions for complex tasks (multi-step planning, panel simulation, advisor calls).
 
 You do NOT have authority to :
@@ -80,7 +80,7 @@ You do NOT have authority to :
 ❌ **Delete branches that have unmerged work** without verifying the work is in main.
 ❌ **Skip the kaizen + panel + advisor cascade** for any phase that produces a research claim (even if the change looks trivial).
 ❌ **Add `Co-Authored-By: Claude` trailers** to any commit (user mandate 2026-04-29). Include `[role: <tag>]` in body instead.
-❌ **Spend > €10 / day** on Anthropic API consultations (cumulative).
+❌ **Spend > $5 / day** on Anthropic API consultations (cumulative — same canonical number as §3 and §10 ; track via a simple `~/.async-anthropic-spend-<YYYY-MM-DD>.txt` ledger you append to after each call).
 ❌ **Delete or modify `outbox/<phase-id>/CHEF_VERDICT.md`** files (forensic immutability).
 ❌ **Disable any daemon's existing safety mechanism** (timeout, ERR trap, BOOT trace).
 
@@ -162,6 +162,9 @@ These are non-negotiable. Violating any = STOP IMMEDIATELY + email user :
 
 ## §6. State of play (snapshot 2026-05-07T00:30Z)
 
+> ⚠️ **This snapshot is frozen at 2026-05-07T00:30Z.** It WILL be stale by the time you read it (workers + chef-daemon continue ticking while this brief is being delivered). §20 step 4 instructs you to re-snapshot from live STATUS.json — **if observed state disagrees with §6 below, ALWAYS trust observed state**. Use §6 only for orientation, never as authoritative claim about phase status.
+
+
 ### Daemons (assumed alive — verify on first tick)
 - worker-daemon (PID `pgrep -f worker-daemon` should return ≥1, possibly 2 with WORKER_ID=france-personal-2)
 - chef-daemon (PID `pgrep -f chef-daemon` should return 1)
@@ -213,6 +216,15 @@ After 6.10.h + 6.11.b + 6.11.d ship, Phase 6 (BSEBench infrastructure) is functi
 - **6.11.d** (RUNNING) : statistical tests. Closely related to 6.11.c, may merge.
 - **7.2** (QUEUED) : Zenodo citation metadata. Generate CITATION.cff for each bsebench-* repo + bsebench-bench DOI request.
 - **7.4** (QUEUED) : GitHub Actions CI. Add `.github/workflows/ci.yml` running fast tests on push.
+
+> **Phase numbering note** : "Phase 7" overlaps two namespaces. The
+> tactical micro-phases 7.1, 7.2, 7.4 (READMEs, Zenodo, GitHub Actions
+> CI) are infrastructure carry-overs from the old paper-centric plan.
+> The strategic Phase 7 below is the SCIENTIFIC research phase
+> (claim_55 verification) — its sub-phases are 7.5, 7.6, 7.7, 7.8. If
+> you queue a "phase-7-N" BRIEF, ensure the slug clearly signals which
+> namespace (e.g., `phase-7-2-zenodo-citation-metadata` for infra vs
+> `phase-7-5-residual-cov-extraction` for science).
 
 ### Phase 7 — claim_55 verification (Priority 1, days 2-3)
 
@@ -540,7 +552,56 @@ Total : 13 weighted votes. Majority = ≥ 7/13.
 
 Document in `meetings/meeting_unified_2026/paper2b/PANEL_<topic>_<iso>.md` (format like existing `PANEL_A_vs_B_vs_C_paper2b_scope_2026-04-26.md`).
 
-If vote splits < 7/13, escalate to advisor (§11.3).
+#### 11.2.1 Mandatory dissent enforcement (anti-rubber-stamp)
+
+**The fundamental risk** : a single codex exec generating all 13 personas at once produces a coherent narrative, not a 13-way disagreement. Without enforcement, the panel rubber-stamps anything — turning §13 anti-pattern #7 from a warning into a guarantee.
+
+**Mechanism (binding)** :
+
+1. **Adversarial reviewer persona MUST produce ≥ 1 concrete objection** that cites a specific `file:line` reference OR a specific numerical claim with reproducibility concerns. The objection must be checkable — not a generic "this seems risky" or "consider edge cases".
+
+2. **At least 2 of the 8 expert personas MUST express divergent positions** on at least one substantive point (methodology, numerical interpretation, statistical test choice, scope boundaries). Unanimous-on-everything is a panel failure.
+
+3. **Verification step before counting votes** : after the panel codex exec returns, you (the orchestrating codex) parse the output and check :
+   - Does adversarial reviewer have ≥ 1 file:line citation OR specific numerical concern ? If NO → panel invalid.
+   - Are there ≥ 2 distinct expert positions on ≥ 1 substantive point ? If NO → panel invalid.
+
+4. **If panel invalid** :
+   - Do NOT count the votes (whatever the apparent majority).
+   - Document the failure in the PANEL_*.md file under section "## Panel invalidated — rubber-stamp pattern detected".
+   - Escalate directly to advisor (§11.3) WITH the failed panel output as evidence.
+   - The advisor's verdict (GO / BLOCK) supersedes the panel.
+
+5. **If panel valid** : proceed with weighted-vote counting per the matrix above.
+
+**Concrete prompt template** for the panel codex exec :
+
+```
+You will simulate a 13-member panel reviewing a research claim. CRITICAL :
+this panel must produce REAL disagreement, not consensus theatre. You will
+be inspected for rubber-stamping :
+
+- The adversarial reviewer MUST provide ≥ 1 specific objection citing a
+  file:line reference OR a specific reproducibility concern with a
+  numerical claim. Generic "this seems risky" objections will INVALIDATE
+  the panel.
+- At least 2 of the 8 experts MUST take divergent positions on at least
+  ONE substantive point (methodology, statistics, interpretation).
+  Unanimous panels are evidence of failure.
+
+Panel members and weights :
+[list]
+
+For each member, write :
+1. Their position (1-3 sentences)
+2. Their vote (GO or BLOCK or QUERY)
+3. (For adversarial) the specific objection with file:line OR numerical
+   concern.
+
+Then aggregate the weighted votes and state the verdict.
+```
+
+If vote splits < 7/13 OR panel is invalidated by the dissent check, escalate to advisor (§11.3).
 
 ### 11.3 Advisor consultation (when panel split or confidence < 89%)
 
