@@ -184,7 +184,51 @@ When composing BRIEFs :
 - Within a BRIEF, instruct codex to commit per logical step (skeleton → tests → ruff → docs) rather than one giant commit at end.
 - Naming convention : `phase-<major>-<minor>-<letter>-<short-slug>` (e.g., `phase-6-10-a-calce-a123-adapter-skeleton`).
 
-## 11. What the chef does NOT auto-do
+## 11. Diagnostic-BRIEF pattern (NEW 2026-05-06)
+
+When the chef needs to investigate something on the worker PC (process tree, daemon log, worktree state, file contents) WITHOUT involving the user as relay, the chef writes a **diagnostic BRIEF** that the worker dispatches like any feature BRIEF :
+
+```yaml
+---
+target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex   # the async repo itself
+target_branch: diag/<short-slug>-<iso>                            # throwaway, no merge
+base_branch: main
+hard_wallclock_min: 3                                              # diagnostics are fast
+---
+
+# Diagnostic <id>
+
+Read-only investigation. Run these commands and print stdout. **Do NOT commit anything**.
+The worker captures your stdout into `outbox/<diag-id>/run.log.tail`. The chef reads it.
+
+1. ps -ef | grep ...
+2. ls -la /path/to/something
+3. cat /path/to/some-state-file
+4. tail -50 /var/log/...
+
+That's it. No `git add`, no `git commit`. Print everything to stdout.
+```
+
+The worker handles this transparently — no protocol change. After codex runs :
+- `outbox/<diag-id>/run.log.tail` contains the captured stdout (last 200 lines).
+- `outbox/<diag-id>/SUMMARY.md` has the metadata wrapper.
+- `git diff --quiet HEAD origin/$base_branch` is true → push_result = "not-attempted" → status = "done".
+
+**Important constraint** : the worker is `flock`-guarded — only ONE phase at a time on a given France PC. If a feature dispatch is currently running, a queued diagnostic-BRIEF waits behind it. The chef cannot use diagnostic-BRIEFs to observe a phase IN-PROGRESS in real time. To observe live, kill the running codex first OR add a second concurrent worker (Phase B nice-to-have).
+
+**Chef discipline** : while a feature phase is running, trust the protocol's safety nets (ERR trap + SIGKILL + push stderr capture). The outbox SUMMARY.md will give full forensic info on success or failure. Don't queue diagnostic-BRIEFs to peek mid-run.
+
+**When to use diagnostic-BRIEFs** :
+- After a phase completed with status=error and run.log.tail is ambiguous (e.g., stderr captured but cause unclear).
+- After 3+ retries on the same phase, before escalating to user — gather PC state to debug auth, env, FS issues.
+- One-off investigation : "is the daemon really running?", "what's in `~/.codex/memories/`?", "does this Python import work?".
+
+**When NOT to use diagnostic-BRIEFs** :
+- For live monitoring of a running phase (flock prevents it).
+- For modifications (use feature-BRIEFs for any write).
+- For things the chef can already see via `gh api` from chef PC (commits, branches, file contents on remote — these are accessible without dispatching the worker).
+
+## 12. What the chef does NOT auto-do
 
 - **Push to a target_repo's main without re-running gates.** Always re-verify locally first.
 - **Auto-queue NEW phase groups** the user did not authorize (only fix-retries are auto).
@@ -193,7 +237,7 @@ When composing BRIEFs :
 - **Force-push or amend pushed commits.**
 - **Delete branches that have unmerged commits to main** (only delete after successful ff-merge).
 
-## 12. Entry-point quick reference (the prompt that fires me)
+## 13. Entry-point quick reference (the prompt that fires me)
 
 The cron-cloud agent fires this prompt every 30 min at :07 and :37 :
 
