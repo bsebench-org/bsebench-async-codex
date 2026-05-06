@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [FIX] phase-7-4-github-actions-ci-fix-1 (panel 61/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T00:56:54+02:00
+
+Phase    : phase-7-4-github-actions-ci-fix-1
+Etat     : needs_fix (needs_fix)
+Panel    : 61/100 (seuil 89)
+Quoi     : Phase 7.4 fix-1 — GitHub Actions CI dependency coverage
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-4-github-actions-ci-fix-1/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-4-github-actions-ci-fix-1/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-4-github-actions-ci-fix-1/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
