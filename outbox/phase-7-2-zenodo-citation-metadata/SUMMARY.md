@@ -1,0 +1,104 @@
+# Phase phase-7-2-zenodo-citation-metadata summary
+
+- Worker : france-personal
+- Codex exit : 0
+- Wallclock cap : 20 min
+- Target repo : /mnt/c/doctorat/bsebench-org/bsebench-datasets
+- Target branch : phase-7-2-zenodo-citation-metadata
+- Branch SHA : 86971877b342b84c1f0f98c08dc6fec6958a4f58
+- Push result : ok
+- Started : (see STATUS.json ts_started)
+- Finished : 2026-05-07T00:03:14+02:00
+
+## Push stderr (if push failed)
+
+(push succeeded — no stderr)
+
+## Tail of codex stdout (last 200 lines)
+
+```
++    "reproducibility"
++  ],
++  "license": "CC-BY-4.0",
++  "upload_type": "software",
++  "version": "1.0.0",
++  "publication_date": ""
++}
+diff --git a/CITATION.cff b/CITATION.cff
+index 8995107887665614d7e56ba51ed5c15504d45d2d..00f0b8b0bbceddb69aa467931b2c1b3d1bcc4e43
+--- a/CITATION.cff
++++ b/CITATION.cff
+@@ -1,35 +1,21 @@
+-cff-version: 1.2.0
+-message: "If you use bsebench-datasets in your research, please cite it as below."
+-title: "bsebench-datasets: Dataset registry and harmonization for the BSEBench battery state-estimation filter benchmark"
+-version: 0.1.0a0
+-date-released: 2026-04-29
+-url: "https://github.com/bsebench-org/bsebench-datasets"
+-repository-code: "https://github.com/bsebench-org/bsebench-datasets"
+-license: BSD-3-Clause
+-type: software
++cff-version: "1.2.0"
++message: "If you use BSEBench datasets in your research, please cite this release."
++title: "BSEBench : reproducible battery state estimation benchmark"
++abstract: "Public benchmark metadata and harmonized dataset layer for ECM-based battery state estimation filters across supported open battery datasets. The repository records provenance, source licenses, citation metadata, Tier 2 Parquet conventions, and Python loaders used for reproducible BSEBench benchmark runs."
+ authors:
+   - family-names: Akir
+     given-names: Oussama
+-    email: akir.oussama@gmail.com
+-    affiliation: "Sup'Com Tunisia, GRESCOM Lab"
++    affiliation: "Sup'Com Tunisia / GRESCOM Lab"
++type: software
++version: "1.0.0"
++date-released: "2026-05-06"
++repository-code: "https://github.com/bsebench-org/bsebench-datasets"
++url: "https://github.com/bsebench-org/bsebench-datasets"
++license: CC-BY-4.0
+ keywords:
+   - battery
+-  - state-estimation
++  - state estimation
++  - ECM
++  - Joint UKF
+   - benchmark
+-  - lithium-ion
+-  - datasets
+-  - huggingface
+   - reproducibility
+-references:
+-  - type: software
+-    title: "bsebench-specs"
+-    url: "https://github.com/bsebench-org/bsebench-specs"
+-    notes: "Pydantic v2 contract layer that bsebench-datasets validates against"
+-  - type: standard
+-    title: "LF Energy Battery Data Format (BDF)"
+-    url: "https://lfenergy.org/lf-energy-battery-data-alliance-announces-the-battery-data-format-bdf/"
+-    year: 2025
+-  - type: standard
+-    title: "Faraday Institution BPX 1.1 (Battery Parameter eXchange)"
+-    url: "https://bpxstandard.com/"
+-    year: 2024
+
+tokens used
+88,344
+Terminé sur `phase-7-2-zenodo-citation-metadata`.
+
+Ajouté [.zenodo.json](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-2-zenodo-citation-metadata/.zenodo.json) et mis à jour [CITATION.cff](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-2-zenodo-citation-metadata/CITATION.cff). Commit local créé: `8697187 metadata: add Zenodo citation files`.
+
+Vérifications:
+- Scope: 2 fichiers seulement, `.zenodo.json` et `CITATION.cff`
+- Worktree propre: `git status --porcelain` vide
+- YAML CFF valide avec `python3 -c "import yaml ; yaml.safe_load(open('CITATION.cff'))"`
+- JSON valide avec `python3 -m json.tool .zenodo.json`
+- `git diff --check` OK
+- Pas de tests changés, pas de ruff lancé
+- Aucun `Co-Authored-By`, aucune mention Claude dans le commit final
+
+Note: le binaire `python` n’existe pas dans ce shell, donc j’ai exécuté la gate YAML avec `python3`.
+
+Références consultées: [Zenodo deposit metadata](https://developers.zenodo.org/#representation), [CFF schema guide 1.2.0](https://github.com/citation-file-format/citation-file-format/blob/main/schema-guide.md).
+```
+
+## Next step for chef
+
+git fetch origin && git checkout phase-7-2-zenodo-citation-metadata in target_repo. Verify gates. Merge to main if green.
