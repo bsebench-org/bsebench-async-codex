@@ -1,0 +1,23 @@
+To: akir.oussama@gmail.com
+Subject: [BLOCKED] phase-restart-chef-daemon-v2-bootstrap (panel 28/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T00:18:59+02:00
+
+Phase    : phase-restart-chef-daemon-v2-bootstrap
+Etat     : blocked (escalated)
+Panel    : 28/100 (seuil 89)
+Quoi     : One-time bootstrap : restart BOTH worker-daemon + chef-daemon
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-restart-chef-daemon-v2-bootstrap/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-restart-chef-daemon-v2-bootstrap/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-restart-chef-daemon-v2-bootstrap/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
+
+ATTENTION : chef-daemon est PAUSE.
+Action :
+  (a) supprime outbox/_blocks/phase-restart-chef-daemon-v2-bootstrap.block pour reprendre, OU
+  (b) queue une fix-BRIEF dans inbox/ qui repond aux preoccupations.
+
+ADVISOR_CHECK : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-restart-chef-daemon-v2-bootstrap/ADVISOR_CHECK.md
