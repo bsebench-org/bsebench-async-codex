@@ -189,8 +189,14 @@ done
 
 wallclock_sec=$((hard_wallclock_min * 60))
 
+# `--kill-after=30s` escalates SIGTERM -> SIGKILL after 30 s if codex
+# does not respond to SIGTERM (e.g., bloqué sur network / file lock /
+# child wait). Without this flag, GNU timeout sends ONLY SIGTERM and
+# never SIGKILL, leaving codex hung indefinitely.
+# Bug surfaced 2026-05-06 13:11 UTC on phase-async-canary-fix-1 (token
+# consumption stagnated = hang dur, no SIGTERM response).
 set +e
-timeout "${wallclock_sec}s" codex exec \
+timeout --kill-after=30s "${wallclock_sec}s" codex exec \
   --dangerously-bypass-approvals-and-sandbox \
   -C "$worktree_path" \
   "${add_dir_args[@]}" \
