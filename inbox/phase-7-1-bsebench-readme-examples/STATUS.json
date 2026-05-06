@@ -1,0 +1,12 @@
+{
+  "phase_id": "phase-7-1-bsebench-readme-examples",
+  "status": "queued",
+  "ts_queued": "2026-05-06T20:16:00Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-datasets",
+  "target_branch": "phase-7-1-bsebench-readme-examples",
+  "base_branch": "main"
+}
