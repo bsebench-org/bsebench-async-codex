@@ -1,0 +1,14 @@
+{
+  "phase_id": "phase-7-10-j-async-claim-language-linter",
+  "status": "queued",
+  "ts_queued": "2026-05-07T16:58:08Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
+  "target_branch": "phase-7-10-j-async-claim-language-linter",
+  "base_branch": "main",
+  "queued_by": "cto-autonomy-pacer",
+  "source_backlog": "cto/AUTONOMY_BACKLOG/phase-7-10-j-async-claim-language-linter/BRIEF.md"
+}
