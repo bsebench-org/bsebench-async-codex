@@ -89,7 +89,7 @@ log_inbox_state() {
   for repo in "$ROOT/bsebench-async-codex" "$ROOT/bsebench-async-codex-worker-2" "$ASYNC_CTO"; do
     [[ -d "$repo" ]] || continue
     log "INBOX_STATUS repo=$(basename "$repo")"
-    status_counts "$repo" | sed 's/^/[status] /' | tee -a "$LOG_FILE"
+    { status_counts "$repo" 2>/dev/null || true; } | sed 's/^/[status] /' | tee -a "$LOG_FILE" || true
   done
 }
 
@@ -143,14 +143,14 @@ tick() {
   mapfile -t workdirs < <(unique_codex_workdirs)
   count="${#workdirs[@]}"
   log "UNIQUE_CODEX_EXEC count=$count min=$MIN_UNIQUE_CODEX_EXEC"
-  printf '%s\n' "${workdirs[@]}" | sed 's/^/[codex-workdir] /' | tee -a "$LOG_FILE"
+  printf '%s\n' "${workdirs[@]}" | sed 's/^/[codex-workdir] /' | tee -a "$LOG_FILE" || true
 
   if [[ "$count" -lt "$MIN_UNIQUE_CODEX_EXEC" ]] ; then
     log "WARN_LOW_CODEX_EXEC unique=$count min=$MIN_UNIQUE_CODEX_EXEC action=run_pacer_and_recheck"
   fi
 
   log "DAEMONS"
-  { pgrep -af 'worker-daemon|chef-daemon|cto-daemon' || true; } | sed 's/^/[daemon] /' | tee -a "$LOG_FILE"
+  { pgrep -af 'worker-daemon|chef-daemon|cto-daemon' || true; } | sed 's/^/[daemon] /' | tee -a "$LOG_FILE" || true
 
   log_inbox_state
   log_watched_log_mtimes
@@ -161,11 +161,11 @@ tick() {
     mapfile -t workdirs < <(unique_codex_workdirs)
     count="${#workdirs[@]}"
     log "RECHECK_UNIQUE_CODEX_EXEC count=$count min=$MIN_UNIQUE_CODEX_EXEC"
-    printf '%s\n' "${workdirs[@]}" | sed 's/^/[codex-workdir] /' | tee -a "$LOG_FILE"
+    printf '%s\n' "${workdirs[@]}" | sed 's/^/[codex-workdir] /' | tee -a "$LOG_FILE" || true
   fi
 
   log "PACER_TAIL"
-  tail -25 "$STATE_DIR/pacer.log" 2>/dev/null | sed 's/^/[pacer-tail] /' | tee -a "$LOG_FILE" || true
+  { tail -25 "$STATE_DIR/pacer.log" 2>/dev/null || true; } | sed 's/^/[pacer-tail] /' | tee -a "$LOG_FILE" || true
   log "TICK_END"
 }
 
