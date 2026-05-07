@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [FIX] phase-7-8-c-datasets-hinf-loader-provenance-audit (panel 78/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T08:46:58+02:00
+
+Phase    : phase-7-8-c-datasets-hinf-loader-provenance-audit
+Etat     : needs_fix (needs_fix)
+Panel    : 78/100 (seuil 89)
+Quoi     : Phase 7.8.c — strict Hinf loader/cache provenance audit
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-c-datasets-hinf-loader-provenance-audit/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-c-datasets-hinf-loader-provenance-audit/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-c-datasets-hinf-loader-provenance-audit/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
