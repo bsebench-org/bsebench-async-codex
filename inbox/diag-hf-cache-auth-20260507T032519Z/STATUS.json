@@ -1,0 +1,12 @@
+{
+  "phase_id": "diag-hf-cache-auth-20260507T032519Z",
+  "status": "queued",
+  "ts_queued": "2026-05-07T05:25:19+02:00",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
+  "target_branch": "diag/hf-cache-auth-20260507T032519Z",
+  "base_branch": "main"
+}
