@@ -1,0 +1,200 @@
++
++- focused tests for ready, missing-cache, hash-unavailable, metadata-gap, and loader-unknown cases;
++- a real read-only audit over the current strict evidence config list;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-pacer-reserve-claim-guard-dry-run/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-pacer-reserve-claim-guard-dry-run/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..8cafebe7a38e605b8b3b8965b3e8a5b5ce3a144c
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-pacer-reserve-claim-guard-dry-run/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-t-async-pacer-reserve-claim-guard-dry-run
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.t - async pacer reserve claim guard dry run
++
++You are a rigorous async validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Roadmap mapping
++
++- Research-gate lane: CI and async guardrails that block false scientific claims.
++- Ops lane: keep autonomy useful while preserving reserve quality.
++- Active lane: Evidence generation only.
++
++## Goal
++
++Add a dry-run guard that proves the autonomy pacer will not queue a reserve BRIEF that targets protected claims, lacks validation, or bypasses the research-gate checker.
++
++## Required behavior
++
++- Review `scripts/cto-autonomy-pacer.sh`, `scripts/check-research-brief-gates.sh`, and current `cto/AUTONOMY_BACKLOG/` entries.
++- Add a shell test, dry-run fixture, or documented probe that demonstrates pacer skip reasons for: queued marker present, inbox already exists, target branch already claimed, malformed frontmatter, missing falsification gate, missing validation command, and protected `claim_55` targeting.
++- The probe must count only queueable reserve BRIEFs and must print skipped reasons in a form useful for CI logs.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this async reserve guard task.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a BRIEF that targets `claim_55`, lacks a falsification gate, lacks validation wording, or has a claimed target branch is counted as queueable, the dry-run guard must fail and explain the bad count.
++
++## Validation
++
++Run and record:
++
++- positive and negative dry-run fixture checks for each skip reason;
++- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- a reserve count command proving current queueable BRIEFs are reported;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-u-runner-phase11-residual-artifact-contract/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-u-runner-phase11-residual-artifact-contract/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..dfdcaf8e7a9ec90aba813ad671aa77a79aa9adce
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-u-runner-phase11-residual-artifact-contract/BRIEF.md
+@@ -0,0 +1,51 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-runner
++target_branch: phase-7-10-u-runner-phase11-residual-artifact-contract
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.u - runner Phase 11 residual artifact contract
++
++You are a rigorous BSEBench runner validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Roadmap mapping
++
++- Phase 11 preparation: sensor-noise versus model-mismatch residual decomposition tooling.
++- Research-gate lane: manifest and artifact contract validation before expensive evidence generation.
++- Active lane: Evidence generation only.
++
++## Goal
++
++Define and validate a dry-run residual artifact contract for Phase 11 so future residual-decomposition runs have replayable paths, provenance fields, and fail-loud readiness status before filters run.
++
++## Required behavior
++
++- Review current residual trace export, Hinf evidence bundle, and Phase 11 preflight hooks in `bsebench-runner`.
++- Add or extend a dry-run command, schema fixture, or tests that define required fields for residual trace artifacts: dataset/config, filter, command, stats dependency, dataset provenance identity, output path, hash placeholder or final hash, finite numeric policy, and replay command.
++- The dry run must not execute filters or commit empirical residual outputs.
++- Readiness must distinguish missing dataset provenance, missing stats identity, missing replay command, and unsupported filter/config combinations.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 11 artifact-contract task.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a Phase 11 residual artifact can be marked ready without dataset provenance identity, stats dependency identity, finite numeric policy, and a replay command, the contract must fail and mark downstream scheduling blocked.
++
++## Validation
++
++Run and record:
++
++- focused tests for ready, provenance-missing, stats-unknown, replay-missing, unsupported-filter, and non-finite-policy cases;
++- a real dry-run over the current Phase 11 candidate config set without running filters;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-v-stats-phase8-pcrlb-mad-preflight-fixtures/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-v-stats-phase8-pcrlb-mad-preflight-fixtures/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..53a56b1fc1e275c5f8526f268ccf094b0dd2a719
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-v-stats-phase8-pcrlb-mad-preflight-fixtures/BRIEF.md
+@@ -0,0 +1,50 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-stats
++target_branch: phase-7-10-v-stats-phase8-pcrlb-mad-preflight-fixtures
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.v - stats Phase 8 PCRLB MAD preflight fixtures
++
++You are a rigorous BSEBench statistics validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Roadmap mapping
++
++- Phase 8 preparation: PCRLB/MAD ratio validation before cross-chemistry claim work.
++- Phase 11 preparation: sensor-floor inputs and residual decomposition sanity checks.
++- Active lane: Evidence generation only.
++
++## Goal
++
++Add preflight fixtures for PCRLB/MAD ratio inputs so future Phase 8 and Phase 11 statistics commands fail before producing misleading finite-looking numbers.
++
++## Required behavior
++
++- Review existing PCRLB, MAD, sensor-floor, or replay-summary utilities in `bsebench-stats`.
++- Add validation helpers or fixture tests for required input fields: dataset/config, chemistry/profile metadata, MAD units, PCRLB units, sample count, split/run condition, provenance identity, and finite numeric arrays.
++- The preflight must distinguish missing metadata, unit mismatch, zero or negative variance, non-finite values, sample-count imbalance, and provenance unknown.
++- Output must be mechanical-only JSON or test assertions; do not create a claim verdict or SOTA comparison.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this PCRLB/MAD preflight task.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If PCRLB/MAD preflight accepts missing provenance, mismatched units, non-finite values, zero or negative variance, or an unstated split/run condition as ready, the task must fail and mark the candidate input invalid.
++
++## Validation
++
++Run and record:
++
++- focused tests for valid, missing-metadata, unit-mismatch, non-finite, non-positive-variance, sample-imbalance, and provenance-unknown fixtures;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+100,788
+Implemented and committed `6b4aa25` (`chore(async): replenish autonomy backlog reserve`).
+
+Added six new roadmap-mapped backlog BRIEFs:
+
+- `phase-7-10-q-runner-hinf-manifest-replay-negative-controls`
+- `phase-7-10-r-stats-hinf-fragility-loo-threshold-report`
+- `phase-7-10-s-datasets-strict-evidence-provenance-hash-audit`
+- `phase-7-10-t-async-pacer-reserve-claim-guard-dry-run`
+- `phase-7-10-u-runner-phase11-residual-artifact-contract`
+- `phase-7-10-v-stats-phase8-pcrlb-mad-preflight-fixtures`
+
+Validation passed:
+
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md` passed: `22 checked`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh` passed
+- `git diff --check` passed
+- `git diff --cached --check` passed
+- Reserve count command proved `queueable_reserve_count=8`
+
+No thesis, roadmap, claim registry, or `claims/registry.yaml` files were edited. `claim_55` is only referenced as protected/forbidden.
