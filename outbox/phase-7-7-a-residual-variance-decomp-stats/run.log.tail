@@ -1,0 +1,200 @@
++        for config_index in range(5)
++    ]
++
++    report = build_residual_variance_decomposition(
++        _payload_from_variances(variances),
++        require_ok_configs=5,
++    )
++
++    decomposition = report["decomposition"]
++    assert decomposition["config_share"] > decomposition["filter_share"]
++
++
++@pytest.mark.fast
++def test_filter_dominant_synthetic_payload_yields_larger_filter_share():
++    variances = [
++        [math.exp(0.03 * config_index + 0.80 * filter_index) for filter_index in range(5)]
++        for config_index in range(5)
++    ]
++
++    report = build_residual_variance_decomposition(
++        _payload_from_variances(variances),
++        require_ok_configs=5,
++    )
++
++    decomposition = report["decomposition"]
++    assert decomposition["filter_share"] > decomposition["config_share"]
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize("metric", ["residual_var_mV2", "rmse_mV"])
++def test_supported_alternate_metrics_are_used_as_metric_value(metric: str):
++    report = build_residual_variance_decomposition(
++        _small_payload(),
++        require_ok_configs=2,
++        metric=metric,
++    )
++
++    cell_metrics = report["per_config_filter_metrics"]["cfg_a"]["EKF"]
++    assert report["metric"] == metric
++    assert cell_metrics["metric_value"] == pytest.approx(cell_metrics[metric])
++
++
++@pytest.mark.fast
++def test_hinf_like_distinct_variance_appears_in_mechanical_filter_effects():
++    variances = [[1.0, 1.2, 12.0, 1.1, 0.9] for _config_index in range(5)]
++
++    report = build_residual_variance_decomposition(
++        _payload_from_variances(variances),
++        require_ok_configs=5,
++    )
++
++    filter_effects = report["filter_effects"]
++    hinf_variance = filter_effects["Hinf"]["mean_residual_var_mV2"]
++    other_variances = [
++        effect["mean_residual_var_mV2"]
++        for filter_label, effect in filter_effects.items()
++        if filter_label != "Hinf"
++    ]
++    assert hinf_variance > max(other_variances)
++    assert filter_effects["Hinf"]["mean_metric"] > max(
++        effect["mean_metric"]
++        for filter_label, effect in filter_effects.items()
++        if filter_label != "Hinf"
++    )
++
++
++@pytest.mark.fast
++def test_failed_filters_are_excluded_without_fabricated_residual_arrays():
++    payload = _small_payload()
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["filters"]["Hinf"] = _error_filter()
++    configs["cfg_b"]["filters"]["Hinf"] = _error_filter()
++
++    report = build_residual_variance_decomposition(payload, require_ok_configs=2)
++
++    assert report["summary"]["ok_filter_traces"] == 4
++    assert report["source_filter_labels"] == ["EKF", "UKF", "Hinf"]
++    assert report["retained_filter_labels"] == ["EKF", "UKF"]
++    assert set(report["per_config_filter_metrics"]["cfg_a"]) == {"EKF", "UKF"}
++    assert "Hinf" not in report["filter_effects"]
++
++
++@pytest.mark.fast
++def test_divergent_ok_filter_sets_across_retained_configs_fail_loud():
++    payload = _small_payload()
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["filters"]["Hinf"] = _error_filter()
++    configs["cfg_b"]["filters"]["UKF"] = _error_filter()
++
++    with pytest.raises(
++        ValueError,
++        match="identical ok filter labels in the same order",
++    ):
++        build_residual_variance_decomposition(payload, require_ok_configs=2)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("residuals", "retained_samples", "message"),
++    [
++        ([1.0, float("nan"), 2.0, 3.0], 4, "finite"),
++        ([[1.0, 2.0], [3.0, 4.0]], 2, "one-dimensional"),
++        ([1.0], 2, "at least 2 samples"),
++        ([1.0, 2.0, 3.0], 4, "retained_samples must equal"),
++    ],
++)
++def test_invalid_residual_arrays_raise_clear_errors(
++    residuals: Sequence[float] | Sequence[Sequence[float]],
++    retained_samples: int,
++    message: str,
++):
++    payload = _small_payload()
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["retained_samples"] = retained_samples
++    configs["cfg_a"]["filters"]["EKF"] = _ok_filter(residuals)
++
++    with pytest.raises(ValueError, match=message):
++        build_residual_variance_decomposition(payload)
++
++
++@pytest.mark.fast
++def test_duplicate_labels_raise_clear_error():
++    payload = _small_payload()
++    payload["filter_labels"] = ["EKF", "UKF", "UKF"]
++
++    with pytest.raises(ValueError, match=r"filter_labels.*unique"):
++        build_residual_variance_decomposition(payload)
++
++
++@pytest.mark.fast
++def test_config_with_too_few_ok_filters_is_skipped_and_can_fail_loud():
++    payload = _small_payload()
++    payload["config_labels"] = ["cfg_a"]
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["filters"]["UKF"] = _error_filter()
++    configs["cfg_a"]["filters"]["Hinf"] = _error_filter()
++
++    with pytest.raises(
++        ResidualVarianceDecompositionRequirementError,
++        match="below required minimum",
++    ) as exc:
++        build_residual_variance_decomposition(payload, require_ok_configs=1)
++
++    partial = exc.value.payload
++    assert partial["summary"]["ok_configs"] == 0
++    assert partial["summary"]["skipped_configs"] == 1
++    assert partial["skipped_configs"][0]["reason"] == "fewer_than_min_ok_filters"
++    assert partial["decomposition"] is None
++
++
++@pytest.mark.fast
++def test_file_runner_writes_json_only_after_requirements_pass(tmp_path):
++    payload = _small_payload()
++    input_path = tmp_path / "trace.json"
++    output_path = tmp_path / "decomp.json"
++    input_path.write_text(json.dumps(payload), encoding="utf-8")
++
++    with pytest.raises(ResidualVarianceDecompositionRequirementError):
++        run_residual_variance_decomposition(input_path, output_path, require_ok_configs=3)
++    assert not output_path.exists()
++
++    report = run_residual_variance_decomposition(
++        input_path,
++        output_path,
++        require_ok_configs=2,
++    )
++
++    assert output_path.exists()
++    loaded = json.loads(output_path.read_text(encoding="utf-8"))
++    assert loaded == report
++    json.dumps(loaded, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_top_level_export_matches_runner_export():
++    assert build_residual_variance_decomposition_top_level is build_residual_variance_decomposition
+
+tokens used
+99,206
+Implemented and committed Phase 7.7.a.
+
+Commit: `58eacbcd38fa6e60b1431e0dd2933b1ab7237db2`  
+Message includes `GLASSBOX: [role: worker-codex-FR]`; no `Co-Authored-By: Claude` trailer.
+
+Changes:
+- Added [residual_decomp.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-7-a-residual-variance-decomp-stats/src/bsebench_stats/runners/residual_decomp.py)
+- Exported runner/top-level APIs from package `__init__` files
+- Added focused synthetic tests in [test_residual_decomp_runner.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-7-a-residual-variance-decomp-stats/tests/test_residual_decomp_runner.py)
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_residual_decomp_runner.py -q --tb=short` → 16 passed
+- `uv run --locked --all-extras pytest -m "not slow" --tb=short` → 67 passed
+- `uv run --locked --all-extras ruff format --check .` → passed
+- `uv run --locked --all-extras ruff check .` → passed
+
+No `uv.lock` was committed. No README, roadmap, claim registry, thesis prose, scientific verdict, plots, or real-data outputs were edited or generated. Note: `docs/RESEARCH-ROADMAP-2026-05-06.md` was not present in this worktree, so I proceeded from the available residual covariance and trace-producer references.
