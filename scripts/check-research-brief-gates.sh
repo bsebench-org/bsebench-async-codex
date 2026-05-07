@@ -19,6 +19,7 @@ Checks Phase 7/8/11 inbox or autonomy-backlog BRIEFs for minimum research-gate w
   - no thesis/claim registry edits
   - no claim_55 targeting
   - no unsupported SOTA claims
+  - no unsupported claim-promotion language
 
 With no files, the default is --staged, which includes untracked BRIEFs.
 USAGE
@@ -170,6 +171,13 @@ check_brief() {
     "$path" \
     "no unsupported SOTA claims" \
     '((do not|must not|no|not|without|unsupported)[[:alnum:]_ ./,-]{0,140}sota|sota[[:alnum:]_ ./,-]{0,140}(unsupported|source ledger|doi|stable url|comparability|claim|status|novelty))'
+
+  if bash scripts/check-claim-language.sh "$path" ; then
+    echo "  [OK]   unsupported claim-promotion language"
+  else
+    echo "  [FAIL] unsupported claim-promotion language"
+    failures=$((failures + 1))
+  fi
 }
 
 if [[ "$dry_run" -eq 1 ]] ; then
