@@ -1,0 +1,9 @@
+{
+  "phase_id": "phase-7-6-a-residual-cov-trace-panel",
+  "status": "queued",
+  "ts_queued": "2026-05-07T01:35:30Z",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
+  "target_branch": "phase-7-6-a-residual-cov-trace-panel",
+  "base_branch": "main",
+  "hard_wallclock_min": 45
+}
