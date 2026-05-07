@@ -1,0 +1,200 @@
++
++Run and record:
++
++- focused tests for complete provenance, missing source identifier, missing split/profile, missing cache, missing citation/license metadata, and unknown chemistry;
++- a real dry-run matrix command over the current Phase 8 candidate set without downloads or filter execution;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-ci-brief-gate-regression-harness/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-ci-brief-gate-regression-harness/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..ac03b12b77ac689615d1dbdff2af711b1214181d
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-ci-brief-gate-regression-harness/BRIEF.md
+@@ -0,0 +1,47 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-t-async-ci-brief-gate-regression-harness
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.t - async CI brief-gate regression harness
++
++You are a rigorous BSEBench async validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Make the research BRIEF gate itself regression-tested so future Phase 7/8/11 backlog tasks cannot silently lose falsification, validation, SOTA-safety, registry, or `claim_55` guardrails.
++
++## Active lane
++
++Validation infrastructure. This task tests guardrail enforcement only and must not alter scientific roadmap content.
++
++## Required behavior
++
++- Review `scripts/check-research-brief-gates.sh`, `docs/RESEARCH-GATE-PROTOCOL-2026-05-07.md`, and current autonomy backlog examples.
++- Add a lightweight regression harness or fixture set that checks at least one valid BRIEF and invalid BRIEFs missing each required guardrail.
++- Required negative cases must cover missing falsification, missing validation/replay wording, missing no-thesis-or-claim-registry edit language, missing `claim_55` prohibition, and unsupported SOTA or novelty language without a source ledger.
++- The harness must be runnable locally and suitable for CI without network access.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this async CI brief-gate harness.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If an invalid fixture missing any required research-gate guardrail exits successfully, or if a valid fixture fails without identifying the broken rule, the task must fail and block use of the harness as a CI gate.
++
++## Validation
++
++Run and record:
++
++- the new regression harness against valid and invalid fixture BRIEFs;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-u-stats-phase11-residual-decomp-preflight-fixtures/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-u-stats-phase11-residual-decomp-preflight-fixtures/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..76695af705334c8a1609b724ba8280ebd5c15749
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-u-stats-phase11-residual-decomp-preflight-fixtures/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-stats
++target_branch: phase-7-10-u-stats-phase11-residual-decomp-preflight-fixtures
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 75
++---
++
++# Phase 7.10.u - stats Phase 11 residual-decomp preflight fixtures
++
++You are a rigorous BSEBench stats Phase 11 preflight engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Prepare Phase 11 sensor-noise versus model-mismatch work by adding synthetic fixtures that prove residual-decomposition preflight checks fail on degenerate or incomplete inputs before real evidence is scheduled.
++
++## Active lane
++
++Validation infrastructure. Use synthetic data and preflight diagnostics only; do not create Phase 11 empirical conclusions.
++
++## Required behavior
++
++- Review `src/bsebench_stats/runners/residual_decomp.py`, residual covariance/decomposition tests, and Hinf uncertainty/sensitivity tooling.
++- Add or extend preflight fixtures for residual decomposition inputs that cover sensor-floor metadata, model residual arrays, sample counts, config identity, finite numeric values, and repeatability.
++- The preflight must distinguish ready, missing sensor-floor metadata, missing model residuals, all-zero residuals, non-finite residuals, insufficient sample count, and inconsistent config identity.
++- Use synthetic fixtures only unless an existing committed evidence artifact is read without modification.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 11 preflight fixture task.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a degenerate Phase 11 input with missing sensor-floor metadata, non-finite residuals, all-zero residuals, too few samples, or inconsistent config identity can be marked ready, the task must fail and block downstream residual-decomposition evidence scheduling.
++
++## Validation
++
++Run and record:
++
++- focused tests for ready synthetic input, missing sensor-floor metadata, missing model residuals, all-zero residuals, non-finite residuals, insufficient samples, and config mismatch;
++- any new preflight command over synthetic fixtures;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-v-async-source-ledger-freeze-preflight/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-v-async-source-ledger-freeze-preflight/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..2f6e65a864bcbc3ad55df8d5616a8429d5ad1624
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-v-async-source-ledger-freeze-preflight/BRIEF.md
+@@ -0,0 +1,47 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-v-async-source-ledger-freeze-preflight
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.v - async source-ledger freeze preflight
++
++You are a rigorous BSEBench anti-hallucination gate engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add a preflight that blocks any future SOTA, novelty, or claim-registration queue unless the source ledger and frozen BSEBench evidence identifiers are explicit and hashable.
++
++## Active lane
++
++Validation infrastructure. This task may validate ledger readiness, but it must not compare real literature numbers or register a claim.
++
++## Required behavior
++
++- Review `docs/RESEARCH-GATE-PROTOCOL-2026-05-07.md`, existing source-ledger schema/checker artifacts, and current claim-candidate readiness outbox files when present.
++- Add or extend a preflight that requires a source-ledger path, ledger SHA256, frozen BSEBench evidence path, evidence SHA256, retrieval date, DOI or stable URL, metric, dataset, split, method, reported value, BSEBench frozen value, comparability status, and caveat for every comparison row.
++- The preflight must distinguish missing ledger, missing evidence hash, partial comparability, not-comparable rows, missing DOI/stable URL, missing retrieval date, and missing caveat.
++- Use synthetic fixtures or existing committed readiness artifacts; do not invent real literature values.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this source-ledger freeze preflight.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a comparison or claim-registration preflight can pass without a hashable source ledger, hashable frozen evidence artifact, DOI or stable URL, retrieval date, exact metric, dataset, split, reported value, BSEBench frozen value, comparability status, and caveat, the task must fail and mark the queue request incomplete.
++
++## Validation
++
++Run and record:
++
++- positive and negative fixture checks for complete comparable rows, partial rows, not-comparable rows, missing ledger hash, missing evidence hash, missing DOI/stable URL, missing retrieval date, and missing caveat;
++- `bash -n` for changed shell scripts;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+88,851
+Implemented and committed the backlog replenishment.
+
+Added six new unqueued reserve briefs under `cto/AUTONOMY_BACKLOG/`:
+
+- `phase-7-10-q-stats-hinf-replay-tolerance-boundary`
+- `phase-7-10-r-runner-hinf-manifest-replay-receipt`
+- `phase-7-10-s-datasets-phase8-provenance-completeness-matrix`
+- `phase-7-10-t-async-ci-brief-gate-regression-harness`
+- `phase-7-10-u-stats-phase11-residual-decomp-preflight-fixtures`
+- `phase-7-10-v-async-source-ledger-freeze-preflight`
+
+Each brief includes validation commands, a falsification gate, no thesis/claim-registry/roadmap edits, no unsupported SOTA or novelty claims, and an explicit `claim_55` targeting prohibition.
+
+Validation passed:
+
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md` → `22 checked, 0 skipped`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh` → passed
+- `git diff --check` → passed
+- reserve count command → `unqueued_reserve_count=13`
+
+Committed as:
+
+`9bdbb2fdccdb67540c9ee89afa87e961eff3d49f` — `Replenish autonomy backlog reserve`
+
+The branch is clean and ahead by this commit. `origin/main` moved during the work, but it has no conflicting `phase-7-10-q` through `v` backlog entries.
