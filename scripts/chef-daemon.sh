@@ -60,6 +60,7 @@ INTERVAL_SEC="${CHEF_INTERVAL_SEC:-60}"
 DEFAULT_TARGET_REPO_ROOT="${TARGET_REPO_ROOT:-/mnt/c/doctorat/bsebench-org}"
 KAIZEN_ENABLED="${KAIZEN_ENABLED:-1}"
 KAIZEN_WALLCLOCK_SEC="${KAIZEN_WALLCLOCK_SEC:-180}"
+STALE_GIT_LOCK_MIN="${STALE_GIT_LOCK_MIN:-15}"
 
 # Self-respawn : capture our own script's SHA at start. If it changes after
 # a git pull inside the loop, exec ourselves with the new version so patches
@@ -88,6 +89,28 @@ echo "[$(date -Iseconds)] chef-daemon: BOOT flock acquired"
 
 log() {
   echo "[$(date -Iseconds)] chef: $*"
+}
+
+clear_stale_git_index_lock() {
+  local repo="$1"
+  local lock="$repo/.git/index.lock"
+  local age_min
+
+  [[ -e "$lock" ]] || return 0
+
+  age_min=$((($(date +%s) - $(stat -c %Y "$lock" 2>/dev/null || echo 0)) / 60))
+  if [[ "$age_min" -lt "$STALE_GIT_LOCK_MIN" ]] ; then
+    log "git index.lock present but fresh repo=$repo age_min=$age_min"
+    return 0
+  fi
+
+  if ps -eo args | grep -F "$repo" | grep -E '[ /]git( |$)' | grep -v grep >/dev/null 2>&1 ; then
+    log "git index.lock present but git process still references repo=$repo age_min=$age_min"
+    return 0
+  fi
+
+  rm -f "$lock"
+  log "removed stale git index.lock repo=$repo age_min=$age_min"
 }
 
 changed_files_unavailable() {
@@ -122,6 +145,7 @@ verify_and_merge() {
     write_verdict "$phase_id" "escalated" "cannot cd to $repo_dir" "" "$(changed_files_unavailable "cannot cd to target repo before chef could inspect branch diff")"
     return
   }
+  clear_stale_git_index_lock "$repo_dir"
 
   # Fetch + clean working tree before checkout. The chef-daemon shares the
   # canonical clone with the worker daemon — worker creates worktrees there
@@ -733,6 +757,7 @@ trap 'log "chef-daemon stopped (signal received)" ; exit 0' TERM INT
 
 while true ; do
   cd "$ASYNC_REPO" || { sleep "$INTERVAL_SEC" ; continue ; }
+  clear_stale_git_index_lock "$ASYNC_REPO"
   git fetch origin main --quiet || true
   git reset --hard origin/main --quiet || true
 

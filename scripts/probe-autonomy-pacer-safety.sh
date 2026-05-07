@@ -206,7 +206,7 @@ assert_contains "$reserve_output" "DRY-RUN would commit queued=phase-7-probe-goo
 assert_not_contains "$reserve_output" "QUEUE reserve task: phase-7-probe-good-b" "reserve overqueue"
 assert_clean_repo
 
-section "block pauses queueing"
+section "block queues remediation only"
 make_fixture "block-present"
 write_good_brief "phase-7-probe-good-a"
 write_good_brief "phase-7-probe-good-b"
@@ -215,9 +215,10 @@ touch "$FIX_ASYNC/outbox/_blocks/probe.block"
 commit_fixture "block scenario"
 block_output="$(run_pacer)"
 printf '%s\n' "$block_output"
-assert_contains "$block_output" "PAUSE blocks present" "block pause"
-assert_not_contains "$block_output" "QUEUE reserve task" "block queue"
-assert_not_contains "$block_output" "DRY-RUN would commit" "block commit"
+assert_contains "$block_output" "blocks=1" "block snapshot"
+assert_contains "$block_output" "QUEUE block remediation task" "block remediation queue"
+assert_contains "$block_output" "DRY-RUN would commit queued=phase-7-10-y-block-remediation-" "block remediation dry run"
+assert_not_contains "$block_output" "QUEUE reserve task" "normal backlog queue while blocked"
 assert_clean_repo
 
 section "bad brief is skipped before queueing"

@@ -24,6 +24,7 @@ WORKER_ID="${WORKER_ID:-france-personal}"
 LOCK_FILE="${REMOTE_WORKER_LOCK_FILE:-/tmp/codex-async-worker-${WORKER_ID}.lock}"
 LOG_TAIL_LINES=200
 DEFAULT_WALLCLOCK_MIN=90
+STALE_GIT_LOCK_MIN="${STALE_GIT_LOCK_MIN:-15}"
 
 # Initialized later when a phase is picked
 queued_phase=""
@@ -45,6 +46,28 @@ push_async_main_with_rebase() {
   done
   echo "worker: push failed after retries for $label" >&2
   return 1
+}
+
+clear_stale_git_index_lock() {
+  local repo="$1"
+  local lock="$repo/.git/index.lock"
+  local age_min
+
+  [[ -e "$lock" ]] || return 0
+
+  age_min=$((($(date +%s) - $(stat -c %Y "$lock" 2>/dev/null || echo 0)) / 60))
+  if [[ "$age_min" -lt "$STALE_GIT_LOCK_MIN" ]] ; then
+    echo "worker: git index.lock present but fresh repo=$repo age_min=$age_min" >&2
+    return 0
+  fi
+
+  if ps -eo args | grep -F "$repo" | grep -E '[ /]git( |$)' | grep -v grep >/dev/null 2>&1 ; then
+    echo "worker: git index.lock present but git process still references repo=$repo age_min=$age_min" >&2
+    return 0
+  fi
+
+  rm -f "$lock"
+  echo "worker: removed stale git index.lock repo=$repo age_min=$age_min" >&2
 }
 
 # ------------------------------------------------------------------ ERR trap
@@ -105,6 +128,7 @@ fi
 
 # ------------------------------------------------------------------ pull
 cd "$ASYNC_REPO"
+clear_stale_git_index_lock "$ASYNC_REPO"
 git fetch origin main --quiet
 git reset --hard origin/main --quiet
 
@@ -215,6 +239,7 @@ Phase $queued_phase BRIEF specifies target_repo $target_repo_dir but it does not
 fi
 
 cd "$target_repo_dir"
+clear_stale_git_index_lock "$target_repo_dir"
 git fetch origin --quiet
 worktree_path="$(dirname "$target_repo_dir")/$(basename "$target_repo_dir")-$target_branch"
 

@@ -6,6 +6,9 @@
 #
 # This script may mutate only the async orchestration repo. It does not run
 # codex, pytest, uv, or target-repo writes. Workers consume the queued briefs.
+# If a block is present, normal scientific queueing stays paused, but the pacer
+# may queue one tightly scoped block-remediation task so the system does not
+# sit silent while the red validation signal waits for diagnosis.
 
 set -euo pipefail
 
@@ -25,6 +28,7 @@ MIN_RESERVE="${MIN_RESERVE:-6}"
 MAX_QUEUE_PER_TICK="${MAX_QUEUE_PER_TICK:-3}"
 STALE_RUNNING_MIN="${STALE_RUNNING_MIN:-180}"
 REPLENISHMENT_COOLDOWN_HOURS="${REPLENISHMENT_COOLDOWN_HOURS:-12}"
+BLOCK_REMEDIATION_COOLDOWN_MIN="${BLOCK_REMEDIATION_COOLDOWN_MIN:-30}"
 DRY_RUN=0
 
 mkdir -p "$STATE_DIR"
@@ -39,8 +43,10 @@ Maintains:
   - at least MIN_RESERVE curated backlog tasks under cto/AUTONOMY_BACKLOG;
   - worker daemons for france-personal and france-personal-2 when possible.
 
-The script pauses on outbox/_blocks/*.block and never fabricates scientific
-tasks except a tightly scoped backlog-replenishment task when reserve is low.
+The script pauses normal queueing on outbox/_blocks/*.block. If blocked and
+idle, it queues at most one block-remediation task per cooldown window instead
+of leaving the system silent. It never fabricates scientific tasks except a
+tightly scoped backlog-replenishment task when reserve is low.
 USAGE
 }
 
@@ -74,9 +80,9 @@ count_status() {
 }
 
 codex_exec_count() {
-  { pgrep -af 'codex exec' 2>/dev/null || true; } |
+  { pgrep -af 'codex exec|/usr/bin/codex|@openai/codex' 2>/dev/null || true; } |
     awk -v root="$ROOT" '
-      $0 !~ /pgrep|cto-autonomy-pacer/ && index($0, root) > 0 { n++ }
+      $0 !~ /pgrep|cto-autonomy-pacer|cto-watchdog-10min/ && index($0, root) > 0 && ($0 ~ /codex exec/ || $0 ~ / -C /) { n++ }
       END { print n + 0 }
     '
 }
@@ -92,6 +98,22 @@ is_queueable_phase_id() {
   [[ "$phase_id" =~ ^phase-(7|8|11)(-|$) ]]
 }
 
+brief_target_branch_claimed() {
+  local brief="$1"
+  local target_repo target_branch repo_dir
+
+  target_repo="$(target_repo_from_brief "$brief")"
+  target_branch="$(target_branch_from_brief "$brief")"
+  [[ -n "$target_repo" && -n "$target_branch" ]] || return 1
+
+  repo_dir="$(eval echo "$target_repo")"
+  [[ -d "$repo_dir/.git" ]] || return 1
+
+  git -C "$repo_dir" show-ref --verify --quiet "refs/heads/$target_branch" && return 0
+  git -C "$repo_dir" show-ref --verify --quiet "refs/remotes/origin/$target_branch" && return 0
+  return 1
+}
+
 reserve_candidates() {
   { find cto/AUTONOMY_BACKLOG -mindepth 2 -maxdepth 2 -name BRIEF.md -print 2>/dev/null || true; } |
     sort |
@@ -102,6 +124,7 @@ reserve_candidates() {
       is_queueable_phase_id "$phase_id" || continue
       [[ -f "$phase_dir/QUEUED.json" ]] && continue
       [[ -d "inbox/$phase_id" ]] && continue
+      brief_target_branch_claimed "$brief" && continue
       printf '%s\n' "$brief"
     done
 }
@@ -295,6 +318,116 @@ replenishment_recent_or_open() {
     awk 'NF { found=1 } END { exit found ? 0 : 1 }'
 }
 
+block_remediation_recent_or_open() {
+  local cooldown_sec=$((BLOCK_REMEDIATION_COOLDOWN_MIN * 60))
+  find inbox -mindepth 1 -maxdepth 1 -type d -name 'phase-7-10-y-block-remediation-*' 2>/dev/null |
+    while IFS= read -r dir ; do
+      jq -r --argjson now "$(date +%s)" --argjson cooldown "$cooldown_sec" '
+        (.status // "unknown") as $status
+        | ((.ts_queued // "") as $ts | try ($ts | fromdateiso8601) catch 0) as $queued
+        | if (($status == "queued") or ($status == "running") or ($status == "needs_fix") or ($queued > 0 and (($now - $queued) <= $cooldown))) then
+            "recent_or_open"
+          else
+            empty
+          end
+      ' "$dir/STATUS.json" 2>/dev/null
+    done |
+    awk 'NF { found=1 } END { exit found ? 0 : 1 }'
+}
+
+queue_block_remediation_task() {
+  local now compact phase_id phase_dir branch block_list
+
+  if block_remediation_recent_or_open ; then
+    log "BLOCKED block remediation task is open or inside ${BLOCK_REMEDIATION_COOLDOWN_MIN}min cooldown"
+    return 0
+  fi
+
+  now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  compact="$(date -u +%Y%m%dT%H%M%SZ)"
+  phase_id="phase-7-10-y-block-remediation-$compact"
+  branch="$phase_id"
+  phase_dir="inbox/$phase_id"
+  block_list="$(find outbox/_blocks -maxdepth 1 -type f -name '*.block' -printf '%f\n' 2>/dev/null | sort | paste -sd ',')"
+  block_list="${block_list:-unknown}"
+
+  log "QUEUE block remediation task: phase=$phase_id blocks=$block_list"
+  if [[ "$DRY_RUN" -eq 1 ]] ; then
+    QUEUED_PHASES+=("$phase_id")
+    return 0
+  fi
+
+  mkdir -p "$phase_dir"
+  cat > "$phase_dir/BRIEF.md" <<EOF
+---
+target_repo: $ASYNC_REPO
+target_branch: $branch
+base_branch: main
+add_dir:
+  - /mnt/c/doctorat/bsebench-org/bsebench-runner
+  - /mnt/c/doctorat/bsebench-org/bsebench-stats
+  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
+hard_wallclock_min: 45
+---
+
+# Phase 7.10.y - block remediation
+
+You are a rigorous BSEBench incident-remediation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
+
+## Goal
+
+Diagnose the active async block(s), preserve a GLASSBOX root-cause record, and propose the smallest safe unblock or fix path.
+
+## Active block snapshot
+
+- Queued by: \`cto-autonomy-pacer\`
+- Queued at: \`$now\`
+- Block files seen by pacer: \`$block_list\`
+
+## Required behavior
+
+- Read \`outbox/_blocks/*.block\`, the matching \`outbox/<phase>/CHEF_VERDICT.md\`, \`PANEL_CHECK.md\`, \`ADVISOR_CHECK.md\` when present, and the latest worker/chef/pacer logs.
+- Write an incident note under \`cto/OUTBOX/\` with root cause, blast radius, current evidence, and exact recovery gate.
+- Do not delete block files unless the branch also proves the block cause has been fixed and records a \`CTO_UNBLOCK.md\` for the blocked phase.
+- Do not edit thesis files, claim registry files, \`claims/registry.yaml\`, \`claim_55\`, or the roadmap.
+- Do not make SOTA, novelty, breakthrough, or verified-claim statements without a source ledger and comparability table.
+
+## Falsification gate
+
+If the task cannot identify whether the block is still scientifically valid, infra-only, or stale-after-fix, it must fail and record the uncertainty instead of unblocking.
+
+## Validation
+
+Run and record:
+
+- \`find outbox/_blocks -maxdepth 1 -type f -name '*.block' -print\`;
+- \`pgrep -af 'worker-daemon|chef-daemon|cto-daemon|codex exec|/usr/bin/codex|@openai/codex'\`;
+- \`bash scripts/check-research-brief-gates.sh --dry-run inbox/$phase_id/BRIEF.md\`;
+- \`bash -n scripts/cto-autonomy-pacer.sh scripts/remote-worker.sh scripts/chef-daemon.sh scripts/cto-watchdog-10min.sh\`;
+- \`git diff --check\`.
+
+Commit with GLASSBOX metadata. No \`Co-Authored-By Claude\`.
+EOF
+  cat > "$phase_dir/STATUS.json" <<EOF
+{
+  "phase_id": "$phase_id",
+  "status": "queued",
+  "ts_queued": "$now",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "$ASYNC_REPO",
+  "target_branch": "$branch",
+  "base_branch": "main",
+  "queued_by": "cto-autonomy-pacer",
+  "source_backlog": "dynamic-block-remediation",
+  "block_files": "$block_list"
+}
+EOF
+  QUEUED_PHASES+=("$phase_id")
+}
+
 queue_replenishment_task() {
   local queued_this_tick="${1:-0}"
   local now compact phase_id phase_dir branch reserve gate_dir gate_brief
@@ -424,7 +557,7 @@ append_history_and_commit() {
   fi
 
   cat >> HISTORY.md <<EOF
-- **$now** | [actor: cto-autonomy-pacer-FR] | [QUEUE] | $queued_csv | pacer restored non-idle capacity from curated backlog. Guards: codex_exec=$execs, status_running=$running, queued_before=$queued, reserve_before=$reserve, blocks=$blocks, min_running=$MIN_RUNNING, min_queued=$MIN_QUEUED, min_reserve=$MIN_RESERVE. Tasks remain mechanical, falsifiable, no thesis/registry/roadmap edits, no unsupported SOTA claims.
+- **$now** | [actor: cto-autonomy-pacer-FR] | [QUEUE] | $queued_csv | pacer restored non-idle or block-remediation capacity. Guards: codex_exec=$execs, status_running=$running, queued_before=$queued, reserve_before=$reserve, blocks=$blocks, min_running=$MIN_RUNNING, min_queued=$MIN_QUEUED, min_reserve=$MIN_RESERVE. Tasks remain mechanical, falsifiable, no thesis/registry/roadmap edits, no unsupported SOTA claims.
 EOF
 
   git add HISTORY.md inbox/ cto/AUTONOMY_BACKLOG/
@@ -433,13 +566,13 @@ EOF
 [role: cto-autonomy-pacer-FR]
 
 ## Context
-The async system must not sit idle after workers drain all queued tasks.
+The async system must not sit idle after workers drain all queued tasks or after a block requires remediation.
 
 ## Objective
-Restore non-idle capacity from a curated, gate-checked backlog while keeping one task waiting behind at least two active workers.
+Restore non-idle capacity from a curated, gate-checked backlog or, when blocked, queue a bounded remediation task while keeping normal scientific queueing paused.
 
 ## Problem
-The audit-only watchdog could report an empty backlog but could not enqueue useful follow-up work.
+The audit-only watchdog could report an empty backlog or active block but could not enqueue useful follow-up or remediation work.
 
 ## Result
 Queued: $queued_csv
@@ -459,12 +592,6 @@ main() {
 
   local running fresh_running effective_running queued execs reserve blocks effective_capacity target_open needed brief queued_now candidate_idx
   local -a candidates
-  blocks="$(block_count)"
-  if [[ "$blocks" -gt 0 ]] ; then
-    log "PAUSE blocks present; not restarting daemons or hiding red validation with new work"
-    return 0
-  fi
-
   ensure_worker_daemon "france-personal" "$ASYNC_ACTIVE" "/home/oakir/.async-worker.log"
   ensure_worker_daemon "france-personal-2" "$ASYNC_WORKER_2" "/home/oakir/.async-worker-2.log"
   ensure_chef_daemon || return 0
@@ -495,7 +622,13 @@ main() {
   log "SNAPSHOT codex_exec=$execs status_running=$running fresh_running=$fresh_running effective_running=$effective_running queued=$queued reserve=$reserve blocks=$blocks needed=$needed"
 
   if [[ "$blocks" -gt 0 ]] ; then
-    log "PAUSE blocks present; not hiding red validation with new work"
+    QUEUED_PHASES=()
+    if [[ "$effective_capacity" -lt "$target_open" ]] ; then
+      queue_block_remediation_task
+    else
+      log "BLOCKED capacity already non-idle; normal backlog queueing paused"
+    fi
+    append_history_and_commit "$running" "$queued" "$execs" "$reserve" "$blocks"
     return 0
   fi
 
