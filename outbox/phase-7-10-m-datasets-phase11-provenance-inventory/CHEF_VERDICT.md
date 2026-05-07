@@ -1,0 +1,77 @@
+# Chef verdict for phase-7-10-m-datasets-phase11-provenance-inventory
+
+- Decision : approved
+- Decided at : 2026-05-07T20:35:39+02:00
+- Decided by : chef-daemon (automated, France PC) [role: chef-FR]
+
+## Re-verification on chef PC
+
+merged phase-7-10-m-datasets-phase11-provenance-inventory -> main at 2b97c256c86128bc057ec394a40610a086a7d665
+
+## Gate evidence
+
+```
+tests/test_prospect_catalog.py::test_prospect_rejects_bad_name PASSED    [ 95%]
+tests/test_prospect_catalog.py::test_catalog_named_item_count PASSED     [ 95%]
+tests/test_prospect_catalog.py::test_repository_catalog_validates PASSED [ 96%]
+tests/test_split_audit_j_v1.py::test_schema_version_and_split_id PASSED  [ 96%]
+tests/test_split_audit_j_v1.py::test_exactly_26_configs PASSED           [ 97%]
+tests/test_split_audit_j_v1.py::test_no_duplicate_tuples PASSED          [ 97%]
+tests/test_split_audit_j_v1.py::test_all_wrappers_in_audit_j_set PASSED  [ 97%]
+tests/test_split_audit_j_v1.py::test_chemistry_breakdown_matches_inventory PASSED [ 98%]
+tests/test_split_audit_j_v1.py::test_first_and_last_tuples_pinned PASSED [ 98%]
+tests/test_split_audit_j_v1.py::test_forensic_block_complete PASSED      [ 99%]
+tests/test_split_audit_j_v1.py::test_temperatures_are_within_battery_envelope PASSED [ 99%]
+tests/test_split_audit_j_v1.py::test_load_split_raises_on_missing_path PASSED [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                                          Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------------------------------------
+src/bsebench_datasets/__init__.py                                 5      0      0      0   100%
+src/bsebench_datasets/adapters/__init__.py                        0      0      0      0   100%
+src/bsebench_datasets/adapters/calce_a123_2014.py                96      3     24      3    95%   170, 209->212, 223-224
+src/bsebench_datasets/adapters/calce_inr_20r_2014.py             78      4     20      3    93%   117, 135, 148, 167
+src/bsebench_datasets/adapters/empa_aurora_2025.py              213     43     84     31    72%   84, 97-111, 121, 129-130, 137, 141, 150-151, 154, 158->160, 166, 168, 173-174, 182->178, 184, 189, 193, 205, 209, 218, 235-243, 246-247, 255, 267, 288-298, 325, 342, 344, 401->404, 420, 424
+src/bsebench_datasets/adapters/lg_hg2_stroebl_2024.py           168    123     50      1    21%   106, 115-118, 127-129, 133-149, 160-190, 194-196, 200, 208-272, 282-290, 310-313, 317-365, 370
+src/bsebench_datasets/adapters/nasa_pcoe_2007.py                137    117     42      0    11%   85-91, 96-103, 115-126, 136-174, 190-203, 225-289
+src/bsebench_datasets/adapters/nasa_rw_2014.py                  325    107    158     39    60%   70, 78, 82, 86, 103, 128-149, 164-166, 170, 173, 185-198, 202-218, 223, 230, 232-235, 246, 252, 256, 263, 281, 285, 287, 292, 297-301, 305, 307, 309, 311, 314-329, 338, 343, 347, 359-368, 387, 402, 435, 463, 475->467, 479, 524, 527-530, 548
+src/bsebench_datasets/adapters/oxford_birkl_2017.py             132     15     56     10    85%   203-208, 212, 240, 251, 264, 295, 381, 391-392, 419->417, 424
+src/bsebench_datasets/adapters/panasonic_kollmeyer_2018.py      109     76     34      0    23%   138-153, 157-160, 165-184, 188-218, 229, 244-272, 277
+src/bsebench_datasets/adapters/sandia_preger_2020.py              3      3      0      0     0%   107-129
+src/bsebench_datasets/adapters/severson_2019.py                 202    136     70      3    33%   313, 375-493, 509-524, 582-685
+src/bsebench_datasets/adapters/yao_tu_berlin_2024.py            123     79     34      2    29%   80, 84, 90-92, 96-105, 109-113, 117-121, 131-139, 143-145, 149, 155-185, 201-209, 228-229, 233-266, 271
+src/bsebench_datasets/auditj_local_cache_manifest.py            812    168    276     49    76%   151, 159-162, 175, 184-185, 191-192, 198-199, 214-221, 238-248, 265, 271, 274-275, 288, 348-349, 367-413, 433-437, 456-457, 469-471, 484, 498-502, 565->563, 577-578, 580, 696-700, 706-708, 714-717, 724-727, 736, 738-739, 743, 811, 861, 865-882, 917, 938-943, 953, 965-969, 971-981, 983, 990-991, 1003, 1026, 1033, 1043-1044, 1059, 1068-1069, 1138->1148, 1145->1138, 1149, 1156, 1164, 1204, 1233-1237, 1320, 1447-1448, 1451-1452, 1462-1484, 1722-1724, 1731-1733, 1819-1821, 1855, 1873-1875, 1879-1880, 1902-1903, 2088-2094, 2123->2125, 2128->2118, 2145-2149
+src/bsebench_datasets/hinf_loader_provenance.py                 240     30     88     26    82%   130-131, 140-142, 148-149, 154, 157, 163, 169, 178, 197, 214, 218, 227, 232, 248, 252, 264, 359, 365, 372, 380, 385-389, 410, 424, 442, 460, 565->572
+src/bsebench_datasets/loaders/__init__.py                        37     16     12      0    47%   125-155
+src/bsebench_datasets/loaders/calce_a123_dyn_loader.py           70      8     16      2    88%   35-37, 61-62, 129-130, 137, 150
+src/bsebench_datasets/loaders/calce_a123_legacy_loader.py        60      7     14      3    86%   36-38, 80, 106-107, 113, 125
+src/bsebench_datasets/loaders/calce_inr_20r_loader.py            74     10     16      2    87%   35-37, 60-61, 74-75, 130-131, 138, 151
+src/bsebench_datasets/loaders/lg_hg2_stroebl_2024_loader.py      97     13     36      8    84%   38-40, 62-63, 78, 96, 107, 112, 120, 135, 152-153, 159
+src/bsebench_datasets/loaders/nasa_pcoe_loader.py                67      8     14      3    86%   66-68, 101, 104-105, 114->119, 120, 178-179
+src/bsebench_datasets/loaders/nasa_rw_loader.py                  73      2     18      1    97%   75-77, 119->114
+src/bsebench_datasets/loaders/panasonic_kollmeyer_loader.py      61     10     16      4    82%   35-37, 47-48, 51, 82, 95, 118-119, 125
+src/bsebench_datasets/loaders/yao_tu_berlin_2024_loader.py       76     10     24      4    86%   37-39, 70-71, 86, 104, 125-126, 132, 144
+src/bsebench_datasets/manifest.py                                51      0      4      0   100%
+src/bsebench_datasets/prospect.py                                61      3      0      0    95%   162-164
+src/bsebench_datasets/splits.py                                  36      0      2      0   100%
+---------------------------------------------------------------------------------------------------------
+TOTAL                                                          3406    991   1108    194    67%
+===================== 241 passed, 29 deselected in 19.13s ======================
+62 files already formatted
+All checks passed!
+```
+
+## Changed files
+
+```
+M	src/bsebench_datasets/auditj_local_cache_manifest.py
+M	tests/test_auditj_local_cache_manifest.py
+```
+
+## Cross-references
+
+- inbox/phase-7-10-m-datasets-phase11-provenance-inventory/STATUS.json (worker artifact)
+- outbox/phase-7-10-m-datasets-phase11-provenance-inventory/SUMMARY.md (worker SUMMARY)
+- outbox/phase-7-10-m-datasets-phase11-provenance-inventory/run.log.tail (worker stdout tail, if non-empty)
