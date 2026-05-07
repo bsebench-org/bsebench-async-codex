@@ -98,6 +98,7 @@ commit_fixture() {
 
 write_running_status() {
   local phase_id="$1"
+  local status="${2:-running}"
   local dir="$FIX_ASYNC/inbox/$phase_id"
   local now
   now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -106,7 +107,7 @@ write_running_status() {
   cat > "$dir/STATUS.json" <<EOF
 {
   "phase_id": "$phase_id",
-  "status": "running",
+  "status": "$status",
   "ts_queued": "$now",
   "ts_started": "$now",
   "worker_id": "probe"
@@ -220,6 +221,18 @@ assert_contains "$block_output" "blocks=1" "block snapshot"
 assert_contains "$block_output" "QUEUE block remediation task" "block remediation queue"
 assert_contains "$block_output" "DRY-RUN would commit queued=phase-7-10-y-block-remediation-" "block remediation dry run"
 assert_not_contains "$block_output" "QUEUE reserve task" "normal backlog queue while blocked"
+assert_clean_repo
+
+section "idle empty reserve bypasses replenishment cooldown"
+make_fixture "idle-empty-reserve"
+write_running_status "phase-7-10-z-autonomy-backlog-replenishment-19700101T000000Z" "running"
+commit_fixture "idle empty reserve scenario"
+idle_output="$(run_pacer)"
+printf '%s\n' "$idle_output"
+assert_contains "$idle_output" "codex_exec=0 status_running=1" "idle reserve snapshot"
+assert_contains "$idle_output" "RESERVE_LOW reserve=0 force_replenishment=1 reason=no_real_codex_no_queue" "forced replenishment"
+assert_contains "$idle_output" "QUEUE replenishment task: reserve=0" "forced replenishment queue"
+assert_contains "$idle_output" "DRY-RUN would commit queued=phase-7-10-z-autonomy-backlog-replenishment-" "forced replenishment dry run"
 assert_clean_repo
 
 section "bad brief is skipped before queueing"

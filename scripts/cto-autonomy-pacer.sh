@@ -455,18 +455,22 @@ EOF
 
 queue_replenishment_task() {
   local queued_this_tick="${1:-0}"
+  local force="${2:-0}"
   local now compact phase_id phase_dir branch reserve gate_dir gate_brief
   reserve="$(reserve_count)"
   if [[ "$reserve" -ge "$MIN_RESERVE" ]] ; then
     return 0
   fi
-  if [[ "$queued_this_tick" -ge "$MAX_QUEUE_PER_TICK" ]] ; then
+  if [[ "$queued_this_tick" -ge "$MAX_QUEUE_PER_TICK" && "$force" -ne 1 ]] ; then
     log "RESERVE_LOW reserve=$reserve but queue cap already used this tick"
     return 0
   fi
-  if replenishment_recent_or_open ; then
+  if [[ "$force" -ne 1 ]] && replenishment_recent_or_open ; then
     log "RESERVE_LOW reserve=$reserve but replenishment task is open or inside ${REPLENISHMENT_COOLDOWN_HOURS}h cooldown"
     return 0
+  fi
+  if [[ "$force" -eq 1 ]] ; then
+    log "RESERVE_LOW reserve=$reserve force_replenishment=1 reason=no_real_codex_no_queue"
   fi
 
   now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -673,7 +677,13 @@ main() {
     fi
   done
 
-  queue_replenishment_task "$queued_now"
+  local force_replenishment
+  force_replenishment=0
+  if [[ "$needed" -gt "$queued_now" && "$execs" -eq 0 && "$queued" -eq 0 && "$reserve" -eq 0 ]] ; then
+    force_replenishment=1
+  fi
+
+  queue_replenishment_task "$queued_now" "$force_replenishment"
   append_history_and_commit "$running" "$queued" "$execs" "$reserve" "$blocks"
 
   local stale
