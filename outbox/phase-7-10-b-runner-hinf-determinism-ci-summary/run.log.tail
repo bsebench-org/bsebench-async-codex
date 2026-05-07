@@ -1,0 +1,200 @@
++    parser.add_argument("--repo-root", default=str(REPO_ROOT))
++    parser.add_argument("--max-mismatches", type=int, default=20)
++    return parser.parse_args(argv)
++
++
++def format_summary(summary: Mapping[str, object]) -> str:
++    """Return compact command-line output for CI logs."""
++    outputs = _mapping(summary.get("outputs"), "summary.outputs")
++    evidence = _mapping(outputs.get("evidence"), "summary.outputs.evidence")
++    identity = _mapping(summary.get("identity"), "summary.identity")
++    sidecar = _mapping(summary.get("sidecar"), "summary.sidecar")
++    return "\n".join(
++        [
++            "hinf residual CI summary audit ok",
++            (
++                "manifest links: "
++                f"{_mapping(summary.get('manifest'), 'summary.manifest')['artifacts']} "
++                "artifacts sha256 ok"
++            ),
++            (
++                "committed outputs: "
++                f"ok_configs={evidence['ok_configs']} "
++                f"ok_filter_runs={evidence['ok_filter_runs']}"
++            ),
++            (
++                "strict identity: "
++                f"configs={len(_string_sequence(identity['config_labels'], 'identity.configs'))} "
++                f"filters={len(_string_sequence(identity['filter_labels'], 'identity.filters'))}"
++            ),
++            (
++                "sensitivity sidecar: "
++                f"{sidecar['material_sensitivity_status']} risks={sidecar['risk_count']}"
++            ),
++        ]
++    )
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = parse_args(argv)
++    try:
++        summary = audit_ci_summary(
++            manifest_path=args.manifest,
++            preflight_path=args.preflight,
++            chi2_path=args.chi2,
++            evidence_path=args.evidence,
++            candidate_summary_path=args.candidate_summary,
++            candidate_markdown_path=args.candidate_markdown,
++            sidecar_path=args.sidecar,
++            repo_root=args.repo_root,
++            max_mismatches=args.max_mismatches,
++        )
++    except (
++        HinfResidualCISummaryAuditError,
++        HinfResidualManifestAuditError,
++        HinfResidualOutputAuditError,
++        HinfResidualSensitivitySidecarAuditError,
++        HinfCandidateReportError,
++    ) as exc:
++        print(f"hinf residual CI summary audit failed: {exc}", file=sys.stderr)
++        return 2
++    print(format_summary(summary))
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/tests/test_audit_hinf_residual_ci_summary.py b/tests/test_audit_hinf_residual_ci_summary.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..190057c510a877cb966681d7b3aba50ee8918aed
+--- /dev/null
++++ b/tests/test_audit_hinf_residual_ci_summary.py
+@@ -0,0 +1,107 @@
++from __future__ import annotations
++
++import copy
++import importlib.util
++import json
++import sys
++from pathlib import Path
++from typing import Any
++
++import pytest
++
++SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "audit_hinf_residual_ci_summary.py"
++REPO_ROOT = Path(__file__).resolve().parents[1]
++SUMMARY_PATH = REPO_ROOT / "outputs" / "hinf_candidate_report_summary.json"
++
++
++def _load_script_module():
++    spec = importlib.util.spec_from_file_location("audit_hinf_residual_ci_summary", SCRIPT_PATH)
++    assert spec is not None
++    assert spec.loader is not None
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[spec.name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++@pytest.fixture(scope="module")
++def audit_module():
++    return _load_script_module()
++
++
++def _summary() -> dict[str, Any]:
++    return json.loads(SUMMARY_PATH.read_text(encoding="utf-8"))
++
++
++def _write_json(path: Path, payload: dict[str, Any], *, allow_nan: bool = False) -> Path:
++    path.write_text(
++        json.dumps(payload, indent=2, sort_keys=True, allow_nan=allow_nan) + "\n",
++        encoding="utf-8",
++    )
++    return path
++
++
++@pytest.mark.fast
++def test_script_import_is_side_effect_free(audit_module) -> None:
++    assert callable(audit_module.audit_ci_summary)
++    assert callable(audit_module.main)
++
++
++@pytest.mark.fast
++def test_committed_hinf_ci_summary_passes(audit_module, capsys) -> None:
++    summary = audit_module.audit_ci_summary()
++
++    assert summary["status"] == "ok"
++    assert summary["manifest"]["artifacts"] == 4
++    assert summary["outputs"]["evidence"]["ok_filter_runs"] == 25
++    assert summary["sidecar"]["risk_count"] == 9
++
++    rc = audit_module.main([])
++    captured = capsys.readouterr()
++    assert rc == 0
++    assert "hinf residual CI summary audit ok" in captured.out
++    assert "committed outputs: ok_configs=5 ok_filter_runs=25" in captured.out
++    assert "sensitivity sidecar: material_sensitivity_detected risks=9" in captured.out
++
++
++@pytest.mark.fast
++def test_ci_summary_rejects_candidate_hash_drift(audit_module, tmp_path: Path) -> None:
++    bad_summary = copy.deepcopy(_summary())
++    bad_summary["source_files"]["evidence"]["sha256"] = "0" * 64
++    bad_summary_path = _write_json(tmp_path / "bad_summary.json", bad_summary)
++
++    with pytest.raises(
++        audit_module.HinfResidualCISummaryAuditError,
++        match=r"summary\.source_files\.evidence\.sha256",
++    ):
++        audit_module.audit_ci_summary(candidate_summary_path=bad_summary_path)
++
++
++@pytest.mark.fast
++def test_ci_summary_rejects_missing_manifest_link(audit_module, tmp_path: Path) -> None:
++    bad_summary = copy.deepcopy(_summary())
++    del bad_summary["source_files"]["manifest"]
++    bad_summary_path = _write_json(tmp_path / "missing_manifest_summary.json", bad_summary)
++
++    with pytest.raises(
++        audit_module.HinfResidualCISummaryAuditError,
++        match=r"summary\.source_files roles",
++    ):
++        audit_module.audit_ci_summary(candidate_summary_path=bad_summary_path)
++
++
++@pytest.mark.fast
++def test_ci_summary_rejects_non_finite_json(audit_module, tmp_path: Path) -> None:
++    bad_summary = copy.deepcopy(_summary())
++    bad_summary["counts"]["n_configs"] = float("nan")
++    bad_summary_path = _write_json(
++        tmp_path / "nonfinite_summary.json",
++        bad_summary,
++        allow_nan=True,
++    )
++
++    with pytest.raises(
++        audit_module.HinfResidualCISummaryAuditError,
++        match=r"non-finite JSON token NaN",
++    ):
++        audit_module.audit_ci_summary(candidate_summary_path=bad_summary_path)
+
+tokens used
+165,247
+Implemented and committed.
+
+Changes:
+- Added read-only checker: [audit_hinf_residual_ci_summary.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-10-b-runner-hinf-determinism-ci-summary/scripts/audit_hinf_residual_ci_summary.py:1)
+- Added focused tests for hash drift, missing manifest link, and non-finite JSON: [test_audit_hinf_residual_ci_summary.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-10-b-runner-hinf-determinism-ci-summary/tests/test_audit_hinf_residual_ci_summary.py:1)
+- Wired the checker into `strict-hinf-audit` CI: [ci.yml](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-10-b-runner-hinf-determinism-ci-summary/.github/workflows/ci.yml:55)
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_audit_hinf_residual_ci_summary.py -q` -> `5 passed`
+- `uv run --locked --all-extras python scripts/audit_hinf_residual_ci_summary.py` -> OK
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q` -> `129 passed, 5 deselected`
+- `uv run --locked --all-extras ruff check .` -> passed
+- `uv run --locked --all-extras ruff format --check .` -> passed
+- `git diff --check` -> passed
+
+No expensive Hinf evidence was regenerated. No thesis, claim registry, `claim_55`, or roadmap files were edited.
+
+Commit: `079cc97` (`GLASSBOX [role: codex-runner-engineer] Add Hinf CI summary audit`)
