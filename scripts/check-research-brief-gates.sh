@@ -127,6 +127,33 @@ require_pattern() {
   fi
 }
 
+reject_claim55_target_instruction() {
+  local path="$1"
+  local offending
+
+  offending="$(
+    awk '
+      {
+        line = tolower($0)
+      }
+      line ~ /claim_55/ && line ~ /(target|targeting|targets|promote|promotes|promotion|verified[ _-]?claim)/ {
+        if (line ~ /(do not|must not|shall not|avoid|forbid|forbidden|unrelated|flag.*claim_55|must fail|fail validation|without being flagged|no[[:space:]_-]+claim_55|no[[:space:]_-]+.*target|not[[:space:]_-]+.*target)/) {
+          next
+        }
+        print
+        exit
+      }
+    ' "$path"
+  )"
+
+  if [[ -n "$offending" ]] ; then
+    echo "  [FAIL] no protected claim_55 target instruction"
+    failures=$((failures + 1))
+  else
+    echo "  [OK]   no protected claim_55 target instruction"
+  fi
+}
+
 check_brief() {
   local path="$1"
 
@@ -165,6 +192,8 @@ check_brief() {
     "$path" \
     "no claim_55 targeting" \
     '((do not|must not|no|not).{0,180}claim_55|claim_55.{0,180}(protected|not|no|forbid|avoid|target|unrelated))'
+
+  reject_claim55_target_instruction "$path"
 
   require_pattern \
     "$path" \

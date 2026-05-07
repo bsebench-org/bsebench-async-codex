@@ -46,6 +46,18 @@ assert_not_contains() {
   fi
 }
 
+assert_line_contains() {
+  local haystack="$1"
+  local include_a="$2"
+  local include_b="$3"
+  local label="$4"
+
+  if ! grep -F "$include_a" <<<"$haystack" | grep -F "$include_b" >/dev/null ; then
+    printf '%s\n' "$haystack" >&2
+    fail "$label: missing line with [$include_a] and [$include_b]"
+  fi
+}
+
 assert_clean_repo() {
   local status
   status="$(git -C "$FIX_ASYNC" status --short)"
@@ -69,6 +81,13 @@ make_fixture() {
     "$FIX_ACTIVE/scripts" \
     "$FIX_WORKER_2/scripts" \
     "$FIX_STATE"
+
+  git -C "$FIX_ROOT" init -q target
+  git -C "$FIX_ROOT/target" config user.email "pacer-probe@example.invalid"
+  git -C "$FIX_ROOT/target" config user.name "Pacer Probe"
+  printf 'probe target\n' > "$FIX_ROOT/target/README.md"
+  git -C "$FIX_ROOT/target" add README.md
+  git -C "$FIX_ROOT/target" commit -qm "initial target fixture"
 
   cp "$SOURCE_REPO/scripts/cto-autonomy-pacer.sh" "$FIX_ASYNC/scripts/cto-autonomy-pacer.sh"
   cp "$SOURCE_REPO/scripts/check-research-brief-gates.sh" "$FIX_ASYNC/scripts/check-research-brief-gates.sh"
@@ -116,13 +135,14 @@ EOF
 
 write_good_brief() {
   local phase_id="$1"
+  local target_branch="${2:-$phase_id}"
   local dir="$FIX_ASYNC/cto/AUTONOMY_BACKLOG/$phase_id"
 
   mkdir -p "$dir"
   cat > "$dir/BRIEF.md" <<EOF
 ---
 target_repo: $FIX_ROOT/target
-target_branch: $phase_id
+target_branch: $target_branch
 base_branch: main
 hard_wallclock_min: 5
 ---
@@ -142,6 +162,136 @@ Exercise the autonomy pacer guardrails with a harmless validation task.
 ## Falsification gate
 
 If the validation command cannot verify the guardrail outcome, this task must fail.
+
+## Validation
+
+Run and record \`bash scripts/check-research-brief-gates.sh --dry-run $dir/BRIEF.md\`.
+EOF
+}
+
+write_malformed_brief() {
+  local phase_id="$1"
+  local dir="$FIX_ASYNC/cto/AUTONOMY_BACKLOG/$phase_id"
+
+  mkdir -p "$dir"
+  cat > "$dir/BRIEF.md" <<EOF
+---
+target_repo: $FIX_ROOT/target
+base_branch: main
+hard_wallclock_min: 5
+---
+
+# $phase_id
+
+## Goal
+
+This probe has missing target branch frontmatter.
+
+## Required behavior
+
+- Do not target \`claim_55\`; \`claim_55\` is protected and unrelated.
+- Do not edit thesis files, claim registry files, \`claims/registry.yaml\`, \`claim_55\`, or the roadmap.
+- Do not make SOTA, novelty, or verified-claim statements without a source ledger and comparability table.
+
+## Falsification gate
+
+If the malformed frontmatter is counted as queueable, this probe must fail.
+
+## Validation
+
+Run and record \`bash scripts/check-research-brief-gates.sh --dry-run $dir/BRIEF.md\`.
+EOF
+}
+
+write_no_falsification_brief() {
+  local phase_id="$1"
+  local dir="$FIX_ASYNC/cto/AUTONOMY_BACKLOG/$phase_id"
+
+  mkdir -p "$dir"
+  cat > "$dir/BRIEF.md" <<EOF
+---
+target_repo: $FIX_ROOT/target
+target_branch: $phase_id
+base_branch: main
+hard_wallclock_min: 5
+---
+
+# $phase_id
+
+## Goal
+
+Exercise a BRIEF that intentionally omits the required negative gate.
+
+## Required behavior
+
+- Do not target \`claim_55\`; \`claim_55\` is protected and unrelated.
+- Do not edit thesis files, claim registry files, \`claims/registry.yaml\`, \`claim_55\`, or the roadmap.
+- Do not make SOTA, novelty, or verified-claim statements without a source ledger and comparability table.
+
+## Validation
+
+Run and record \`bash scripts/check-research-brief-gates.sh --dry-run $dir/BRIEF.md\`.
+EOF
+}
+
+write_no_validation_brief() {
+  local phase_id="$1"
+  local dir="$FIX_ASYNC/cto/AUTONOMY_BACKLOG/$phase_id"
+
+  mkdir -p "$dir"
+  cat > "$dir/BRIEF.md" <<EOF
+---
+target_repo: $FIX_ROOT/target
+target_branch: $phase_id
+base_branch: main
+hard_wallclock_min: 5
+---
+
+# $phase_id
+
+## Goal
+
+Exercise a BRIEF that intentionally omits the required command wording.
+
+## Required behavior
+
+- Do not target \`claim_55\`; \`claim_55\` is protected and unrelated.
+- Do not edit thesis files, claim registry files, \`claims/registry.yaml\`, \`claim_55\`, or the roadmap.
+- Do not make SOTA, novelty, or verified-claim statements without a source ledger and comparability table.
+
+## Falsification gate
+
+If this guardrail-negative BRIEF is counted as queueable, this probe must fail.
+EOF
+}
+
+write_claim55_target_brief() {
+  local phase_id="$1"
+  local dir="$FIX_ASYNC/cto/AUTONOMY_BACKLOG/$phase_id"
+
+  mkdir -p "$dir"
+  cat > "$dir/BRIEF.md" <<EOF
+---
+target_repo: $FIX_ROOT/target
+target_branch: ${phase_id}-claim_55
+base_branch: main
+hard_wallclock_min: 5
+---
+
+# $phase_id
+
+## Goal
+
+Target \`claim_55\` for a protected-claim dry-run negative probe.
+
+## Required behavior
+
+- Do not edit thesis files, claim registry files, \`claims/registry.yaml\`, or the roadmap.
+- Do not make SOTA, novelty, or verified-claim statements without a source ledger and comparability table.
+
+## Falsification gate
+
+If a protected \`claim_55\` target is counted as queueable, this probe must fail.
 
 ## Validation
 
@@ -233,11 +383,54 @@ write_good_brief "phase-7-probe-good-d"
 commit_fixture "bad brief scenario"
 bad_output="$(run_pacer)"
 printf '%s\n' "$bad_output"
-assert_contains "$bad_output" "SKIP research gate failed: phase-7-probe-bad-a" "bad brief gate"
+assert_line_contains "$bad_output" "phase=phase-7-probe-bad-a" "reason=missing_falsification_gate,missing_validation_command" "bad brief gate"
 assert_not_contains "$bad_output" "QUEUE reserve task: phase-7-probe-bad-a" "bad brief queue"
 assert_not_contains "$bad_output" "phase-6-probe-unsafe" "non-research phase candidate"
 assert_contains "$bad_output" "QUEUE reserve task: phase-7-probe-good-b" "good fallback queue"
 assert_contains "$bad_output" "DRY-RUN would commit queued=phase-7-probe-good-b" "bad brief dry run"
+assert_clean_repo
+
+section "reserve candidate skip reasons and count"
+make_fixture "reserve-skip-reasons"
+write_running_status "phase-7-probe-running-a"
+write_running_status "phase-7-probe-running-b"
+write_good_brief "phase-7-probe-good-queueable"
+write_good_brief "phase-7-probe-queued-marker"
+cat > "$FIX_ASYNC/cto/AUTONOMY_BACKLOG/phase-7-probe-queued-marker/QUEUED.json" <<EOF
+{
+  "phase_id": "phase-7-probe-queued-marker",
+  "queued_at": "2026-05-07T00:00:00Z",
+  "queued_by": "probe",
+  "inbox": "inbox/phase-7-probe-queued-marker"
+}
+EOF
+write_good_brief "phase-7-probe-inbox-exists"
+mkdir -p "$FIX_ASYNC/inbox/phase-7-probe-inbox-exists"
+write_good_brief "phase-7-probe-claimed-branch"
+git -C "$FIX_ROOT/target" branch "phase-7-probe-claimed-branch"
+write_malformed_brief "phase-7-probe-malformed"
+write_no_falsification_brief "phase-7-probe-no-failgate"
+write_no_validation_brief "phase-7-probe-no-runcmd"
+write_claim55_target_brief "phase-7-probe-claim55-target"
+commit_fixture "reserve skip reason matrix"
+skip_output="$(run_pacer)"
+printf '%s\n' "$skip_output"
+assert_contains "$skip_output" "effective_running=2 queued=0 reserve=1 blocks=0 needed=1" "reserve guard count"
+assert_line_contains "$skip_output" "phase=phase-7-probe-queued-marker" "reason=queued_marker_present" "queued marker skip"
+assert_line_contains "$skip_output" "phase=phase-7-probe-inbox-exists" "reason=inbox_already_exists" "inbox skip"
+assert_line_contains "$skip_output" "phase=phase-7-probe-claimed-branch" "reason=target_branch_already_claimed" "claimed branch skip"
+assert_line_contains "$skip_output" "phase=phase-7-probe-malformed" "reason=malformed_frontmatter" "malformed skip"
+assert_line_contains "$skip_output" "phase=phase-7-probe-no-failgate" "reason=missing_falsification_gate" "falsification skip"
+assert_line_contains "$skip_output" "phase=phase-7-probe-no-runcmd" "reason=missing_validation_command" "validation skip"
+assert_line_contains "$skip_output" "phase=phase-7-probe-claim55-target" "reason=protected_claim_55_targeting" "claim_55 skip"
+assert_contains "$skip_output" "QUEUE reserve task: phase-7-probe-good-queueable" "queueable reserve brief"
+assert_not_contains "$skip_output" "QUEUE reserve task: phase-7-probe-queued-marker" "queued marker not queued"
+assert_not_contains "$skip_output" "QUEUE reserve task: phase-7-probe-inbox-exists" "inbox brief not queued"
+assert_not_contains "$skip_output" "QUEUE reserve task: phase-7-probe-claimed-branch" "claimed branch not queued"
+assert_not_contains "$skip_output" "QUEUE reserve task: phase-7-probe-malformed" "malformed brief not queued"
+assert_not_contains "$skip_output" "QUEUE reserve task: phase-7-probe-no-failgate" "missing falsification not queued"
+assert_not_contains "$skip_output" "QUEUE reserve task: phase-7-probe-no-runcmd" "missing validation not queued"
+assert_not_contains "$skip_output" "QUEUE reserve task: phase-7-probe-claim55-target" "claim_55 brief not queued"
 assert_clean_repo
 
 printf '\nPASS: autonomy pacer dry-run safety probes passed.\n'

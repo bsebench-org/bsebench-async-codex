@@ -47,6 +47,10 @@ The script pauses normal queueing on outbox/_blocks/*.block. If blocked and
 idle, it queues at most one block-remediation task per cooldown window instead
 of leaving the system silent. It never fabricates scientific tasks except a
 tightly scoped backlog-replenishment task when reserve is low.
+
+In --dry-run mode, reserve candidate counting reports skipped backlog BRIEFs
+with RESERVE_SKIP lines so CI logs show why each non-queueable BRIEF was not
+counted.
 USAGE
 }
 
@@ -98,6 +102,11 @@ is_queueable_phase_id() {
   [[ "$phase_id" =~ ^phase-(7|8|11)(-|$) ]]
 }
 
+is_git_worktree() {
+  local repo_dir="$1"
+  git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
 brief_target_branch_claimed() {
   local brief="$1"
   local target_repo target_branch repo_dir
@@ -107,30 +116,96 @@ brief_target_branch_claimed() {
   [[ -n "$target_repo" && -n "$target_branch" ]] || return 1
 
   repo_dir="$(eval echo "$target_repo")"
-  [[ -d "$repo_dir/.git" ]] || return 1
+  is_git_worktree "$repo_dir" || return 1
 
   git -C "$repo_dir" show-ref --verify --quiet "refs/heads/$target_branch" && return 0
   git -C "$repo_dir" show-ref --verify --quiet "refs/remotes/origin/$target_branch" && return 0
   return 1
 }
 
+reserve_skip() {
+  local phase_id="$1"
+  local reason="$2"
+  local detail="${3:-}"
+
+  if [[ "${RESERVE_SUPPRESS_SKIP_LOGS:-0}" == "1" ]] ; then
+    return 0
+  fi
+  if [[ "$DRY_RUN" -eq 1 || "${RESERVE_REPORT_SKIPS:-0}" == "1" ]] ; then
+    if [[ -n "$detail" ]] ; then
+      printf '[%s] RESERVE_SKIP phase=%s reason=%s %s\n' "$(date -Is)" "$phase_id" "$reason" "$detail" | tee -a "$LOG_FILE" >&2
+    else
+      printf '[%s] RESERVE_SKIP phase=%s reason=%s\n' "$(date -Is)" "$phase_id" "$reason" | tee -a "$LOG_FILE" >&2
+    fi
+  fi
+}
+
+gate_skip_reason() {
+  local gate_output="$1"
+  local reason=""
+
+  if [[ "$gate_output" == *"[FAIL] falsification condition"* ]] ; then
+    reason="${reason:+$reason,}missing_falsification_gate"
+  fi
+  if [[ "$gate_output" == *"[FAIL] validation or replay wording"* ]] ; then
+    reason="${reason:+$reason,}missing_validation_command"
+  fi
+  if [[ "$gate_output" == *"[FAIL] no claim_55 targeting"* || "$gate_output" == *"[FAIL] no protected claim_55 target instruction"* ]] ; then
+    reason="${reason:+$reason,}protected_claim_55_targeting"
+  fi
+
+  printf '%s\n' "${reason:-research_gate_failed}"
+}
+
+brief_targets_claim_55() {
+  local phase_id="$1"
+  local target_branch="$2"
+
+  [[ "$phase_id" == *claim_55* || "$target_branch" == *claim_55* ]]
+}
+
 reserve_candidates() {
   { find cto/AUTONOMY_BACKLOG -mindepth 2 -maxdepth 2 -name BRIEF.md -print 2>/dev/null || true; } |
     sort |
     while IFS= read -r brief ; do
-      local phase_dir phase_id
+      local phase_dir phase_id target_repo target_branch gate_output reason
       phase_dir="$(dirname "$brief")"
       phase_id="$(basename "$phase_dir")"
       is_queueable_phase_id "$phase_id" || continue
-      [[ -f "$phase_dir/QUEUED.json" ]] && continue
-      [[ -d "inbox/$phase_id" ]] && continue
-      brief_target_branch_claimed "$brief" && continue
+      if [[ -f "$phase_dir/QUEUED.json" ]] ; then
+        reserve_skip "$phase_id" "queued_marker_present" "brief=$brief"
+        continue
+      fi
+      if [[ -d "inbox/$phase_id" ]] ; then
+        reserve_skip "$phase_id" "inbox_already_exists" "brief=$brief"
+        continue
+      fi
+
+      target_repo="$(target_repo_from_brief "$brief")"
+      target_branch="$(target_branch_from_brief "$brief")"
+      if [[ -z "$target_repo" || -z "$target_branch" ]] ; then
+        reserve_skip "$phase_id" "malformed_frontmatter" "brief=$brief"
+        continue
+      fi
+      if brief_targets_claim_55 "$phase_id" "$target_branch" ; then
+        reserve_skip "$phase_id" "protected_claim_55_targeting" "brief=$brief target_branch=$target_branch"
+        continue
+      fi
+      if brief_target_branch_claimed "$brief" ; then
+        reserve_skip "$phase_id" "target_branch_already_claimed" "brief=$brief target_repo=$target_repo target_branch=$target_branch"
+        continue
+      fi
+      if ! gate_output="$(bash scripts/check-research-brief-gates.sh --dry-run "$brief" 2>&1)" ; then
+        reason="$(gate_skip_reason "$gate_output")"
+        reserve_skip "$phase_id" "$reason" "brief=$brief"
+        continue
+      fi
       printf '%s\n' "$brief"
     done
 }
 
 reserve_count() {
-  reserve_candidates | wc -l | tr -d ' '
+  RESERVE_SUPPRESS_SKIP_LOGS=1 reserve_candidates | wc -l | tr -d ' '
 }
 
 fresh_running_count() {
@@ -150,7 +225,7 @@ git_dirty() {
 }
 
 ensure_repo_ready() {
-  if [[ ! -d "$ASYNC_REPO/.git" ]] ; then
+  if ! is_git_worktree "$ASYNC_REPO" ; then
     log "FATAL async repo missing: $ASYNC_REPO"
     exit 1
   fi
@@ -261,10 +336,24 @@ queue_backlog_brief() {
     return 1
   fi
 
-  if ! bash scripts/check-research-brief-gates.sh --dry-run "$brief" >> "$LOG_FILE" 2>&1 ; then
-    log "SKIP research gate failed: $phase_id"
+  if brief_targets_claim_55 "$phase_id" "$target_branch" ; then
+    log "SKIP protected claim_55 targeting: $phase_id"
     return 1
   fi
+
+  if brief_target_branch_claimed "$brief" ; then
+    log "SKIP target branch already claimed: $phase_id target=$target_repo branch=$target_branch"
+    return 1
+  fi
+
+  local gate_output reason
+  if ! gate_output="$(bash scripts/check-research-brief-gates.sh --dry-run "$brief" 2>&1)" ; then
+    printf '%s\n' "$gate_output" >> "$LOG_FILE"
+    reason="$(gate_skip_reason "$gate_output")"
+    log "SKIP research gate failed: $phase_id reason=$reason"
+    return 1
+  fi
+  printf '%s\n' "$gate_output" >> "$LOG_FILE"
 
   log "QUEUE reserve task: $phase_id target=$target_repo branch=$target_branch"
   if [[ "$DRY_RUN" -eq 1 ]] ; then
