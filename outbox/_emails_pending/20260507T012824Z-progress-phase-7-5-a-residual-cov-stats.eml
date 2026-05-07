@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [OK] phase-7-5-a-residual-cov-stats (panel 90/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T03:28:24+02:00
+
+Phase    : phase-7-5-a-residual-cov-stats
+Etat     : approved (approved)
+Panel    : 90/100 (seuil 89)
+Quoi     : Phase 7.5.a - residual covariance stats primitives
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-5-a-residual-cov-stats/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-5-a-residual-cov-stats/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-5-a-residual-cov-stats/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
