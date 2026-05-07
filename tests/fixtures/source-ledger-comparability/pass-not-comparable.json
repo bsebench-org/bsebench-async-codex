@@ -1,0 +1,22 @@
+{
+  "source_ledger": {
+    "schema_version": "source-ledger-comparability/v1",
+    "ledger_status": "synthetic_positive_fixture",
+    "entries": [
+      {
+        "source_id": "synthetic-not-comparable-001",
+        "title": "Synthetic Not Comparable Source Row",
+        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/not-comparable-001",
+        "retrieval_date": "2026-05-07",
+        "metric": "synthetic MAE percent",
+        "dataset": "SyntheticOtherCellSet v0 fixed profile",
+        "split": "synthetic source-only test split C",
+        "method": "SyntheticDifferentMethod",
+        "reported_value": "3.210 synthetic units (fixture only, not literature evidence)",
+        "bsebench_frozen_value": "1.230 synthetic units from frozen fixture artifact",
+        "comparability": "not_comparable",
+        "comparability_caveat": "synthetic caveat: source row uses a different metric, dataset, split, and method basis"
+      }
+    ]
+  }
+}

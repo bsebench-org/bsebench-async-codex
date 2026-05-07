@@ -138,18 +138,28 @@ Minimum ledger fields:
 |---|---|
 | `source_id` | Stable local identifier. |
 | `title` | Paper, benchmark, repository, or report title. |
-| `doi_or_url` | DOI, arXiv URL, official repo URL, or other stable URL. |
-| `retrieved_at` | Retrieval date in ISO format. |
+| `stable_url_or_doi` | DOI, arXiv URL, official repo URL, or other stable URL. |
+| `retrieval_date` | Retrieval date in `YYYY-MM-DD` format. |
 | `metric` | Exact metric name and units. |
 | `dataset` | Dataset and variant/profile. |
 | `split` | Train/test split, validation protocol, horizon, or run condition. |
-| `reported_value` | Exact value, table/figure/page if available. |
-| `bsebench_value` | Frozen BSEBench value being compared. |
+| `method` | Method/model/baseline name exactly as the source reports it. |
+| `reported_value` | Exact external value, table/figure/page if available. |
+| `bsebench_frozen_value` | Frozen BSEBench value being compared. |
 | `comparability` | `comparable`, `partial`, or `not_comparable`. |
-| `caveat` | Reason for any limitation or missing field. |
+| `comparability_caveat` | Reason for any limitation or missing field. |
 
 If any required field is unknown, the ledger row must mark the comparison
 `partial` or `not_comparable`. It must not silently fill gaps from memory.
+Rows with missing, blank, placeholder, or malformed required fields are
+incomplete and cannot support downstream claim registration.
+
+The JSON fixture checker in `scripts/check-source-ledger-comparability.sh`
+validates source-ledger rows against this field set. It reports complete rows as
+`comparable`, `partial`, or `not_comparable`; it reports missing required
+fields as `INCOMPLETE` and exits non-zero. The fixture rows under
+`tests/fixtures/source-ledger-comparability/` are synthetic and are not
+literature evidence.
 
 ### G5 - No Claim Until Validated
 
@@ -200,7 +210,8 @@ equivalent explicit wording:
   claim registration.
 - A prohibition on unsupported SOTA, novelty, or claim language.
 - For SOTA work, a source ledger requirement with DOI or stable URL, retrieval
-  date, metric, dataset, split, and comparability caveat.
+  date, metric, dataset, split, method, reported value, BSEBench frozen value,
+  and comparability caveat.
 - For evidence work, a provenance artifact requirement.
 
 The lightweight checker in `scripts/check-research-brief-gates.sh` enforces the

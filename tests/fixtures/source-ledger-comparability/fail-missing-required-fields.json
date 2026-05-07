@@ -1,0 +1,13 @@
+{
+  "source_ledger": {
+    "schema_version": "source-ledger-comparability/v1",
+    "ledger_status": "synthetic_negative_fixture",
+    "entries": [
+      {
+        "source_id": "synthetic-missing-required-001",
+        "title": "Synthetic Missing Required Fields Row",
+        "comparability": "partial"
+      }
+    ]
+  }
+}

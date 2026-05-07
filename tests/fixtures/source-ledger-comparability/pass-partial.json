@@ -1,0 +1,22 @@
+{
+  "source_ledger": {
+    "schema_version": "source-ledger-comparability/v1",
+    "ledger_status": "synthetic_positive_fixture",
+    "entries": [
+      {
+        "source_id": "synthetic-partial-001",
+        "title": "Synthetic Partial Source Row",
+        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/partial-001",
+        "retrieval_date": "2026-05-07",
+        "metric": "synthetic RMSE percent",
+        "dataset": "SyntheticCellSet v0 fixed profile",
+        "split": "synthetic alternate validation horizon B",
+        "method": "SyntheticComparableMethod",
+        "reported_value": "2.340 synthetic units (fixture only, not literature evidence)",
+        "bsebench_frozen_value": "2.100 synthetic units from frozen fixture artifact",
+        "comparability": "partial",
+        "comparability_caveat": "synthetic caveat: source row shares metric and dataset but uses a different validation horizon"
+      }
+    ]
+  }
+}

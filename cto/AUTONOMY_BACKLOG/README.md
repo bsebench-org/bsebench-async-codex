@@ -8,4 +8,4 @@ Rules:
 - every BRIEF must pass `scripts/check-research-brief-gates.sh`;
 - tasks must be useful validation, evidence, provenance, SOTA-safety, or async reliability work;
 - no thesis, claim registry, roadmap, `claims/registry.yaml`, or `claim_55` edits are authorized here;
-- no SOTA or novelty claims without a source ledger, stable URL or DOI, retrieval date, metric, dataset, split, and comparability caveat.
+- no SOTA or novelty claims without a source ledger, stable URL or DOI, retrieval date, metric, dataset, split, method, reported value, BSEBench frozen value, and comparability caveat.
