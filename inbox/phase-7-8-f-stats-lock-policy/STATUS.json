@@ -1,0 +1,12 @@
+{
+  "phase_id": "phase-7-8-f-stats-lock-policy",
+  "status": "queued",
+  "ts_queued": "2026-05-07T06:05:00Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
+  "target_branch": "phase-7-8-f-stats-lock-policy",
+  "base_branch": "main"
+}
