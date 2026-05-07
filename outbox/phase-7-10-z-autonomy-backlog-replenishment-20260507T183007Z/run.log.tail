@@ -1,0 +1,200 @@
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-phase8-11-preflight-matrix/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-phase8-11-preflight-matrix/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..998f40d5aad6bc730ed5c25188a167530932fa98
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-phase8-11-preflight-matrix/BRIEF.md
+@@ -0,0 +1,50 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-t-async-phase8-11-preflight-matrix
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.t - async Phase 8/11 preflight matrix
++
++You are a rigorous async validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add an async-side preflight matrix that shows whether queued or reserve tasks for Phase 8 and Phase 11 have the required validation, provenance, replay, and anti-claim guardrails before workers spend compute.
++
++## Roadmap mapping
++
++- Active lane: evidence generation.
++- Phase 8/11 preparation: sensor floor, PCRLB/MAD, residual decomposition, and cross-dataset comparison tooling readiness.
++- Validation infrastructure: anti-hallucination and claim-gate checks before expensive work.
++
++## Required behavior
++
++- Review `docs/RESEARCH-GATE-PROTOCOL-2026-05-07.md`, `scripts/check-research-brief-gates.sh`, `scripts/cto-autonomy-pacer.sh`, and current Phase 7/8/11 BRIEFs.
++- Add a lightweight script or documented dry-run probe that emits a matrix for inbox and backlog BRIEFs with columns for phase, target repo, active lane, validation command, falsification gate, provenance requirement, replay requirement, SOTA ledger requirement, and forbidden-write guardrails.
++- The matrix must explicitly mark missing fields as blockers, not warnings, for Phase 8 and Phase 11 work.
++- Do not modify worker queue semantics unless a failing test proves the preflight cannot be reported otherwise.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to Phase 8/11 preflight matrix work.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a Phase 8 or Phase 11 BRIEF without a validation command, falsification condition, provenance/replay requirement, or forbidden-write guardrail is reported as ready, the task must fail.
++
++## Validation
++
++Run and record:
++
++- a dry-run matrix over current `inbox/phase-{7,8,11}*/BRIEF.md` and `cto/AUTONOMY_BACKLOG/phase-{7,8,11}*/BRIEF.md` entries;
++- at least one negative fixture or temp BRIEF proving a missing blocker is reported as not ready;
++- `bash -n` for changed shell scripts;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-u-stats-pcrlb-mad-input-contract/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-u-stats-pcrlb-mad-input-contract/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..f2430b5e4d1da4522fe682b5307b6421e35a5c91
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-u-stats-pcrlb-mad-input-contract/BRIEF.md
+@@ -0,0 +1,52 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-stats
++target_branch: phase-7-10-u-stats-pcrlb-mad-input-contract
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 75
++---
++
++# Phase 7.10.u - stats PCRLB/MAD input contract
++
++You are a rigorous BSEBench stats preflight engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Define and validate the input contract for future PCRLB/MAD and sensor-floor calculations before Phase 8 or Phase 11 code consumes empirical artifacts.
++
++## Roadmap mapping
++
++- Active lane: evidence generation.
++- Phase 8 preparation: PCRLB/MAD ceiling validation requires explicit metric, unit, dataset, split, and sensor-floor inputs.
++- Phase 11 preparation: residual decomposition requires separating sensor-noise, model-mismatch, and numerical terms without unsupported interpretation.
++
++## Required behavior
++
++- Review existing stats replay summaries, Hinf residual outputs, and any PCRLB/MAD preflight helpers.
++- Add a schema, dataclass validator, fixture, or command that validates PCRLB/MAD input rows before computation.
++- Required row fields must include dataset/config identifier, split/profile, chemistry when known, metric name and unit, MAD value, PCRLB or sensor-floor value, sample count, artifact source, artifact hash when practical, and provenance caveat.
++- The validator must reject missing units, missing split/profile, non-finite values, negative variances/floors, mismatched dataset identifiers, and ambiguous sensor-floor source.
++- Do not compute or state a Phase 8 or Phase 11 scientific conclusion in this task.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to PCRLB/MAD input-contract validation.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If an input row with missing units, missing split/profile, non-finite numeric values, negative floor terms, unknown artifact source, or an ambiguous sensor-floor definition can pass validation, the task must fail.
++
++## Validation
++
++Run and record:
++
++- focused tests for valid rows plus each rejection case listed in the falsification gate;
++- a dry-run validation over any current PCRLB/MAD fixture or a clearly labeled synthetic fixture if no real fixture exists;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-v-runner-ci-evidence-readiness-artifact/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-v-runner-ci-evidence-readiness-artifact/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..7deb0054877274b1b936974758535f770827b5a4
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-v-runner-ci-evidence-readiness-artifact/BRIEF.md
+@@ -0,0 +1,51 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-runner
++target_branch: phase-7-10-v-runner-ci-evidence-readiness-artifact
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 75
++---
++
++# Phase 7.10.v - runner CI evidence readiness artifact
++
++You are a rigorous BSEBench runner CI engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Make CI produce a small evidence-readiness artifact that tells async reviewers whether Hinf, Phase 8, or Phase 11 evidence bundles are replayable, audited, and provenance-complete.
++
++## Roadmap mapping
++
++- Active lane: evidence generation.
++- Phase 7: Hinf evidence readiness and replay status, with no `claim_55` targeting.
++- Phase 8/11 preparation: CI preflight for future cross-dataset and residual-decomposition evidence bundles.
++
++## Required behavior
++
++- Review existing runner CI, Hinf output audit, manifest audit, and preflight commands.
++- Add or extend a CI-safe command that writes a deterministic JSON readiness artifact summarizing: artifact existence, manifest audit status, stats replay status when available, dataset provenance status, local-cache readiness status, and forbidden-claim guardrail status.
++- The readiness artifact must be finite JSON and must distinguish not-run, skipped-with-reason, failed, and passed states.
++- Keep the command dry-run by default; it must not run expensive filters unless explicitly invoked by an existing evidence-generation workflow.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to CI readiness artifact work.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If CI can report evidence readiness as passed while the manifest audit failed, stats replay is missing without a reason, provenance is incomplete, or forbidden claim wording is present in the evidence metadata, the task must fail.
++
++## Validation
++
++Run and record:
++
++- focused tests for passed, failed, not-run, skipped-with-reason, missing-provenance, and forbidden-wording cases;
++- one dry-run command that writes or prints the readiness JSON without running filters;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+155,241
+Implemented and committed Phase 7.10.z on the target branch.
+
+Commit: `39f90845f21141570124a7cccef9ea8aa4e9e432`
+
+Added six new queueable BRIEFs under `cto/AUTONOMY_BACKLOG/`:
+
+- `phase-7-10-q-stats-hinf-fragility-sidecar-replay`
+- `phase-7-10-r-runner-manifest-replay-mismatch-fixtures`
+- `phase-7-10-s-datasets-source-ledger-provenance-crosswalk`
+- `phase-7-10-t-async-phase8-11-preflight-matrix`
+- `phase-7-10-u-stats-pcrlb-mad-input-contract`
+- `phase-7-10-v-runner-ci-evidence-readiness-artifact`
+
+Validation recorded:
+
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md` passed: `22 checked, 0 skipped`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh` passed
+- `git diff --check` passed
+- reserve count command reported `unqueued_reserve_count=6`
+
+No thesis files, claim registry files, `claims/registry.yaml`, roadmap file, or `claim_55` target were edited. The commit has GLASSBOX metadata and no `Co-Authored-By Claude`.
