@@ -193,3 +193,4 @@
   `block=outbox/_blocks/phase-7-8-g-stats-hinf-weighting-sensitivity.block removed=true`
 - **08:34 UTC** | [actor: codex-cto-FR] | [QUEUE] | phase-7-9-a..e | queued the next useful research/infra wave: Hinf uncertainty stability, strict Hinf determinism audit, Hinf sensitivity sidecar, worker format-gate hardening, and datasets local cache root resolution. These tasks target falsification, reproducibility, and anti-drift, not busy work.
   `queued=5 repos=stats,runner,async,datasets guardrails=no_thesis_no_registry_no_sota_no_claim`
+- **2026-05-07T14:00:05Z** | [actor: cto-autonomy-pacer-FR] | [QUEUE] | phase-7-10-a-stats-hinf-uncertainty-report | pacer restored non-idle capacity from curated backlog. Guards: codex_exec=6, status_running=0, queued_before=0, reserve_before=10, blocks=0, min_running=2, min_queued=1, min_reserve=6. Tasks remain mechanical, falsifiable, no thesis/registry/roadmap edits, no unsupported SOTA claims.
