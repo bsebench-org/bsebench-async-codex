@@ -80,11 +80,38 @@ count_status() {
 }
 
 codex_exec_count() {
-  { pgrep -af 'codex exec|/usr/bin/codex|@openai/codex' 2>/dev/null || true; } |
-    awk -v root="$ROOT" '
-      $0 !~ /pgrep|cto-autonomy-pacer|cto-watchdog-10min/ && index($0, root) > 0 && ($0 ~ /codex exec/ || $0 ~ / -C /) { n++ }
-      END { print n + 0 }
-    '
+  python3 - "$ROOT" <<'PY'
+import shlex
+import subprocess
+import sys
+
+root = sys.argv[1]
+proc = subprocess.run(
+    ["pgrep", "-af", r"codex exec|/usr/bin/codex|@openai/codex"],
+    text=True,
+    capture_output=True,
+    check=False,
+)
+seen = set()
+for line in proc.stdout.splitlines():
+    if any(
+        marker in line
+        for marker in ("pgrep", "cto-autonomy-pacer", "cto-watchdog-10min", "cto-supervisor-10h")
+    ):
+        continue
+    try:
+        parts = shlex.split(line)
+    except ValueError:
+        parts = line.split()
+    workdir = None
+    for idx, token in enumerate(parts):
+        if token in ("-C", "--cd") and idx + 1 < len(parts):
+            workdir = parts[idx + 1]
+            break
+    if workdir and root in workdir:
+        seen.add(workdir)
+print(len(seen))
+PY
 }
 
 block_count() {
@@ -598,10 +625,10 @@ main() {
   fresh_running="$(fresh_running_count)"
   queued="$(count_status queued)"
   execs="$(codex_exec_count)"
+  # STATUS.json can lag reality when a worker wrapper exits early or a daemon
+  # misses a terminal update. Capacity decisions must be based on real unique
+  # codex exec workdirs; fresh status rows are recorded for diagnostics only.
   effective_running="$execs"
-  if [[ "$fresh_running" -gt "$effective_running" ]] ; then
-    effective_running="$fresh_running"
-  fi
   reserve="$(reserve_count)"
   blocks="$(block_count)"
   target_open=$((MIN_RUNNING + MIN_QUEUED))

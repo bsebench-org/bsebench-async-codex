@@ -190,7 +190,7 @@ run_pacer() {
     bash "$FIX_ASYNC/scripts/cto-autonomy-pacer.sh" --dry-run 2>&1
 }
 
-section "reserve keeps one waiting task"
+section "status-only running tasks do not satisfy codex capacity"
 make_fixture "reserve-waiting"
 write_running_status "phase-7-probe-running-a"
 write_running_status "phase-7-probe-running-b"
@@ -200,10 +200,11 @@ write_good_brief "phase-7-probe-good-c"
 commit_fixture "reserve waiting scenario"
 reserve_output="$(run_pacer)"
 printf '%s\n' "$reserve_output"
-assert_contains "$reserve_output" "effective_running=2 queued=0 reserve=3 blocks=0 needed=1" "reserve snapshot"
+assert_contains "$reserve_output" "codex_exec=0 status_running=2 fresh_running=2 effective_running=0 queued=0 reserve=3 blocks=0 needed=3" "reserve snapshot"
 assert_contains "$reserve_output" "QUEUE reserve task: phase-7-probe-good-a" "reserve queue"
-assert_contains "$reserve_output" "DRY-RUN would commit queued=phase-7-probe-good-a" "reserve dry run"
-assert_not_contains "$reserve_output" "QUEUE reserve task: phase-7-probe-good-b" "reserve overqueue"
+assert_contains "$reserve_output" "QUEUE reserve task: phase-7-probe-good-b" "reserve second queue"
+assert_contains "$reserve_output" "QUEUE reserve task: phase-7-probe-good-c" "reserve third queue"
+assert_contains "$reserve_output" "DRY-RUN would commit queued=phase-7-probe-good-a,phase-7-probe-good-b,phase-7-probe-good-c" "reserve dry run"
 assert_clean_repo
 
 section "block queues remediation only"
@@ -237,7 +238,9 @@ assert_contains "$bad_output" "SKIP research gate failed: phase-7-probe-bad-a" "
 assert_not_contains "$bad_output" "QUEUE reserve task: phase-7-probe-bad-a" "bad brief queue"
 assert_not_contains "$bad_output" "phase-6-probe-unsafe" "non-research phase candidate"
 assert_contains "$bad_output" "QUEUE reserve task: phase-7-probe-good-b" "good fallback queue"
-assert_contains "$bad_output" "DRY-RUN would commit queued=phase-7-probe-good-b" "bad brief dry run"
+assert_contains "$bad_output" "QUEUE reserve task: phase-7-probe-good-c" "second good fallback queue"
+assert_contains "$bad_output" "QUEUE reserve task: phase-7-probe-good-d" "third good fallback queue"
+assert_contains "$bad_output" "DRY-RUN would commit queued=phase-7-probe-good-b,phase-7-probe-good-c,phase-7-probe-good-d" "bad brief dry run"
 assert_clean_repo
 
 printf '\nPASS: autonomy pacer dry-run safety probes passed.\n'
