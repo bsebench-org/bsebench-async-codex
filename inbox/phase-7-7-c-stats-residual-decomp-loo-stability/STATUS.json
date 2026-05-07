@@ -1,0 +1,12 @@
+{
+  "phase_id": "phase-7-7-c-stats-residual-decomp-loo-stability",
+  "status": "queued",
+  "ts_queued": "2026-05-07T04:27:49+02:00",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
+  "target_branch": "phase-7-7-c-stats-residual-decomp-loo-stability",
+  "base_branch": "main"
+}
