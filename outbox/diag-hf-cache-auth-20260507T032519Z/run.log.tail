@@ -1,0 +1,200 @@
+        \"targets\": [(\"BCDC\", 25.0), (\"US06\", 25.0)],
+        \"expected_files\": [yao_file(\"BCDC\", 25), yao_file(\"US06\", 25)],
+    },
+    {
+        \"label\": \"Panasonic US06 T25\",
+        \"wrapper\": \"panasonic\",
+        \"class\": PanasonicKollmeyerLoader,
+        \"repo\": PANASONIC_HF_REPO,
+        \"root\": Path(\"/tmp/bsebench_panasonic_tier2_cache\"),
+        \"targets\": [(\"US06\", 25.0)],
+        \"expected_files\": [pan_file(\"US06\", 25.0)],
+    },
+    {
+        \"label\": \"NASA B0005 T24 / CC-discharge\",
+        \"wrapper\": \"nasa\",
+        \"class\": NasaPcoeLoader,
+        \"repo\": NASA_PCOE_HF_REPO,
+        \"root\": Path(\"/tmp/bsebench_nasa_tier2_cache\"),
+        \"targets\": [(\"CC-discharge\", 24.0)],
+        \"expected_files\": [METADATA_FILENAME],
+    },
+    {
+        \"label\": \"CALCE A123 DST T25 legacy\",
+        \"wrapper\": \"calce_legacy\",
+        \"class\": CalceLegacyLoader,
+        \"repo\": CALCE_LEGACY_HF_REPO,
+        \"root\": Path(\"/tmp/bsebench_calce_legacy_tier2_cache\"),
+        \"targets\": [(\"DST\", 25.0)],
+        \"expected_files\": [\"calce_a123_DST_T25.parquet\"],
+    },
+]
+
+for check in checks:
+    print(f\"{check['label']}:\")
+    print(f\"  wrapper: {check['wrapper']}\")
+    print(f\"  loader_class: {check['class'].__module__}.{check['class'].__name__}\")
+    print(f\"  hf_repo: {check['repo']}\")
+    print(f\"  local_cache_root: {check['root']} ({'exists' if check['root'].is_dir() else 'missing'})\")
+    print(\"  expected_files:\")
+    for name in check[\"expected_files\"]:
+        p = check[\"root\"] / name
+        print(f\"    {name}: {'present' if p.is_file() else 'missing'}\")
+    try:
+        loader = make_loader(check[\"class\"], check[\"root\"])
+        configs = loader.available_configs()
+        targets = check[\"targets\"]
+        hit_flags = [target in configs for target in targets]
+        print(\"  available_configs_no_network: success\")
+        print(f\"  available_configs: {summarize_configs(configs)}\")
+        print(\"  target_configs_present: \" + \", \".join(f\"{target}={'yes' if hit else 'no'}\" for target, hit in zip(targets, hit_flags)))
+    except Exception as exc:
+        print(\"  available_configs_no_network: failure\")
+        print(f\"  exception: {exc.__class__.__name__}: {str(exc).splitlines()[0][:240]}\")
+PY" in /mnt/c/doctorat/bsebench-org/bsebench-async-codex
+ succeeded in 2207ms:
+Yao BCDC/US06 T25:
+  wrapper: yao
+  loader_class: bsebench_datasets.loaders.yao_tu_berlin_2024_loader.YaoTuBerlin2024Loader
+  hf_repo: bsebench-org/yao-tu-berlin-2024
+  local_cache_root: /tmp/bsebench_yao_tier2_cache (exists)
+  expected_files:
+    Yao-BCDC-T25.parquet: present
+    Yao-US06-T25.parquet: missing
+  available_configs_no_network: success
+  available_configs: [('BCDC', 25.0)]
+  target_configs_present: ('BCDC', 25.0)=yes, ('US06', 25.0)=no
+Panasonic US06 T25:
+  wrapper: panasonic
+  loader_class: bsebench_datasets.loaders.panasonic_kollmeyer_loader.PanasonicKollmeyerLoader
+  hf_repo: bsebench-org/panasonic-kollmeyer-2018
+  local_cache_root: /tmp/bsebench_panasonic_tier2_cache (missing)
+  expected_files:
+    pan_US06_T25.parquet: missing
+  available_configs_no_network: success
+  available_configs: []
+  target_configs_present: ('US06', 25.0)=no
+NASA B0005 T24 / CC-discharge:
+  wrapper: nasa
+  loader_class: bsebench_datasets.loaders.nasa_pcoe_loader.NasaPcoeLoader
+  hf_repo: bsebench-org/nasa-pcoe-saha-goebel-2007
+  local_cache_root: /tmp/bsebench_nasa_tier2_cache (missing)
+  expected_files:
+    metadata.csv: missing
+  available_configs_no_network: success
+  available_configs: [('CC-discharge', 24.0)]
+  target_configs_present: ('CC-discharge', 24.0)=yes
+CALCE A123 DST T25 legacy:
+  wrapper: calce_legacy
+  loader_class: bsebench_datasets.loaders.calce_a123_legacy_loader.CalceLegacyLoader
+  hf_repo: bsebench-org/calce-a123-2014
+  local_cache_root: /tmp/bsebench_calce_legacy_tier2_cache (missing)
+  expected_files:
+    calce_a123_DST_T25.parquet: missing
+  available_configs_no_network: success
+  available_configs: [('DST', 0.0), ('DST', 25.0), ('DST', 40.0)]
+  target_configs_present: ('DST', 25.0)=yes
+
+codex
+Read-only diagnostic complete.
+
+**Repo SHAs**
+- `bsebench-runner`: `13ec00459341fe380f7fcb6864232ef8ee12fc0f`
+- `bsebench-datasets`: `a941b4a0538f53e4b9055d226af269f67f747a30`
+
+**HF Auth**
+- `HF_TOKEN` set: no
+- `HUGGINGFACE_HUB_TOKEN` set: no
+- `~/.cache/huggingface/token` exists: no
+- `huggingface-cli whoami`: unavailable
+
+**Local Caches**
+- `/mnt/c/doctorat/bsebench-org/_datasets`: `157M`
+- `/tmp/bsebench_yao_tier2_cache`: `3.3M`
+- `/tmp/bsebench_panasonic_tier2_cache`: missing
+- `/tmp/bsebench_nasa_tier2_cache`: missing
+- `/tmp/bsebench_calce_legacy_tier2_cache`: missing
+- `~/.cache/huggingface/hub`: missing
+
+`/tmp/bsebench_yao_tier2_cache` contains only `Yao-BCDC-T25.parquet`. `_datasets` contains raw CALCE zip bundles, not the harmonized Parquet files the Tier 2 loaders expect.
+
+**Loader / Cache Probe**
+- Yao BCDC/US06 T25
+  - HF repo: `bsebench-org/yao-tu-berlin-2024`
+  - local `available_configs()`: success, no network
+  - configs found: `[('BCDC', 25.0)]`
+  - BCDC T25 present: yes
+  - US06 T25 present: no
+
+- Panasonic US06 T25
+  - HF repo: `bsebench-org/panasonic-kollmeyer-2018`
+  - local `available_configs()`: success, no network
+  - configs found: `[]`
+  - target present: no
+
+- NASA B0005 T24 / CC-discharge
+  - HF repo: `bsebench-org/nasa-pcoe-saha-goebel-2007`
+  - `available_configs()`: success, no network, returns `[('CC-discharge', 24.0)]`
+  - local `metadata.csv`: missing
+
+- CALCE A123 DST T25 legacy
+  - HF repo: `bsebench-org/calce-a123-2014`
+  - `available_configs()`: success, no network, returns `[('DST', 0.0), ('DST', 25.0), ('DST', 40.0)]`
+  - local `calce_a123_DST_T25.parquet`: missing
+
+**Diagnosis**
+`mixed`
+
+The prior strict real 5x5 run used the default runner registry, which instantiates HF-backed loaders without local cache roots. With no HF token configured and no HF hub cache, every missing dataset had to go through `hf_hub_download`, producing the observed `401` / `RepositoryNotFoundError` / auth failures. Local fallback is also incomplete: only Yao BCDC T25 exists locally, while Yao US06, Panasonic, NASA metadata/data, and CALCE legacy Parquet are missing.
+tokens used
+74,259
+Read-only diagnostic complete.
+
+**Repo SHAs**
+- `bsebench-runner`: `13ec00459341fe380f7fcb6864232ef8ee12fc0f`
+- `bsebench-datasets`: `a941b4a0538f53e4b9055d226af269f67f747a30`
+
+**HF Auth**
+- `HF_TOKEN` set: no
+- `HUGGINGFACE_HUB_TOKEN` set: no
+- `~/.cache/huggingface/token` exists: no
+- `huggingface-cli whoami`: unavailable
+
+**Local Caches**
+- `/mnt/c/doctorat/bsebench-org/_datasets`: `157M`
+- `/tmp/bsebench_yao_tier2_cache`: `3.3M`
+- `/tmp/bsebench_panasonic_tier2_cache`: missing
+- `/tmp/bsebench_nasa_tier2_cache`: missing
+- `/tmp/bsebench_calce_legacy_tier2_cache`: missing
+- `~/.cache/huggingface/hub`: missing
+
+`/tmp/bsebench_yao_tier2_cache` contains only `Yao-BCDC-T25.parquet`. `_datasets` contains raw CALCE zip bundles, not the harmonized Parquet files the Tier 2 loaders expect.
+
+**Loader / Cache Probe**
+- Yao BCDC/US06 T25
+  - HF repo: `bsebench-org/yao-tu-berlin-2024`
+  - local `available_configs()`: success, no network
+  - configs found: `[('BCDC', 25.0)]`
+  - BCDC T25 present: yes
+  - US06 T25 present: no
+
+- Panasonic US06 T25
+  - HF repo: `bsebench-org/panasonic-kollmeyer-2018`
+  - local `available_configs()`: success, no network
+  - configs found: `[]`
+  - target present: no
+
+- NASA B0005 T24 / CC-discharge
+  - HF repo: `bsebench-org/nasa-pcoe-saha-goebel-2007`
+  - `available_configs()`: success, no network, returns `[('CC-discharge', 24.0)]`
+  - local `metadata.csv`: missing
+
+- CALCE A123 DST T25 legacy
+  - HF repo: `bsebench-org/calce-a123-2014`
+  - `available_configs()`: success, no network, returns `[('DST', 0.0), ('DST', 25.0), ('DST', 40.0)]`
+  - local `calce_a123_DST_T25.parquet`: missing
+
+**Diagnosis**
+`mixed`
+
+The prior strict real 5x5 run used the default runner registry, which instantiates HF-backed loaders without local cache roots. With no HF token configured and no HF hub cache, every missing dataset had to go through `hf_hub_download`, producing the observed `401` / `RepositoryNotFoundError` / auth failures. Local fallback is also incomplete: only Yao BCDC T25 exists locally, while Yao US06, Panasonic, NASA metadata/data, and CALCE legacy Parquet are missing.
