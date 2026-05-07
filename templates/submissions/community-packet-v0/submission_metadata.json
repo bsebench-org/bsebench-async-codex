@@ -1,0 +1,84 @@
+{
+  "packet_schema_version": "bsebench.community_submission_packet.v0",
+  "submission_id": "replace_with_lowercase_submission_id",
+  "created_utc": "YYYY-MM-DDTHH:MM:SSZ",
+  "estimator": {
+    "name": "EstimatorName",
+    "version": "0.0.0",
+    "contract_version": "bsebench.estimator.v1",
+    "entrypoint": "estimator_adapter.py:build_filter_registry",
+    "factory_names": [
+      "EstimatorName"
+    ],
+    "step_signature": "step(t, voltage_V, current_A, temperature_C)",
+    "required_step_outputs": [
+      "voltage_predicted"
+    ],
+    "optional_step_outputs": [
+      "soc_estimated",
+      "soh_estimated"
+    ]
+  },
+  "submitter": {
+    "name": "Submitter Name",
+    "email": "submitter@example.org",
+    "affiliation": "unknown",
+    "contact_consent": "unknown"
+  },
+  "repository": {
+    "source_url": "https://example.org/repo",
+    "commit_sha": "unknown",
+    "archive_url": "not_applicable",
+    "license": "unknown",
+    "license_file": "unknown"
+  },
+  "runtime": {
+    "python": "3.12",
+    "package_manager": "uv",
+    "platform": "linux",
+    "cpu_required": "unknown",
+    "gpu_required": "not_applicable",
+    "network_required_for_smoke": false,
+    "network_required_for_replay": false,
+    "deterministic_seed_policy": "unknown"
+  },
+  "dependencies": {
+    "direct": [
+      {
+        "name": "numpy",
+        "version": "unknown",
+        "license": "unknown",
+        "source": "pypi",
+        "required_for": "smoke",
+        "risk_status": "unknown"
+      }
+    ],
+    "private_indexes_required": false,
+    "native_build_required": "unknown",
+    "dependency_lock_file": "unknown"
+  },
+  "runner_smoke": {
+    "runner_repo": "https://github.com/bsebench/bsebench-runner",
+    "runner_ref": "unknown",
+    "command": "see smoke_test.md",
+    "split_file": "smoke_split.yaml",
+    "n_max": 16,
+    "expected_status": "pass"
+  },
+  "replay_evidence": {
+    "command": "see replay_evidence.md",
+    "runner_commit_sha": "unknown",
+    "datasets_commit_sha": "unknown",
+    "stats_commit_sha": "not_applicable",
+    "artifact_paths": [],
+    "artifact_sha256": {},
+    "rerun_status": "not_run"
+  },
+  "guardrails": {
+    "contains_secrets": false,
+    "contains_private_cache_material": false,
+    "contains_large_dataset_payloads": false,
+    "contains_public_ranking_language": false,
+    "contains_unsupported_result_language": false
+  }
+}
