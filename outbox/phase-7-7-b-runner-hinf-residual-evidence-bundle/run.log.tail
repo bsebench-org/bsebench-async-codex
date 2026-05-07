@@ -1,0 +1,200 @@
++            },
++        ),
++    ]
++
++    payload = json.loads(output_path.read_text(encoding="utf-8"))
++    assert payload["script"] == "scripts/hinf_residual_evidence_5x5.py"
++    assert payload["scientific_verdict"] == "none"
++    assert payload["claim_target"] == "new_hinf_candidate_not_claim_55"
++    assert payload["trace"]["summary"] == {
++        "ok_configs": 5,
++        "error_configs": 0,
++        "ok_filter_runs": 25,
++        "error_filter_runs": 0,
++    }
++    assert payload["trace"]["filter_labels"] == ["EnsembleMeta", "EKF", "UKFDef", "JUKFV6B", "Hinf"]
++    assert "residual_covariance_panel" in payload
++    assert "residual_variance_decomposition" in payload
++
++    for config_payload in payload["trace"]["configs"].values():
++        retained = config_payload["retained_samples"]
++        hinf = config_payload["filters"]["Hinf"]
++        assert hinf["status"] == "ok"
++        assert hinf["retained_samples"] == retained
++        assert len(hinf["residual_mV"]) == retained
++
++
++@pytest.mark.fast
++def test_missing_hinf_fails_before_output_writing(evidence_module, tmp_path: Path) -> None:
++    balanced = _run_synthetic_bundle(evidence_module, tmp_path)["trace"]
++    trace_payload = copy.deepcopy(balanced)
++    trace_payload["filter_labels"] = ["EnsembleMeta", "EKF", "UKFDef", "JUKFV6B", "Other"]
++    for config_payload in trace_payload["configs"].values():
++        filters = config_payload["filters"]
++        filters["Other"] = filters.pop("Hinf")
++
++    output_path = tmp_path / "missing_hinf.json"
++
++    def trace_runner(**kwargs: Any) -> dict[str, Any]:
++        del kwargs
++        return trace_payload
++
++    def should_not_call(*args: Any, **kwargs: Any) -> dict[str, object]:
++        raise AssertionError("stats builder should not be called")
++
++    with pytest.raises(
++        evidence_module.HinfResidualEvidenceRequirementError,
++        match="filter_labels must be exactly",
++    ):
++        evidence_module.run_hinf_residual_evidence_5x5(
++            output_path=output_path,
++            covariance_builder=should_not_call,
++            decomposition_builder=should_not_call,
++            trace_runner=trace_runner,
++        )
++
++    assert not output_path.exists()
++
++
++@pytest.mark.fast
++def test_insufficient_ok_filter_runs_fail_before_output_writing(
++    evidence_module,
++    tmp_path: Path,
++    capsys,
++) -> None:
++    output_path = tmp_path / "insufficient.json"
++
++    rc = evidence_module.main(
++        [
++            "--output",
++            str(output_path),
++            "--n-max",
++            "7",
++            "--warmup-samples",
++            "2",
++        ],
++        adapter_factories=_adapter_factories(evidence_module),
++        filter_factories=_filter_factories(evidence_module, fail_hinf=True),
++    )
++
++    captured = capsys.readouterr()
++    assert rc == 2
++    assert not output_path.exists()
++    assert "ok_filter_runs=20/25" in captured.err
++    assert "Hinf" in captured.out
++
++
++@pytest.mark.fast
++def test_covariance_exception_prevents_output_writing(evidence_module, tmp_path: Path) -> None:
++    output_path = tmp_path / "covariance_error.json"
++
++    def covariance_builder(*args: Any, **kwargs: Any) -> dict[str, object]:
++        del args, kwargs
++        raise RuntimeError("synthetic covariance failure")
++
++    def decomposition_builder(*args: Any, **kwargs: Any) -> dict[str, object]:
++        del args, kwargs
++        return {"summary": {"ok_configs": 5, "ok_filter_traces": 25}}
++
++    with pytest.raises(RuntimeError, match="synthetic covariance failure"):
++        evidence_module.run_hinf_residual_evidence_5x5(
++            output_path=output_path,
++            adapter_factories=_adapter_factories(evidence_module),
++            filter_factories=_filter_factories(evidence_module),
++            n_max=7,
++            warmup_samples=2,
++            covariance_builder=covariance_builder,
++            decomposition_builder=decomposition_builder,
++        )
++
++    assert not output_path.exists()
++
++
++@pytest.mark.fast
++def test_decomposition_exception_prevents_output_writing(evidence_module, tmp_path: Path) -> None:
++    output_path = tmp_path / "decomposition_error.json"
++
++    def covariance_builder(*args: Any, **kwargs: Any) -> dict[str, object]:
++        del args, kwargs
++        return {"summary": {"ok_configs": 5, "ok_filter_traces": 25}}
++
++    def decomposition_builder(*args: Any, **kwargs: Any) -> dict[str, object]:
++        del args, kwargs
++        raise RuntimeError("synthetic decomposition failure")
++
++    with pytest.raises(RuntimeError, match="synthetic decomposition failure"):
++        evidence_module.run_hinf_residual_evidence_5x5(
++            output_path=output_path,
++            adapter_factories=_adapter_factories(evidence_module),
++            filter_factories=_filter_factories(evidence_module),
++            n_max=7,
++            warmup_samples=2,
++            covariance_builder=covariance_builder,
++            decomposition_builder=decomposition_builder,
++        )
++
++    assert not output_path.exists()
++
++
++@pytest.mark.fast
++def test_json_output_is_allow_nan_false_safe(evidence_module, tmp_path: Path) -> None:
++    output_path = tmp_path / "nan.json"
++
++    def covariance_builder(*args: Any, **kwargs: Any) -> dict[str, object]:
++        del args, kwargs
++        return {"summary": {"ok_configs": 5, "ok_filter_traces": 25}}
++
++    def decomposition_builder(*args: Any, **kwargs: Any) -> dict[str, object]:
++        del args, kwargs
++        return {
++            "summary": {"ok_configs": 5, "ok_filter_traces": 25},
++            "bad": float("nan"),
++        }
++
++    with pytest.raises(ValueError, match="Out of range float values"):
++        evidence_module.run_hinf_residual_evidence_5x5(
++            output_path=output_path,
++            adapter_factories=_adapter_factories(evidence_module),
++            filter_factories=_filter_factories(evidence_module),
++            n_max=7,
++            warmup_samples=2,
++            covariance_builder=covariance_builder,
++            decomposition_builder=decomposition_builder,
++        )
++
++    assert not output_path.exists()
++
++
++@pytest.mark.fast
++def test_write_result_json_rejects_nan_without_creating_file(
++    evidence_module,
++    tmp_path: Path,
++) -> None:
++    output_path = tmp_path / "bad.json"
++
++    with pytest.raises(ValueError, match="Out of range float values"):
++        evidence_module.write_result_json({"bad": float("nan")}, output_path)
++
++    assert not output_path.exists()
+
+tokens used
+118,133
+Implemented and committed the Phase 7.7.b runner evidence wrapper.
+
+Commit: `d4a9e2b2646738cfdf19c2ad2e09e05f7964fdf6`  
+Message: `GLASSBOX [role: worker-codex-FR] Add Hinf residual evidence bundle`
+
+Changed files:
+- [scripts/hinf_residual_evidence_5x5.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-7-b-runner-hinf-residual-evidence-bundle/scripts/hinf_residual_evidence_5x5.py:1)
+- [tests/test_hinf_residual_evidence_5x5.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-7-b-runner-hinf-residual-evidence-bundle/tests/test_hinf_residual_evidence_5x5.py:1)
+
+Validation:
+- Focused tests: `8 passed`
+- G2: `uv run --locked --all-extras pytest -m "not slow" --tb=short` -> `81 passed, 5 deselected`
+- G3: `ruff format --check .` -> passed
+- G4: `ruff check .` -> passed
+- G5 attempted. Real run failed before writing output:
+  `ok_configs=0/5`, `ok_filter_runs=0/25`
+- Diagnostic no-output trace showed all five config loads failed with Hugging Face `RepositoryNotFoundError` / `401` / `Invalid username or password`.
+
+No `outputs/hinf_residual_evidence_5x5.json` was written or committed. No roadmap, README, claim registry, or thesis prose files were edited. No `Co-Authored-By: Claude` trailer was added.
