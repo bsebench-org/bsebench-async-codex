@@ -1,0 +1,3 @@
+worker_id	phase_id	target_repo	target_branch	write_set	validation
+A1	universal-runner-estimator-plugin-contract	bsebench-runner	phase-8-0-a-universal-runner-estimator-plugin-contract	src/bsebench_runner/adapters;tests/test_estimator_contract.py	pytest tests/test_estimator_contract.py -q
+A2	universal-runner-submission-smoke	bsebench-runner	phase-8-0-f-universal-runner-submission-smoke	src/bsebench_runner/adapters/submission.py;tests/test_submission_smoke.py	pytest tests/test_submission_smoke.py -q

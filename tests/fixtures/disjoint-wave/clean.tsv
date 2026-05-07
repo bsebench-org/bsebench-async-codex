@@ -1,0 +1,4 @@
+worker_id	phase_id	target_repo	target_branch	write_set	validation
+A1	universal-runner-estimator-plugin-contract	bsebench-runner	phase-8-0-a-universal-runner-estimator-plugin-contract	src/bsebench_runner/adapters/contract.py;tests/test_estimator_contract.py	pytest tests/test_estimator_contract.py -q
+A2	universal-stats-metric-matrix	bsebench-stats	phase-8-0-b-universal-stats-metric-matrix	src/bsebench_stats/metric_matrix.py;tests/test_metric_matrix.py	pytest tests/test_metric_matrix.py -q
+A4	universal-async-disjoint-wave-planner	bsebench-async-codex	phase-8-0-v-universal-async-disjoint-wave-planner	scripts/plan-disjoint-wave.sh;docs/DISJOINT-WAVE-PLANNER.md;tests/test-disjoint-wave-planner.sh	bash tests/test-disjoint-wave-planner.sh

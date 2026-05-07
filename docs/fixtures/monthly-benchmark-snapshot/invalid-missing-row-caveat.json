@@ -1,0 +1,113 @@
+{
+  "schema_version": "bsebench.monthly_benchmark_snapshot.v1",
+  "snapshot_id": "bsebench-monthly-2026-05-synthetic",
+  "snapshot_month": "2026-05",
+  "created_at": "2026-05-07T18:00:00Z",
+  "release_status": "draft",
+  "benchmark_identity": {
+    "bsebench_version": "synthetic-fixture-only",
+    "async_repo_commit": "1111111111111111111111111111111111111111",
+    "runner_commit": "2222222222222222222222222222222222222222",
+    "stats_commit": "3333333333333333333333333333333333333333",
+    "datasets_commit": "4444444444444444444444444444444444444444"
+  },
+  "release_caveats": {
+    "coverage_caveat": "synthetic fixture covers one method, one dataset, one protocol, and one metric only",
+    "comparability_caveat": "synthetic fixture is comparable only to itself and is not external literature evidence",
+    "leakage_caveat": "synthetic fixture declares a frozen split but does not exercise real leakage checks",
+    "provenance_caveat": "hashes are fixture placeholders used only to validate schema shape",
+    "source_ledger_caveat": "no external comparison ledger is used in this synthetic fixture",
+    "ranking_caveat": "single-row ranking group validates structure only and does not imply superiority"
+  },
+  "evidence_artifacts": [
+    {
+      "artifact_id": "synthetic-evidence-001",
+      "path": "docs/fixtures/monthly-benchmark-snapshot/invalid-missing-row-caveat.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "generated_by_command": "synthetic fixture committed by hand; no benchmark execution",
+      "frozen_at": "2026-05-07T18:00:00Z",
+      "artifact_caveat": "fixture artifact validates schema failure paths only"
+    }
+  ],
+  "source_ledgers": [],
+  "method_registry": [
+    {
+      "method_id": "synthetic-baseline-001",
+      "display_name": "Synthetic Baseline",
+      "method_family": "baseline",
+      "adapter_name": "synthetic_fixture_adapter",
+      "adapter_version": "0.0.0-fixture",
+      "training_data_policy": "no training data; fixture row only",
+      "tuning_policy": "no tuning; fixture row only",
+      "method_caveat": "not a real estimator and not a benchmarked method",
+      "compute_environment_caveat": "compute environment is not measured for fixture rows"
+    }
+  ],
+  "dataset_registry": [
+    {
+      "dataset_id": "synthetic-cellset-v0",
+      "display_name": "Synthetic Cellset v0",
+      "chemistry": "synthetic",
+      "profile_axis": "single synthetic dynamic profile",
+      "temperature_axis": "25 C nominal fixture condition",
+      "aging_axis": "fresh synthetic fixture state",
+      "split_ids": ["synthetic-test-split-a"],
+      "provenance_caveat": "dataset row is synthetic and not derived from laboratory data",
+      "availability_caveat": "available only as a committed fixture row"
+    }
+  ],
+  "protocols": [
+    {
+      "protocol_id": "synthetic-soc-protocol-v0",
+      "protocol_version": "0.0.0-fixture",
+      "task_family": "soc",
+      "initialization_policy": "degraded",
+      "split_policy": "synthetic fixed test split A",
+      "leakage_guard": "declared fixture split; no real training or calibration path",
+      "metric_set": ["synthetic_mae_percent"],
+      "protocol_caveat": "protocol validates monthly snapshot schema only"
+    }
+  ],
+  "ranking_groups": [
+    {
+      "group_id": "synthetic-mae-group",
+      "title": "Synthetic MAE Fixture Group",
+      "metric": "synthetic_mae_percent",
+      "direction": "lower_is_better",
+      "eligible_row_ids": ["row-synthetic-001"],
+      "ranking_caveat": "single synthetic row; ranking is structural only"
+    }
+  ],
+  "result_rows": [
+    {
+      "row_id": "row-synthetic-001",
+      "protocol_id": "synthetic-soc-protocol-v0",
+      "method_id": "synthetic-baseline-001",
+      "dataset_id": "synthetic-cellset-v0",
+      "split_id": "synthetic-test-split-a",
+      "metric": "synthetic_mae_percent",
+      "value": 1.23,
+      "unit": "percent",
+      "aggregation": "mean across synthetic fixture samples",
+      "rank": 1,
+      "status": "valid",
+      "comparability": "comparable",
+      "provenance": {
+        "evidence_artifact_id": "synthetic-evidence-001",
+        "run_id": "synthetic-run-001",
+        "run_command": "no execution; committed fixture row",
+        "config_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "result_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "caveats": {
+        "comparability_caveat": "comparable only within this synthetic fixture",
+        "dataset_caveat": "synthetic dataset row has no laboratory provenance",
+        "split_caveat": "synthetic split validates shape only",
+        "metric_caveat": "synthetic metric is not a real BSEBench score",
+        "provenance_caveat": "hash values are fixed placeholders for schema validation",
+        "compute_caveat": "runtime and memory were not measured for this fixture",
+        "exclusion_caveat": "row is not excluded; fixture status is valid for schema validation only"
+      }
+    }
+  ]
+}
