@@ -1,0 +1,12 @@
+{
+  "phase_id": "phase-7-9-d-async-worker-format-gate",
+  "status": "queued",
+  "ts_queued": "2026-05-07T08:34:27Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
+  "target_branch": "phase-7-9-d-async-worker-format-gate",
+  "base_branch": "main"
+}

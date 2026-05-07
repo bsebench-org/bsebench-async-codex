@@ -187,3 +187,9 @@
   `running=2 queued=6 worker2=phase-7-8-a-runner-claim63-report-generator worker1=phase-7-8-b-stats-hinf-replay-summary`
 - **06:15 UTC** | [actor: codex-cto-FR] | [INSTALL] | cto-daemon-persistence | relaunched `cto-daemon.sh` with `setsid` and added a `.bashrc` auto-start block so new WSL shells restore the CTO daemon alongside existing worker and chef auto-start blocks.
   `log=/home/oakir/.async-cto.log state=/home/oakir/.async-cto-daemon.running`
+- **08:34 UTC** | [actor: codex-cto-FR] | [MERGE] | phase-7-8-a,b,c,d,g,h remediation | manually repaired Phase 7.8 branches that chef blocked for formatter or non-linear merge issues, reran gates, and fast-forward pushed target mains. Runner main `3d4e487`; stats main `6a892ee`; datasets main `654ed19`; async main `b7acf68`. The Hinf sensitivity result remains mechanical-only and reports `material_sensitivity_detected`, not a scientific verdict.
+  `runner=3d4e487 stats=6a892ee datasets=654ed19 async=b7acf68 gate=ruff_format+tests+audits no_claim=true`
+- **08:34 UTC** | [actor: codex-cto-FR] | [FIX] | phase-7-8-g-block-clear | removed the stale advisor block for `phase-7-8-g-stats-hinf-weighting-sensitivity` after formatter remediation and full gate rerun. Added `CTO_UNBLOCK.md` with the validation evidence.
+  `block=outbox/_blocks/phase-7-8-g-stats-hinf-weighting-sensitivity.block removed=true`
+- **08:34 UTC** | [actor: codex-cto-FR] | [QUEUE] | phase-7-9-a..e | queued the next useful research/infra wave: Hinf uncertainty stability, strict Hinf determinism audit, Hinf sensitivity sidecar, worker format-gate hardening, and datasets local cache root resolution. These tasks target falsification, reproducibility, and anti-drift, not busy work.
+  `queued=5 repos=stats,runner,async,datasets guardrails=no_thesis_no_registry_no_sota_no_claim`
