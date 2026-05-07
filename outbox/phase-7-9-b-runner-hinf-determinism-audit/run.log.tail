@@ -1,0 +1,200 @@
++
++SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "audit_hinf_residual_determinism.py"
++REPO_ROOT = Path(__file__).resolve().parents[1]
++MANIFEST_PATH = REPO_ROOT / "outputs" / "hinf_residual_artifact_manifest.json"
++PREFLIGHT_PATH = REPO_ROOT / "outputs" / "hinf_residual_cache_preflight.json"
++CHI2_PATH = REPO_ROOT / "outputs" / "chi2_sweep_5x5.json"
++EVIDENCE_PATH = REPO_ROOT / "outputs" / "hinf_residual_evidence_5x5.json"
++
++
++def _load_script_module():
++    spec = importlib.util.spec_from_file_location("audit_hinf_residual_determinism", SCRIPT_PATH)
++    assert spec is not None
++    assert spec.loader is not None
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[spec.name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++@pytest.fixture(scope="module")
++def audit_module():
++    return _load_script_module()
++
++
++def _json(path: Path) -> dict[str, Any]:
++    return json.loads(path.read_text(encoding="utf-8"))
++
++
++def _write(path: Path, payload: dict[str, Any]) -> Path:
++    path.write_text(json.dumps(payload, sort_keys=True, allow_nan=False), encoding="utf-8")
++    return path
++
++
++@pytest.mark.fast
++def test_script_import_is_side_effect_free(audit_module) -> None:
++    assert callable(audit_module.audit_determinism)
++    assert callable(audit_module.audit_committed_determinism)
++    assert callable(audit_module.compare_fresh_artifacts)
++    assert callable(audit_module.main)
++
++
++@pytest.mark.fast
++def test_committed_strict_hinf_determinism_audit_passes(audit_module, capsys) -> None:
++    summary = audit_module.audit_determinism(fresh_run="never")
++
++    assert summary["status"] == "ok"
++    assert summary["committed"]["outputs"]["evidence"]["ok_filter_runs"] == 25
++    assert summary["committed"]["stats_replay"]["status"] == "ok"
++    assert summary["fresh_run"]["status"] == "not_requested"
++
++    rc = audit_module.main(["--fresh-run", "never"])
++    captured = capsys.readouterr()
++    assert rc == 0
++    assert "hinf residual determinism audit ok" in captured.out
++    assert "committed outputs: ok_configs=5 ok_filter_runs=25" in captured.out
++    assert "dry-run stats replay: ok" in captured.out
++    assert "fresh run: not_requested" in captured.out
++
++
++@pytest.mark.fast
++def test_dry_run_replay_rejects_hinf_correlation_drift(audit_module, tmp_path: Path) -> None:
++    evidence = _json(EVIDENCE_PATH)
++    bad = copy.deepcopy(evidence)
++    matrix = bad["residual_covariance_panel"]["aggregate_report"]["correlation_matrix"]
++    matrix[4][1] += 1.0e-3
++    matrix[1][4] += 1.0e-3
++    bad_path = _write(tmp_path / "bad_evidence.json", bad)
++
++    with pytest.raises(
++        audit_module.HinfResidualDeterminismAuditError,
++        match=r"stats_replay\.residual_covariance_panel\.aggregate_report\.correlation_matrix",
++    ):
++        audit_module.audit_committed_determinism(
++            manifest_path=MANIFEST_PATH,
++            preflight_path=PREFLIGHT_PATH,
++            chi2_path=CHI2_PATH,
++            evidence_path=bad_path,
++        )
++
++
++@pytest.mark.fast
++def test_dry_run_replay_rejects_decomposition_share_drift(audit_module, tmp_path: Path) -> None:
++    evidence = _json(EVIDENCE_PATH)
++    bad = copy.deepcopy(evidence)
++    bad["residual_variance_decomposition"]["decomposition"]["config_share"] += 1.0e-3
++    bad_path = _write(tmp_path / "bad_decomposition.json", bad)
++
++    with pytest.raises(
++        audit_module.HinfResidualDeterminismAuditError,
++        match=r"stats_replay\.residual_variance_decomposition\.decomposition\.config_share",
++    ):
++        audit_module.audit_committed_determinism(
++            manifest_path=MANIFEST_PATH,
++            preflight_path=PREFLIGHT_PATH,
++            chi2_path=CHI2_PATH,
++            evidence_path=bad_path,
++        )
++
++
++@pytest.mark.fast
++def test_compare_fresh_artifacts_accepts_exact_committed_copies(
++    audit_module,
++    tmp_path: Path,
++) -> None:
++    fresh_preflight = tmp_path / "hinf_residual_cache_preflight.json"
++    fresh_chi2 = tmp_path / "chi2_sweep_5x5.json"
++    fresh_evidence = tmp_path / "hinf_residual_evidence_5x5.json"
++    fresh_preflight.write_bytes(PREFLIGHT_PATH.read_bytes())
++    fresh_chi2.write_bytes(CHI2_PATH.read_bytes())
++    fresh_evidence.write_bytes(EVIDENCE_PATH.read_bytes())
++
++    summary = audit_module.compare_fresh_artifacts(
++        committed_preflight_path=PREFLIGHT_PATH,
++        committed_chi2_path=CHI2_PATH,
++        committed_evidence_path=EVIDENCE_PATH,
++        fresh_preflight_path=fresh_preflight,
++        fresh_chi2_path=fresh_chi2,
++        fresh_evidence_path=fresh_evidence,
++        manifest_path=MANIFEST_PATH,
++    )
++
++    assert summary["status"] == "ok"
++    assert summary["outputs"]["evidence"]["ok_filter_runs"] == 25
++    assert summary["artifact_hashes"]["evidence"]
++
++
++@pytest.mark.fast
++def test_fresh_run_drift_preserves_diagnostics(audit_module, tmp_path: Path, monkeypatch) -> None:
++    def fake_preflight(**kwargs: Any) -> dict[str, Any]:
++        payload = _json(PREFLIGHT_PATH)
++        Path(kwargs["output_path"]).write_text(
++            json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
++            encoding="utf-8",
++        )
++        return payload
++
++    def fake_chi2(**kwargs: Any) -> dict[str, Any]:
++        payload = _json(CHI2_PATH)
++        Path(kwargs["output_path"]).write_text(
++            json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
++            encoding="utf-8",
++        )
++        return payload
++
++    def fake_evidence(**kwargs: Any) -> dict[str, Any]:
++        payload = _json(EVIDENCE_PATH)
++        payload["residual_variance_decomposition"]["decomposition"]["config_share"] += 1.0e-3
++        Path(kwargs["output_path"]).write_text(
++            json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
++            encoding="utf-8",
++        )
++        return payload
++
++    monkeypatch.setattr(audit_module, "run_cache_preflight", fake_preflight)
++    monkeypatch.setattr(audit_module, "run_sweep", fake_chi2)
++    monkeypatch.setattr(audit_module, "run_hinf_residual_evidence_5x5", fake_evidence)
++
++    with pytest.raises(
++        audit_module.HinfResidualDeterminismAuditError,
++        match="fresh diagnostics preserved",
++    ):
++        audit_module.run_fresh_strict_comparison(
++            mode="always",
++            diagnostics_dir=tmp_path,
++            manifest_path=MANIFEST_PATH,
++            committed_preflight_path=PREFLIGHT_PATH,
++            committed_chi2_path=CHI2_PATH,
++            committed_evidence_path=EVIDENCE_PATH,
++        )
++
++    assert (tmp_path / "hinf_residual_evidence_5x5.json").is_file()
++    assert (tmp_path / "hinf_residual_determinism_drift.json").is_file()
+
+tokens used
+155,377
+Implemented and committed the strict Hinf determinism audit on `phase-7-9-b-runner-hinf-determinism-audit`.
+
+Commit: `0d1fed2 GLASSBOX [role: codex-repro-engineer] Add strict Hinf determinism audit`
+
+Added:
+- [scripts/audit_hinf_residual_determinism.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-9-b-runner-hinf-determinism-audit/scripts/audit_hinf_residual_determinism.py:1)
+- [tests/test_audit_hinf_residual_determinism.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-9-b-runner-hinf-determinism-audit/tests/test_audit_hinf_residual_determinism.py:1)
+
+What it does:
+- Audits committed strict output and manifest contracts.
+- Recomputes covariance/decomposition from committed trace residuals at explicit `1e-12` tolerances.
+- Compares key Hinf correlations and decomposition shares.
+- Supports optional fresh strict recomputation into a temp diagnostics directory without touching committed `outputs/`.
+- Fails non-zero on drift and preserves fresh diagnostics outside committed artifacts.
+
+Validation passed:
+- `uv run --locked --all-extras python scripts/audit_hinf_residual_determinism.py --fresh-run never`
+- `uv run --locked --all-extras python scripts/audit_hinf_residual_determinism.py --fresh-run auto`
+  - fresh run ok, diagnostics: `/tmp/bsebench_hinf_determinism_fkravwzx`
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`
+  - `119 passed, 5 deselected`
+- `uv run --locked --all-extras ruff check .`
+- `uv run --locked --all-extras ruff format --check .`
+
+No committed evidence, thesis, claim registry, roadmap, or SOTA-related files were edited.
