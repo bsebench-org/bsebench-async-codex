@@ -144,3 +144,4 @@
 - **00:51 UTC** | [actor: codex-FR] | [MERGE] | phase-6-11-d-friedman-nemenyi-stats-fix-1 | ff-pushed `bsebench-stats/main` to `e32b72d` after worker gates, clean CTO validation, and independent validator Locke GO.
 - **00:51 UTC** | [actor: codex-FR] | [BLOCK] | phase-6-11-b-chi2-multi-cfg-sweep-fix-1 | blocked branch `b776508` from merge because committed `outputs/chi2_sweep_5x5.json` had `ok=0, skipped=25`; code gates passed, but this is diagnostic output, not scientific evidence.
 - **00:51 UTC** | [actor: codex-FR] | [QUEUE] | phase-6-11-b-chi2-multi-cfg-sweep-fix-2 | queued evidence-hygiene fix from the fix-1 branch: either produce real `ok` cells or remove the all-skipped JSON from versioned evidence and add a fail-loud guard.
+- **00:56 UTC** | [actor: codex-FR] | [QUEUE] | phase-6-11-c-stats-panel-runner | queued roadmap Phase 6.11.c on `bsebench-stats`: reusable Friedman/Nemenyi/Spearman panel runner, independent of the active chi2 sweep fix-2.

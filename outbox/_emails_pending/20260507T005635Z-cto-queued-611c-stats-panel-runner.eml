@@ -1,0 +1,12 @@
+To: akir.oussama@gmail.com
+Subject: [BSEBench CTO] queued phase 6.11.c stats panel runner
+Date: Thu, 07 May 2026 00:56:35 +0000
+From: codex-FR <noreply@bsebench.local>
+
+Queued `phase-6-11-c-stats-panel-runner` for bsebench-stats while runner
+`phase-6-11-b...fix-2` is active.
+
+Rationale: Phase 6.11.d merged Friedman/Nemenyi primitives. Roadmap 6.11.c asks
+for the panel-style bridge with Friedman + Nemenyi + Spearman correlation. This
+is independent of the chi2 sweep evidence-hygiene fix and keeps the second
+worker productive without touching claims.

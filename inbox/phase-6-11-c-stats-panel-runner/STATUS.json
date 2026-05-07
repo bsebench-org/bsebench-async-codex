@@ -1,0 +1,9 @@
+{
+  "phase_id": "phase-6-11-c-stats-panel-runner",
+  "status": "queued",
+  "ts_queued": "2026-05-07T00:56:35Z",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
+  "target_branch": "phase-6-11-c-stats-panel-runner",
+  "base_branch": "main",
+  "hard_wallclock_min": 40
+}
