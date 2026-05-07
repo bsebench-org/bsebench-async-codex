@@ -1,0 +1,151 @@
+{
+  "allowed_claim_scope": {
+    "covariance_only": "Candidate evidence supports a scoped residual-covariance pattern only if the wording explicitly states that Hinf is low-correlated with EnsembleMeta and JUKFV6B but high-correlated with EKF on the strict five-config panel.",
+    "decomposition_only": "Candidate evidence supports a residual-variance decomposition observation only if it is framed as a mechanical panel result, not as a mechanism proof.",
+    "joint_candidate": "Preferred candidate scope: a joint residual-covariance and residual-variance signature on the strict five-config panel, with explicit limitations."
+  },
+  "artifact_hashes": {
+    "chi2_sweep_5x5_json": {
+      "path": "outputs/chi2_sweep_5x5.json",
+      "sha256": "ab1c3d92e762aa00365b3b2b1b1bd98dc0d87fc78519cdfb211e242135158d20",
+      "size_bytes": 62092
+    },
+    "hinf_residual_artifact_manifest_json": {
+      "path": "outputs/hinf_residual_artifact_manifest.json",
+      "repo": "bsebench-runner",
+      "sha": "cf99b71"
+    },
+    "hinf_residual_cache_preflight_json": {
+      "path": "outputs/hinf_residual_cache_preflight.json",
+      "sha256": "e002d37837e8ee6c4ddfa43b5c4607a6278ce240f1839642ddc9fd85c01329d7",
+      "size_bytes": 4970
+    },
+    "hinf_residual_evidence_5x5_json": {
+      "path": "outputs/hinf_residual_evidence_5x5.json",
+      "sha256": "35c255c696fd9b63552c2206d08009aea834c17f3f09e2bd49b7ac5666917f78",
+      "size_bytes": 2679574
+    }
+  },
+  "banned_wording": [
+    "claim_55 update",
+    "verified Hinf claim",
+    "Hinf is uncorrelated with all L2 filters",
+    "Hinf is a structural outlier",
+    "mechanism proved",
+    "closed-form mechanism proof",
+    "thesis-proven claim",
+    "registry verified"
+  ],
+  "candidate": {
+    "candidate_id": "claim_63",
+    "candidate_name": "hinf_residual_cov_decomp",
+    "initial_registry_status_if_ever_added": "proposed",
+    "must_not_target": "claim_55",
+    "status": "async_candidate_only"
+  },
+  "commit_anchors": {
+    "async_claim_draft": "6e988ae",
+    "async_provenance_log": "504fb72",
+    "async_replay_log": "1ddc79a",
+    "runner_evidence_bundle": "d21e059a1eb3e1128959c6cc3ca7cd01b0f0b12a",
+    "runner_output_audit": "5885b3f6c9bebef8aa9756445b53673dbbe6c8bc",
+    "runner_provenance_lock": "cf99b71",
+    "stats_replay_audit": "7d09a20"
+  },
+  "completed_gates": {
+    "independent_validators": {
+      "Maxwell": "GO on async claim candidate draft",
+      "Pascal": "GO on runner provenance lock",
+      "Wegener": "GO on stats replay audit"
+    },
+    "runner_manifest_audit": {
+      "command": "uv run --locked --all-extras python scripts/audit_hinf_residual_manifest.py",
+      "result": "pass",
+      "stats_lock": "d7e86b72398e6785238797fabbb5c788d2294215"
+    },
+    "runner_output_audit": {
+      "chi2": {
+        "error": 0,
+        "ok": 25,
+        "skipped": 0
+      },
+      "evidence": {
+        "ok_configs": 5,
+        "ok_filter_runs": 25
+      },
+      "preflight": {
+        "missing_configs": 0,
+        "ok_configs": 5
+      }
+    },
+    "stats_replay": {
+      "command": "uv run scripts/replay_hinf_residual_stats.py --evidence ../bsebench-runner/outputs/hinf_residual_evidence_5x5.json",
+      "residual_covariance_panel_values_compared": 584,
+      "residual_variance_decomposition_values_compared": 498,
+      "result": "pass"
+    }
+  },
+  "created_utc": "2026-05-07T05:12:00Z",
+  "guardrails": {
+    "claim_55_targeted": false,
+    "mechanical_evidence_only": true,
+    "registry_edit_allowed": false,
+    "scientific_verdict": "none",
+    "thesis_prose_edit_allowed": false
+  },
+  "interpretation_boundary": [
+    "This is not a thesis registry entry.",
+    "This is not a verified claim.",
+    "Hinf has high aggregate correlation with EKF on this panel, so blanket uncorrelated-outlier wording is invalid.",
+    "The strict five-config bundle is complete but still a small evidence surface.",
+    "NASA B0005 contributes only 97 post-warmup retained samples.",
+    "No closed-form Hinf mechanism is proved."
+  ],
+  "mechanical_observations": {
+    "configs": [
+      "Yao BCDC T25",
+      "Yao US06 T25",
+      "Panasonic US06 T25",
+      "NASA B0005 T24",
+      "CALCE A123 DST T25"
+    ],
+    "filters": [
+      "EnsembleMeta",
+      "EKF",
+      "UKFDef",
+      "JUKFV6B",
+      "Hinf"
+    ],
+    "hinf_correlations": {
+      "EKF": 0.8870889996288478,
+      "EnsembleMeta": 0.012880056269532505,
+      "JUKFV6B": 0.13619668042454816,
+      "UKFDef": 0.26529211558795396
+    },
+    "residual_covariance": {
+      "fraction_below_abs_corr_0_5": 0.9,
+      "max_abs_corr": 0.8870889996288478,
+      "median_abs_corr": 0.1528167598682994,
+      "off_diagonal_finite_pairs": "10/10"
+    },
+    "trace": {
+      "error_configs": 0,
+      "error_filter_runs": 0,
+      "ok_configs": 5,
+      "ok_filter_runs": 25
+    },
+    "variance_decomposition": {
+      "config_share": 0.6229435697547356,
+      "filter_share": 0.315492687747909,
+      "residual_interaction_share": 0.06156374249735543
+    }
+  },
+  "next_required_gates_before_thesis_registry": [
+    "Human/CTO decision on covariance-only vs decomposition-only vs joint wording.",
+    "Minimal claim_63 registry patch only; do not edit claim_55.",
+    "Run thesis claim registry validation, including tests/test_claims.py or current equivalent.",
+    "Add MASTER_DISCOVERIES only after registry patch acceptance.",
+    "Keep initial registry status proposed unless a separate verification task is explicitly assigned."
+  ],
+  "schema_version": "claim63_hinf_evidence_card_v1"
+}
