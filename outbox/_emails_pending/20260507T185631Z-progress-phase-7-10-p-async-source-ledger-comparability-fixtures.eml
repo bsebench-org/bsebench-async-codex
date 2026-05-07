@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [ESCALATED] phase-7-10-p-async-source-ledger-comparability-fixtures (panel 80/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T20:56:31+02:00
+
+Phase    : phase-7-10-p-async-source-ledger-comparability-fixtures
+Etat     : escalated (escalated)
+Panel    : 80/100 (seuil 89)
+Quoi     : Phase 7.10.p - async source-ledger comparability fixtures
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-p-async-source-ledger-comparability-fixtures/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-p-async-source-ledger-comparability-fixtures/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-p-async-source-ledger-comparability-fixtures/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
