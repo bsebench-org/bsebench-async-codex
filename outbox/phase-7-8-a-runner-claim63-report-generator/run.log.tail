@@ -1,0 +1,200 @@
++import hashlib
++import importlib.util
++import json
++import sys
++from pathlib import Path
++
++import pytest
++
++SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "build_hinf_candidate_report.py"
++REPO_ROOT = Path(__file__).resolve().parents[1]
++EVIDENCE_PATH = REPO_ROOT / "outputs" / "hinf_residual_evidence_5x5.json"
++MANIFEST_PATH = REPO_ROOT / "outputs" / "hinf_residual_artifact_manifest.json"
++
++
++def _load_script_module():
++    spec = importlib.util.spec_from_file_location("build_hinf_candidate_report", SCRIPT_PATH)
++    assert spec is not None
++    assert spec.loader is not None
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[spec.name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++@pytest.fixture(scope="module")
++def report_module():
++    return _load_script_module()
++
++
++def _sha256_file(path: Path) -> str:
++    digest = hashlib.sha256()
++    with path.open("rb") as handle:
++        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
++            digest.update(chunk)
++    return digest.hexdigest()
++
++
++def _write_json(path: Path, payload: dict[str, object]) -> Path:
++    text = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False)
++    path.write_text(text, encoding="utf-8")
++    return path
++
++
++def _manifest_for_evidence(tmp_path: Path, evidence_path: Path) -> Path:
++    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
++    manifest["artifacts"]["evidence"]["sha256"] = _sha256_file(evidence_path)
++    manifest["artifacts"]["evidence"]["size_bytes"] = evidence_path.stat().st_size
++    return _write_json(tmp_path / "manifest.json", manifest)
++
++
++@pytest.mark.fast
++def test_script_import_is_side_effect_free(report_module) -> None:
++    assert callable(report_module.build_candidate_report)
++    assert callable(report_module.render_markdown_report)
++    assert callable(report_module.main)
++    assert report_module.DEFAULT_SUMMARY_PATH.name == "hinf_candidate_report_summary.json"
++
++
++@pytest.mark.fast
++def test_committed_bundle_writes_neutral_summary_and_markdown(
++    report_module,
++    tmp_path: Path,
++    capsys,
++) -> None:
++    summary_path = tmp_path / "summary.json"
++    markdown_path = tmp_path / "report.md"
++
++    rc = report_module.main(
++        [
++            "--evidence",
++            str(EVIDENCE_PATH),
++            "--manifest",
++            str(MANIFEST_PATH),
++            "--summary-output",
++            str(summary_path),
++            "--markdown-output",
++            str(markdown_path),
++        ]
++    )
++
++    captured = capsys.readouterr()
++    assert rc == 0
++    assert "hinf candidate report ok" in captured.out
++    summary = json.loads(summary_path.read_text(encoding="utf-8"))
++    markdown = markdown_path.read_text(encoding="utf-8")
++
++    assert summary["guardrails"] == {
++        "scientific_verdict": "none",
++        "claim_target": "new_hinf_candidate_not_claim_55",
++        "mechanical_evidence_only": True,
++        "claim_55_targeted": False,
++    }
++    assert summary["counts"]["trace_summary"] == {
++        "ok_configs": 5,
++        "error_configs": 0,
++        "ok_filter_runs": 25,
++        "error_filter_runs": 0,
++    }
++    assert summary["counts"]["manifest_strict_summary"]["chi2"] == {
++        "ok": 25,
++        "skipped": 0,
++        "error": 0,
++    }
++    assert summary["hinf_correlations"]["aggregate"]["EKF"] == 0.8870889996288478
++    assert summary["variance_decomposition"]["full_panel_shares"] == {
++        "config_share": 0.6229435697547356,
++        "filter_share": 0.315492687747909,
++        "residual_or_interaction_share": 0.06156374249735543,
++    }
++    assert summary["manifest_artifacts"]["evidence"]["sha256"] == (
++        "35c255c696fd9b63552c2206d08009aea834c17f3f09e2bd49b7ac5666917f78"
++    )
++    assert "# Strict Hinf Residual Candidate Evidence Report" in markdown
++    assert "new_hinf_candidate_not_claim_55" in markdown
++    assert "0.8870889996288478" in markdown
++
++
++@pytest.mark.fast
++def test_evidence_guardrail_change_fails_closed(report_module, tmp_path: Path) -> None:
++    evidence = json.loads(EVIDENCE_PATH.read_text(encoding="utf-8"))
++    bad_evidence = copy.deepcopy(evidence)
++    bad_evidence["claim_55_targeted"] = True
++    bad_evidence_path = _write_json(tmp_path / "bad_evidence.json", bad_evidence)
++    manifest_path = _manifest_for_evidence(tmp_path, bad_evidence_path)
++
++    with pytest.raises(
++        report_module.HinfCandidateReportError,
++        match=r"evidence\.claim_55_targeted",
++    ):
++        report_module.build_candidate_report(
++            evidence_path=bad_evidence_path,
++            manifest_path=manifest_path,
++        )
++
++
++@pytest.mark.fast
++def test_manifest_guardrail_change_exits_nonzero(report_module, tmp_path: Path, capsys) -> None:
++    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
++    bad_manifest = copy.deepcopy(manifest)
++    bad_manifest["claim_target"] = "claim_55"
++    bad_manifest_path = _write_json(tmp_path / "bad_manifest.json", bad_manifest)
++    summary_path = tmp_path / "summary.json"
++    markdown_path = tmp_path / "report.md"
++
++    rc = report_module.main(
++        [
++            "--evidence",
++            str(EVIDENCE_PATH),
++            "--manifest",
++            str(bad_manifest_path),
++            "--summary-output",
++            str(summary_path),
++            "--markdown-output",
++            str(markdown_path),
++        ]
++    )
++
++    captured = capsys.readouterr()
++    assert rc == 2
++    assert "manifest.claim_target" in captured.out
++    assert not summary_path.exists()
++    assert not markdown_path.exists()
++
++
++@pytest.mark.fast
++def test_manifest_evidence_hash_mismatch_fails_closed(report_module, tmp_path: Path) -> None:
++    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
++    bad_manifest = copy.deepcopy(manifest)
++    bad_manifest["artifacts"]["evidence"]["sha256"] = "0" * 64
++    bad_manifest_path = _write_json(tmp_path / "hash_mismatch_manifest.json", bad_manifest)
++
++    with pytest.raises(
++        report_module.HinfCandidateReportError,
++        match=r"manifest\.artifacts\.evidence\.sha256",
++    ):
++        report_module.build_candidate_report(
++            evidence_path=EVIDENCE_PATH,
++            manifest_path=bad_manifest_path,
++        )
+
+tokens used
+151,292
+Implemented and committed the neutral Hinf candidate report generator.
+
+Commit: `6a56ae98dc1ac6ef5599ab7968315164be9f40ce`
+
+Changed files:
+- [build_hinf_candidate_report.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-8-a-runner-claim63-report-generator/scripts/build_hinf_candidate_report.py)
+- [test_build_hinf_candidate_report.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-8-a-runner-claim63-report-generator/tests/test_build_hinf_candidate_report.py)
+- [hinf_candidate_report_summary.json](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-8-a-runner-claim63-report-generator/outputs/hinf_candidate_report_summary.json)
+- [hinf_candidate_report.md](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-8-a-runner-claim63-report-generator/outputs/hinf_candidate_report.md)
+
+Validation run:
+- `uv run --locked --all-extras python scripts/audit_hinf_residual_manifest.py` passed
+- `uv run --locked --all-extras python scripts/build_hinf_candidate_report.py` passed
+- `uv run --locked --all-extras pytest tests/test_build_hinf_candidate_report.py -q` passed: 5 passed
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q` passed: 113 passed, 5 deselected
+- `uv run --locked --all-extras ruff check .` passed
+
+Worktree is clean and the branch is ahead by 1 commit.
