@@ -98,6 +98,22 @@ is_queueable_phase_id() {
   [[ "$phase_id" =~ ^phase-(7|8|11)(-|$) ]]
 }
 
+resolve_repo_dir() {
+  local repo="$1"
+
+  case "$repo" in
+    "~")
+      printf '%s\n' "$HOME"
+      ;;
+    "~/"*)
+      printf '%s/%s\n' "$HOME" "${repo#~/}"
+      ;;
+    *)
+      printf '%s\n' "$repo"
+      ;;
+  esac
+}
+
 brief_target_branch_claimed() {
   local brief="$1"
   local target_repo target_branch repo_dir
@@ -106,7 +122,7 @@ brief_target_branch_claimed() {
   target_branch="$(target_branch_from_brief "$brief")"
   [[ -n "$target_repo" && -n "$target_branch" ]] || return 1
 
-  repo_dir="$(eval echo "$target_repo")"
+  repo_dir="$(resolve_repo_dir "$target_repo")"
   [[ -d "$repo_dir/.git" ]] || return 1
 
   git -C "$repo_dir" show-ref --verify --quiet "refs/heads/$target_branch" && return 0
@@ -115,22 +131,11 @@ brief_target_branch_claimed() {
 }
 
 reserve_candidates() {
-  { find cto/AUTONOMY_BACKLOG -mindepth 2 -maxdepth 2 -name BRIEF.md -print 2>/dev/null || true; } |
-    sort |
-    while IFS= read -r brief ; do
-      local phase_dir phase_id
-      phase_dir="$(dirname "$brief")"
-      phase_id="$(basename "$phase_dir")"
-      is_queueable_phase_id "$phase_id" || continue
-      [[ -f "$phase_dir/QUEUED.json" ]] && continue
-      [[ -d "inbox/$phase_id" ]] && continue
-      brief_target_branch_claimed "$brief" && continue
-      printf '%s\n' "$brief"
-    done
+  bash scripts/check-autonomy-brief-reserve.sh --list-queueable --min 0
 }
 
 reserve_count() {
-  reserve_candidates | wc -l | tr -d ' '
+  bash scripts/check-autonomy-brief-reserve.sh --count-only --min 0
 }
 
 fresh_running_count() {
@@ -224,16 +229,41 @@ ensure_chef_daemon() {
   return 0
 }
 
+frontmatter_value() {
+  local path="$1"
+  local key="$2"
+
+  awk -v key="$key" '
+    /^---[[:space:]]*$/ {
+      if (!seen_frontmatter) {
+        frontmatter = 1
+        seen_frontmatter = 1
+        next
+      }
+      if (frontmatter) {
+        exit
+      }
+      next
+    }
+    frontmatter && index($0, key ":") == 1 {
+      sub("^[^:]+:[[:space:]]*", "")
+      gsub(/^["'\'']|["'\'']$/, "")
+      print
+      exit
+    }
+  ' "$path"
+}
+
 target_repo_from_brief() {
-  awk '/^---$/{flag=!flag; next} flag && /^target_repo:/{print $2; exit}' "$1"
+  frontmatter_value "$1" "target_repo"
 }
 
 target_branch_from_brief() {
-  awk '/^---$/{flag=!flag; next} flag && /^target_branch:/{print $2; exit}' "$1"
+  frontmatter_value "$1" "target_branch"
 }
 
 base_branch_from_brief() {
-  awk '/^---$/{flag=!flag; next} flag && /^base_branch:/{print $2; exit}' "$1"
+  frontmatter_value "$1" "base_branch"
 }
 
 queue_backlog_brief() {
