@@ -1,0 +1,200 @@
++
++SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
++CHECKER="$REPO_ROOT/scripts/check-source-ledger-comparability.sh"
++FIXTURE_DIR="$REPO_ROOT/tests/fixtures/source-ledger-comparability"
++
++fail() {
++  echo "FAIL: $*" >&2
++  exit 1
++}
++
++assert_contains() {
++  local haystack="$1"
++  local needle="$2"
++  local label="$3"
++
++  if [[ "$haystack" != *"$needle"* ]] ; then
++    printf '%s\n' "$haystack" >&2
++    fail "$label: missing [$needle]"
++  fi
++}
++
++run_pass() {
++  local label="$1"
++  local file="$2"
++  local expected_summary="$3"
++  local output
++
++  output="$("$CHECKER" "$file" 2>&1)"
++  printf '%s\n' "$output"
++  assert_contains "$output" "$expected_summary" "$label summary"
++  assert_contains "$output" "incomplete=0" "$label completeness"
++}
++
++run_expected_fail() {
++  local label="$1"
++  local file="$2"
++  local output
++
++  if output="$("$CHECKER" "$file" 2>&1)" ; then
++    printf '%s\n' "$output" >&2
++    fail "$label: expected checker failure"
++  fi
++  printf '%s\n' "$output"
++  assert_contains "$output" "[INCOMPLETE]" "$label incomplete marker"
++  assert_contains "$output" "comparison incomplete" "$label incomplete reason"
++}
++
++run_pass \
++  "comparable row" \
++  "$FIXTURE_DIR/pass-comparable.json" \
++  "entries=1 comparable=1 partial=0 not_comparable=0 incomplete=0"
++
++run_pass \
++  "partial row" \
++  "$FIXTURE_DIR/pass-partial.json" \
++  "entries=1 comparable=0 partial=1 not_comparable=0 incomplete=0"
++
++run_pass \
++  "not-comparable row" \
++  "$FIXTURE_DIR/pass-not-comparable.json" \
++  "entries=1 comparable=0 partial=0 not_comparable=1 incomplete=0"
++
++run_expected_fail \
++  "missing-required-field row" \
++  "$FIXTURE_DIR/fail-missing-required-fields.json"
++
++missing_output="$("$CHECKER" "$FIXTURE_DIR/fail-missing-required-fields.json" 2>&1 || true)"
++for field in stable_url_or_doi retrieval_date metric dataset split method reported_value bsebench_frozen_value comparability_caveat ; do
++  assert_contains "$missing_output" "$field" "missing-required-field probe"
++done
++
++multi_output="$(
++  "$CHECKER" \
++    "$FIXTURE_DIR/pass-comparable.json" \
++    "$FIXTURE_DIR/pass-partial.json" \
++    "$FIXTURE_DIR/pass-not-comparable.json" \
++    2>&1
++)"
++printf '%s\n' "$multi_output"
++assert_contains "$multi_output" "comparable=1 partial=1 not_comparable=1 incomplete=0" "combined positive probe"
++
++echo "Source-ledger comparability fixture checks passed."
+diff --git a/tests/fixtures/source-ledger-comparability/fail-missing-required-fields.json b/tests/fixtures/source-ledger-comparability/fail-missing-required-fields.json
+new file mode 100755
+index 0000000000000000000000000000000000000000..9ace802be247e17f465c18bb79d951c60a23cb56
+--- /dev/null
++++ b/tests/fixtures/source-ledger-comparability/fail-missing-required-fields.json
+@@ -0,0 +1,13 @@
++{
++  "source_ledger": {
++    "schema_version": "source-ledger-comparability/v1",
++    "ledger_status": "synthetic_negative_fixture",
++    "entries": [
++      {
++        "source_id": "synthetic-missing-required-001",
++        "title": "Synthetic Missing Required Fields Row",
++        "comparability": "partial"
++      }
++    ]
++  }
++}
+diff --git a/tests/fixtures/source-ledger-comparability/pass-comparable.json b/tests/fixtures/source-ledger-comparability/pass-comparable.json
+new file mode 100755
+index 0000000000000000000000000000000000000000..4209b326400be1c583f1658fcbb0b1a2004cc0ae
+--- /dev/null
++++ b/tests/fixtures/source-ledger-comparability/pass-comparable.json
+@@ -0,0 +1,22 @@
++{
++  "source_ledger": {
++    "schema_version": "source-ledger-comparability/v1",
++    "ledger_status": "synthetic_positive_fixture",
++    "entries": [
++      {
++        "source_id": "synthetic-comparable-001",
++        "title": "Synthetic Comparable Source Row",
++        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/comparable-001",
++        "retrieval_date": "2026-05-07",
++        "metric": "synthetic RMSE percent",
++        "dataset": "SyntheticCellSet v0 fixed profile",
++        "split": "synthetic fixed test split A",
++        "method": "SyntheticComparableMethod",
++        "reported_value": "1.230 synthetic units (fixture only, not literature evidence)",
++        "bsebench_frozen_value": "1.230 synthetic units from frozen fixture artifact",
++        "comparability": "comparable",
++        "comparability_caveat": "none; synthetic fixture uses the same metric, dataset, split, and method basis"
++      }
++    ]
++  }
++}
+diff --git a/tests/fixtures/source-ledger-comparability/pass-not-comparable.json b/tests/fixtures/source-ledger-comparability/pass-not-comparable.json
+new file mode 100755
+index 0000000000000000000000000000000000000000..bf1260472ab15dcce6bb79ae6539c019d78d5913
+--- /dev/null
++++ b/tests/fixtures/source-ledger-comparability/pass-not-comparable.json
+@@ -0,0 +1,22 @@
++{
++  "source_ledger": {
++    "schema_version": "source-ledger-comparability/v1",
++    "ledger_status": "synthetic_positive_fixture",
++    "entries": [
++      {
++        "source_id": "synthetic-not-comparable-001",
++        "title": "Synthetic Not Comparable Source Row",
++        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/not-comparable-001",
++        "retrieval_date": "2026-05-07",
++        "metric": "synthetic MAE percent",
++        "dataset": "SyntheticOtherCellSet v0 fixed profile",
++        "split": "synthetic source-only test split C",
++        "method": "SyntheticDifferentMethod",
++        "reported_value": "3.210 synthetic units (fixture only, not literature evidence)",
++        "bsebench_frozen_value": "1.230 synthetic units from frozen fixture artifact",
++        "comparability": "not_comparable",
++        "comparability_caveat": "synthetic caveat: source row uses a different metric, dataset, split, and method basis"
++      }
++    ]
++  }
++}
+diff --git a/tests/fixtures/source-ledger-comparability/pass-partial.json b/tests/fixtures/source-ledger-comparability/pass-partial.json
+new file mode 100755
+index 0000000000000000000000000000000000000000..c530d4e0e49b9b81014ea92523d325a3b5b8a671
+--- /dev/null
++++ b/tests/fixtures/source-ledger-comparability/pass-partial.json
+@@ -0,0 +1,22 @@
++{
++  "source_ledger": {
++    "schema_version": "source-ledger-comparability/v1",
++    "ledger_status": "synthetic_positive_fixture",
++    "entries": [
++      {
++        "source_id": "synthetic-partial-001",
++        "title": "Synthetic Partial Source Row",
++        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/partial-001",
++        "retrieval_date": "2026-05-07",
++        "metric": "synthetic RMSE percent",
++        "dataset": "SyntheticCellSet v0 fixed profile",
++        "split": "synthetic alternate validation horizon B",
++        "method": "SyntheticComparableMethod",
++        "reported_value": "2.340 synthetic units (fixture only, not literature evidence)",
++        "bsebench_frozen_value": "2.100 synthetic units from frozen fixture artifact",
++        "comparability": "partial",
++        "comparability_caveat": "synthetic caveat: source row shares metric and dataset but uses a different validation horizon"
++      }
++    ]
++  }
++}
+
+tokens used
+149,670
+Implemented and pushed commit `91a0649` to `origin/phase-7-10-p-async-source-ledger-comparability-fixtures`.
+
+Added [check-source-ledger-comparability.sh](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-phase-7-10-p-async-source-ledger-comparability-fixtures/scripts/check-source-ledger-comparability.sh:1), fixture probes in [test-source-ledger-comparability.sh](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-phase-7-10-p-async-source-ledger-comparability-fixtures/scripts/test-source-ledger-comparability.sh:1), and synthetic comparable/partial/not-comparable/missing-field fixtures under `tests/fixtures/source-ledger-comparability/`. Updated the research gate protocol’s source-ledger field set at [docs/RESEARCH-GATE-PROTOCOL-2026-05-07.md](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-phase-7-10-p-async-source-ledger-comparability-fixtures/docs/RESEARCH-GATE-PROTOCOL-2026-05-07.md:129).
+
+Validation passed:
+- `bash scripts/test-source-ledger-comparability.sh`
+- `bash -n scripts/check-source-ledger-comparability.sh scripts/test-source-ledger-comparability.sh`
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md` (`16 checked`)
+- `git diff --check`
+
+No thesis, claim registry, `claims/registry.yaml`, `claim_55`, or roadmap files were edited. Commit has no `Co-Authored-By Claude` trailer.
