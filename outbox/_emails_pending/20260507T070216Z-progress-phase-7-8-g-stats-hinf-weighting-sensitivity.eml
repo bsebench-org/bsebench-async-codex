@@ -1,0 +1,23 @@
+To: akir.oussama@gmail.com
+Subject: [BLOCKED] phase-7-8-g-stats-hinf-weighting-sensitivity (panel 82/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T09:02:16+02:00
+
+Phase    : phase-7-8-g-stats-hinf-weighting-sensitivity
+Etat     : blocked (needs_fix)
+Panel    : 82/100 (seuil 89)
+Quoi     : Phase 7.8.g — Hinf weighting and sample-count sensitivity
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-g-stats-hinf-weighting-sensitivity/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-g-stats-hinf-weighting-sensitivity/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-g-stats-hinf-weighting-sensitivity/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
+
+ATTENTION : chef-daemon est PAUSE.
+Action :
+  (a) supprime outbox/_blocks/phase-7-8-g-stats-hinf-weighting-sensitivity.block pour reprendre, OU
+  (b) queue une fix-BRIEF dans inbox/ qui repond aux preoccupations.
+
+ADVISOR_CHECK : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-g-stats-hinf-weighting-sensitivity/ADVISOR_CHECK.md
