@@ -1,0 +1,200 @@
+         "gap_config_labels": gap_configs,
++        "gap_metadata_datasets": gap_metadata_datasets,
+         "configs": config_payloads,
+     }
+     json.dumps(payload, allow_nan=False)
+@@ -1313,7 +1437,9 @@
+             f"loader_readable={summary['present_and_loader_readable']}, "
+             f"present_unreadable={summary['present_but_unreadable']}, "
+             f"missing={summary['missing']}, "
+-            f"gaps={summary['gap_configs']}"
++            f"unknown_metadata={summary['unknown_metadata']}, "
++            f"config_gaps={summary['gap_configs']}, "
++            f"metadata_gaps={summary['gap_metadata_datasets']}"
+         ),
+         f"scopes: {json.dumps(scope_counts, sort_keys=True)}",
+         "cache_root | source | env_var | cli_override | path",
+@@ -1335,19 +1461,34 @@
+             )
+     lines.extend(
+         [
+-            "config | status | gap_kind | cache_root",
++            "config | availability | status | gap_kind | cache_root",
+         ]
+     )
+     for config in payload["configs"]:
+         lines.append(
+-            f"{config['label']} | {config['status']} | {config['gap_kind']} | "
++            f"{config['label']} | {config['availability_status']} | "
++            f"{config['status']} | {config['gap_kind']} | "
+             f"{config['cache_root']}"
+         )
++    if payload.get("metadata_datasets"):
++        lines.append("metadata_dataset | availability | status | local_reason")
++        for dataset in payload["metadata_datasets"]:
++            readiness = dataset.get("loader_readiness", {})
++            name = dataset.get("dataset") or dataset.get("manifest_path") or "unknown_dataset"
++            lines.append(
++                f"{name} | {dataset.get('availability_status')} | "
++                f"{readiness.get('status')} | {readiness.get('local_reason')}"
++            )
+     return "\n".join(lines)
+ 
+ 
+ __all__ = [
+     "AUDIT_J_SCOPE",
++    "AVAILABILITY_MISSING",
++    "AVAILABILITY_READY",
++    "AVAILABILITY_STATUSES",
++    "AVAILABILITY_UNKNOWN_METADATA",
++    "AVAILABILITY_UNREADABLE",
+     "BSEBENCH_DATASETS_ROOT_ENV_VAR",
+     "DATASETS_LAYOUT_HINTS",
+     "DEFAULT_HASH_MAX_BYTES",
+@@ -1358,6 +1499,7 @@
+     "STATUS_LOADER_READABLE",
+     "STATUS_MISSING",
+     "STATUS_PRESENT_UNREADABLE",
++    "STATUS_UNKNOWN_METADATA",
+     "STRICT_HINF_SCOPE",
+     "AuditJLocalCacheManifestError",
+     "build_auditj_local_cache_manifest",
+diff --git a/tests/test_auditj_local_cache_manifest.py b/tests/test_auditj_local_cache_manifest.py
+index ca4b5aa4be5b014d2e4525992e8dee6a0a91a6c0..28b84bbd0c0ea513ded4dd5f83cded2e29c80e05
+--- a/tests/test_auditj_local_cache_manifest.py
++++ b/tests/test_auditj_local_cache_manifest.py
+@@ -16,6 +16,7 @@
+     STATUS_LOADER_READABLE,
+     STATUS_MISSING,
+     STATUS_PRESENT_UNREADABLE,
++    STATUS_UNKNOWN_METADATA,
+     AuditJLocalCacheManifestError,
+     build_auditj_local_cache_manifest,
+     format_summary,
+@@ -105,21 +106,26 @@
+     return {str(config["label"]): config for config in payload["configs"]}  # type: ignore[index]
+ 
+ 
+-def test_manifest_distinguishes_missing_unreadable_and_loader_readable(tmp_path: Path) -> None:
++def test_manifest_distinguishes_ready_missing_unreadable_and_unknown_metadata(
++    tmp_path: Path,
++) -> None:
+     split_path = _write_split(
+         tmp_path / "split.yaml",
+         [
+             ("calce_legacy", "DST", 25.0),
+             ("panasonic", "US06", 25.0),
+             ("yao", "BCDC", 35.0),
++            ("nasa", "CC-discharge", 24.0),
+         ],
+     )
+     calce_root = tmp_path / "calce"
+     panasonic_root = tmp_path / "panasonic"
+     yao_root = tmp_path / "yao"
++    nasa_root = tmp_path / "nasa"
+     calce_root.mkdir()
+     panasonic_root.mkdir()
+     yao_root.mkdir()
++    nasa_root.mkdir()
+ 
+     valid_path = calce_root / "calce_a123_DST_T25.parquet"
+     _write_loader_parquet(valid_path, temperature_c=25.0)
+@@ -132,6 +138,7 @@
+             "calce_legacy": calce_root,
+             "panasonic": panasonic_root,
+             "yao": yao_root,
++            "nasa": nasa_root,
+         },
+         datasets_roots=(),
+         env={},
+@@ -148,18 +155,42 @@
+     )
+     assert configs["yao:BCDC:T35"]["status"] == STATUS_MISSING
+     assert configs["yao:BCDC:T35"]["gap_kind"] == "missing_required_files"
++    assert configs["nasa:CC-discharge:T24"]["status"] == STATUS_UNKNOWN_METADATA
++    assert configs["nasa:CC-discharge:T24"]["availability_status"] == "unknown_metadata"
++    assert configs["nasa:CC-discharge:T24"]["gap_kind"] == "unknown_metadata"
++    assert configs["nasa:CC-discharge:T24"]["unresolved_requirements"] == [
++        "metadata.csv must be present before the selected NASA trace can be derived"
++    ]
+ 
+     calce_files = configs["calce_legacy:DST:T25"]["required_files"]
+     assert calce_files[0]["size_bytes"] == valid_path.stat().st_size  # type: ignore[index]
+     assert calce_files[0]["sha256"] == hashlib.sha256(valid_path.read_bytes()).hexdigest()  # type: ignore[index]
+     assert payload["evidence_ready"] is False
+     assert payload["summary"] == {  # type: ignore[index]
+-        "configs_total": 3,
++        "configs_total": 4,
+         "present_and_loader_readable": 1,
+         "present_but_unreadable": 1,
+         "missing": 1,
+-        "gap_configs": 2,
++        "unknown_metadata": 1,
++        "gap_configs": 3,
++        "gap_metadata_datasets": 0,
+     }
++    assert payload["availability_summary"]["configs"] == {  # type: ignore[index]
++        "ready": 1,
++        "missing": 1,
++        "unreadable": 1,
++        "unknown_metadata": 1,
++    }
++    assert payload["availability"]["ready"]["config_labels"] == [  # type: ignore[index]
++        "calce_legacy:DST:T25"
++    ]
++    assert payload["availability"]["missing"]["config_labels"] == ["yao:BCDC:T35"]  # type: ignore[index]
++    assert payload["availability"]["unreadable"]["config_labels"] == [  # type: ignore[index]
++        "panasonic:US06:T25"
++    ]
++    assert payload["availability"]["unknown_metadata"]["config_labels"] == [  # type: ignore[index]
++        "nasa:CC-discharge:T24"
++    ]
+     json.dumps(payload, allow_nan=False)
+ 
+ 
+@@ -189,6 +220,7 @@
+ 
+     config = payload["configs"][0]
+     assert config["status"] == STATUS_LOADER_READABLE
++    assert config["availability_status"] == "ready"
+     assert config["selection"] == {
+         "cell_id": "B0005",
+         "test_id": 1,
+@@ -428,8 +460,19 @@
+     assert payload["coverage_summary"]["scope_counts"]["phase8_lg_hg2_manifest_grid"] == 27  # type: ignore[index]
+     metadata = {item["dataset"]: item for item in payload["metadata_datasets"] if "dataset" in item}
+     assert metadata["lg_hg2_stroebl_2024"]["manifest_backed_config_count"] == 27
++    assert metadata["lg_hg2_stroebl_2024"]["availability_status"] == "unknown_metadata"
+     assert payload["near_future_prep"]["phase8"]["manifest_backed_config_count"] == 27  # type: ignore[index]
+     assert payload["near_future_prep"]["phase11"]["manifest_backed_config_count"] == 0  # type: ignore[index]
++    assert (
++        payload["near_future_prep"]["phase11"]["loader_readiness"]["status"]  # type: ignore[index]
++        == STATUS_UNKNOWN_METADATA
++    )
++    assert (
++        "lg_hg2_stroebl_2024"
++        in payload["availability"]["unknown_metadata"][  # type: ignore[index]
++            "metadata_datasets"
++        ]
++    )
+ 
+ 
+ def test_manifest_redacts_token_like_path_fragments(tmp_path: Path) -> None:
+
+tokens used
+171,724
+Implemented and committed `91b14f4` (`probe(cache): separate availability buckets`).
+
+Changed:
+- [auditj_local_cache_manifest.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-i-datasets-phase8-cache-probe/src/bsebench_datasets/auditj_local_cache_manifest.py): adds `unknown_metadata`, `availability_status`, top-level `availability`, and `availability_summary`.
+- [test_auditj_local_cache_manifest.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-i-datasets-phase8-cache-probe/tests/test_auditj_local_cache_manifest.py): pins ready, missing, unreadable, and unknown-metadata behavior.
+
+Validation run:
+- Focused probe tests: `13 passed`
+- Read-only local probe: wrote diagnostic JSON to `/tmp/bsebench_phase8_cache_probe.json`; not committed
+- Full non-slow tests: `240 passed, 29 deselected`
+- `ruff check .`: passed
+- `ruff format --check .`: passed
+- `git diff --check`: passed
+
+Worktree is clean and the branch is ahead by 1 commit. No protected files were edited, and the commit has GLASSBOX metadata with no `Co-Authored-By Claude` trailer.
