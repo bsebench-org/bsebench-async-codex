@@ -1,0 +1,200 @@
+diff --git a/tests/test_residuals.py b/tests/test_residuals.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..364cb5cdce113be57aded9678eea3ad9d79ef3f6
+--- /dev/null
++++ b/tests/test_residuals.py
+@@ -0,0 +1,174 @@
++# ruff: noqa: N803
++
++from __future__ import annotations
++
++import json
++from typing import Any
++
++import numpy as np
++import pytest
++
++from bsebench_runner.residuals import run_residual_traces, run_residual_traces_for_config
++
++
++class _BiasFilter:
++    def __init__(self, bias_v: float) -> None:
++        self.bias_v = float(bias_v)
++
++    def step(
++        self,
++        t: float,
++        voltage_V: float,
++        current_A: float,
++        temperature_C: float,
++    ) -> dict[str, float]:
++        del t, current_A, temperature_C
++        return {
++            "soc_estimated": 0.5,
++            "voltage_predicted": float(voltage_V) + self.bias_v,
++        }
++
++
++class _FailingFilter:
++    def step(
++        self,
++        t: float,
++        voltage_V: float,
++        current_A: float,
++        temperature_C: float,
++    ) -> dict[str, float]:
++        del t, voltage_V, current_A, temperature_C
++        raise RuntimeError("synthetic filter failure")
++
++
++class _SyntheticLoader:
++    def load(self, profile: str, t_c: float) -> dict[str, Any]:
++        assert profile == "US06"
++        return _synthetic_data(n_samples=8, t_c=t_c)
++
++
++def _synthetic_data(n_samples: int = 6, *, t_c: float = 25.0) -> dict[str, Any]:
++    t = np.arange(n_samples, dtype=float)
++    voltage = 3.0 + 0.01 * t
++    return {
++        "t": t,
++        "V": voltage,
++        "I": np.full(n_samples, 0.5, dtype=float),
++        "T_meas": np.full(n_samples, t_c, dtype=float),
++        "N": n_samples,
++    }
++
++
++@pytest.mark.fast
++def test_known_bias_filters_produce_expected_post_warmup_residuals() -> None:
++    payload = run_residual_traces(
++        _synthetic_data(n_samples=6),
++        {
++            "plus_1_5mV": lambda: _BiasFilter(0.0015),
++            "minus_2mV": lambda: _BiasFilter(-0.002),
++        },
++        t_c=25.0,
++        warmup_samples=2,
++    )
++
++    assert payload["n_samples"] == 6
++    assert payload["warmup_samples"] == 2
++    assert payload["retained_samples"] == 4
++    assert payload["measured_voltage_mV"] == pytest.approx([3020.0, 3030.0, 3040.0, 3050.0])
++
++    plus = payload["filters"]["plus_1_5mV"]
++    minus = payload["filters"]["minus_2mV"]
++    assert plus["status"] == "ok"
++    assert minus["status"] == "ok"
++    assert plus["predicted_voltage_mV"] == pytest.approx([3021.5, 3031.5, 3041.5, 3051.5])
++    assert plus["residual_mV"] == pytest.approx([1.5, 1.5, 1.5, 1.5])
++    assert minus["residual_mV"] == pytest.approx([-2.0, -2.0, -2.0, -2.0])
++
++
++@pytest.mark.fast
++def test_load_truncate_and_run_one_adapter_config() -> None:
++    payload = run_residual_traces_for_config(
++        _SyntheticLoader(),
++        "US06",
++        10.0,
++        {"bias": lambda: _BiasFilter(0.001)},
++        n_max=5,
++        warmup_samples=2,
++    )
++
++    assert payload["n_samples"] == 5
++    assert payload["retained_samples"] == 3
++    assert payload["validation_window"] == {"start_index": 2, "end_index": 5}
++    assert payload["filters"]["bias"]["residual_mV"] == pytest.approx([1.0, 1.0, 1.0])
++
++
++@pytest.mark.fast
++def test_mismatched_trace_lengths_raise_clear_value_error() -> None:
++    data = _synthetic_data(n_samples=6)
++    data["T_meas"] = np.full(5, 25.0, dtype=float)
++
++    with pytest.raises(ValueError, match="t, V, I, and T_meas must have matching lengths"):
++        run_residual_traces(
++            data,
++            {"bias": lambda: _BiasFilter(0.0)},
++            t_c=25.0,
++            warmup_samples=0,
++        )
++
++
++@pytest.mark.fast
++def test_empty_filters_and_invalid_warmup_raise_clear_value_error() -> None:
++    data = _synthetic_data(n_samples=4)
++
++    with pytest.raises(ValueError, match="filter_factories must not be empty"):
++        run_residual_traces(data, {}, t_c=25.0, warmup_samples=0)
++
++    with pytest.raises(ValueError, match="warmup_samples must be >= 0"):
++        run_residual_traces(
++            data,
++            {"bias": lambda: _BiasFilter(0.0)},
++            t_c=25.0,
++            warmup_samples=-1,
++        )
++
++    with pytest.raises(ValueError, match="retained sample window is empty after warmup"):
++        run_residual_traces(
++            data,
++            {"bias": lambda: _BiasFilter(0.0)},
++            t_c=25.0,
++            warmup_samples=4,
++        )
++
++
++@pytest.mark.fast
++def test_failing_filter_reports_error_without_residual_evidence() -> None:
++    payload = run_residual_traces(
++        _synthetic_data(n_samples=5),
++        {
++            "ok": lambda: _BiasFilter(0.001),
++            "failing": _FailingFilter,
++        },
++        t_c=25.0,
++        warmup_samples=1,
++    )
++
++    assert payload["filters"]["ok"]["status"] == "ok"
++    failing = payload["filters"]["failing"]
++    assert failing["status"] == "error"
++    assert failing["error"]["type"] == "RuntimeError"
++    assert "synthetic filter failure" in failing["error"]["message"]
++    assert "predicted_voltage_mV" not in failing
++    assert "residual_mV" not in failing
++
++
++@pytest.mark.fast
++def test_residual_trace_output_json_serializes_without_nan() -> None:
++    payload = run_residual_traces(
++        _synthetic_data(n_samples=5),
++        {"bias": lambda: _BiasFilter(0.001)},
++        t_c=25.0,
++        warmup_samples=1,
++    )
++
++    serialized = json.dumps(payload, allow_nan=False)
++    assert '"residual_mV"' in serialized
+
+tokens used
+88,349
+Implemented and committed Phase 7.5.b.
+
+Commit: `05e8cdc`  
+`GLASSBOX [role: worker-codex-FR] Add runner residual trace export helper`
+
+Changed:
+- Added [residuals.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-5-b-runner-residual-trace-export/src/bsebench_runner/residuals.py)
+- Exported helper API from [__init__.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-5-b-runner-residual-trace-export/src/bsebench_runner/__init__.py)
+- Added synthetic tests in [test_residuals.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-5-b-runner-residual-trace-export/tests/test_residuals.py)
+
+Verified:
+- `uv run --all-extras pytest tests/test_residuals.py --tb=short`
+- `uv run --all-extras pytest -m "not slow" --tb=short`
+- `uv run --all-extras ruff format --check .`
+- `uv run --all-extras ruff check .`
+
+No real-data output, claim registry, README, roadmap, or thesis prose edits were committed. Worktree is clean and the branch is ahead by 1 commit.
