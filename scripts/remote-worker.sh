@@ -183,8 +183,14 @@ git commit -m "chore(async): start $queued_phase on $WORKER_ID
 
 Picked up status=queued, marked running at $(date -Iseconds), parsed YAML frontmatter (target_repo=$target_repo, target_branch=$target_branch, base_branch=$base_branch, hard_wallclock_min=$hard_wallclock_min)." --quiet
 if ! git push origin main --quiet ; then
-  # push raced with another worker — abandon and retry next tick
-  git pull --rebase --quiet
+  # Push raced with another worker. The local "start" commit is disposable:
+  # if another worker already marked this phase running, rebasing this commit
+  # can conflict on STATUS.json and strand the async clone mid-rebase.
+  # Realign to origin/main and let the next tick pick the next queued phase.
+  echo "worker: start push raced for $queued_phase, abandoning local start commit" >&2
+  git rebase --abort --quiet 2>/dev/null || true
+  git fetch origin main --quiet || true
+  git reset --hard origin/main --quiet || true
   exit 0
 fi
 
