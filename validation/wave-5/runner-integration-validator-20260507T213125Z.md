@@ -4,6 +4,7 @@ GLASSBOX:
   role: codex-runner-integration-validator
   artifact: runner-integration-validator
   created_utc: 2026-05-07T21:36:01Z
+  updated_utc: 2026-05-07T21:39:49Z
   target_branch: phase-8-4-e-runner-integration-validator-20260507T213125Z
   write_set: validation/wave-5/runner-integration-validator-20260507T213125Z.md
 ---
@@ -23,31 +24,42 @@ Target runner repository inspected:
 
 ## Branch Availability
 
-After `git fetch origin --prune` in the runner repository, this command returned
-no output:
+Initial poll: after `git fetch origin --prune` in the runner repository, this
+command returned no output:
 
 ```bash
 git ls-remote --heads origin phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z
 ```
 
-Result: the W5-01 runner integration branch was not present on `origin` at the
-time of this validation pass. Independent remote validation is therefore
-blocked.
+Final poll: after this validator artifact was first committed, the same remote
+branch appeared on `origin`:
+
+```text
+e0664de6e02dd45832068de427666dbcc2bd3d10	refs/heads/phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z
+```
+
+The runner repository was fetched again with `git fetch origin --prune`. Local
+and remote heads then matched exactly:
+
+```text
+local  phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z: e0664de6e02dd45832068de427666dbcc2bd3d10
+remote origin/phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z: e0664de6e02dd45832068de427666dbcc2bd3d10
+```
 
 For completeness, the CTO-report repository was also checked for the same branch
 name and nearby `phase-8-4-a` / runner integration patterns. No matching
 CTO-report remote branch existed. The actionable branch is runner-scoped.
 
-## Local Pre-Push Evidence Observed
+## Remote Head Evidence Observed
 
 A local linked runner worktree exists:
 
 `/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z`
 
-Observed local status:
+Observed final local tracking status after the branch appeared on `origin`:
 
 ```text
-## phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z...origin/main [ahead 12]
+## phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z...origin/phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z
 ```
 
 Observed local head:
@@ -56,7 +68,7 @@ Observed local head:
 e0664de6e02dd45832068de427666dbcc2bd3d10
 ```
 
-Observed local integration merge commits:
+Observed remote integration merge commits:
 
 | Commit | Parents | Subject |
 | --- | --- | --- |
@@ -69,15 +81,15 @@ Observed local integration merge commits:
 
 The local branch advanced during inspection from R5 head `b14d4716...` to R6
 head `e0664de6...`, which is consistent with W5-01 still being active before a
-remote push.
+remote push. The final remote head is the same R6 merge head.
 
 ## Conflict And Hygiene Checks
 
-Local merge commit inspection found six explicit GLASSBOX merge commits for R1
-through R6. No remote conflict log or remote conflict-resolution commit could be
-independently fetched because the branch is not on `origin`.
+Remote merge commit inspection found six explicit GLASSBOX merge commits for R1
+through R6. The inspected merge commit bodies did not contain a
+`Co-Authored-By: Claude` trailer.
 
-Tracked-file conflict marker scan in the local W5-01 worktree:
+Tracked-file conflict marker scan in the clean W5-01 tracking worktree:
 
 ```bash
 rg -n "conflict|CONFLICT|<<<<<<<|>>>>>>>|======="
@@ -85,19 +97,19 @@ rg -n "conflict|CONFLICT|<<<<<<<|>>>>>>>|======="
 
 Observed result: no matches.
 
-Local integrated diff whitespace check:
+Remote integrated diff whitespace check:
 
 ```bash
-git diff --check origin/main...phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z
+git diff --check origin/main...origin/phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z
 ```
 
 Observed result: pass.
 
-## Focused Local Runner Gate
+## Focused Remote Runner Gate
 
-Because the local W5-01 worktree was clean and had an existing virtual
-environment, a focused pre-push runner gate was run with pytest cache and
-coverage disabled:
+Because the W5-01 tracking worktree was clean, matched the remote head exactly,
+and had an existing virtual environment, a focused runner gate was run with
+pytest cache and coverage disabled:
 
 ```bash
 BSEBENCH_LEGACY_AUTORESEARCH_DIR=/mnt/c/doctorat/these_lfp_2026/ecm_fidelity_lfp/autoresearch \
@@ -112,34 +124,31 @@ BSEBENCH_LEGACY_AUTORESEARCH_DIR=/mnt/c/doctorat/these_lfp_2026/ecm_fidelity_lfp
   -m fast -q --no-cov -p no:cacheprovider
 ```
 
-Observed result: `43 passed in 25.41s`.
+Observed result before the remote branch appeared, on the same SHA: `43 passed in
+25.41s`.
+
+Observed result after the remote branch appeared and local/remote heads matched:
+`43 passed in 13.61s`.
 
 Post-test W5-01 worktree status remained clean.
 
-This is useful pre-push evidence only. It does not replace independent
-validation from a fetched remote branch head.
+This is focused remote-branch validation, not a full non-slow or CI gate.
 
 ## Decision
 
-Decision: `PENDING_REMOTE_PUSH`
+Decision: `PASS_FOCUSED_REMOTE_VALIDATION`
 
-W5-01 runner integration cannot be marked independently validated until
-`origin/phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z` exists.
+W5-01 runner integration is independently validated at the focused runner gate
+level for remote head `e0664de6e02dd45832068de427666dbcc2bd3d10`.
 
-Exact pending gate after W5-01 pushes:
+Residual gates before final promotion:
 
-1. In `/mnt/c/doctorat/bsebench-org/bsebench-runner`, run `git fetch origin --prune`.
-2. Require `git ls-remote --heads origin phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z` to return a head. If it differs from `e0664de6e02dd45832068de427666dbcc2bd3d10`, record the new head and re-run all checks against that head.
-3. Checkout a fresh detached or temporary worktree from `origin/phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z`.
-4. Inspect merge log for R1-R6, conflict-resolution notes, authorship metadata, and absence of `Co-Authored-By: Claude`.
-5. Run `rg -n "conflict|CONFLICT|<<<<<<<|>>>>>>>|======="`.
-6. Run `git diff --check origin/main...origin/phase-8-4-a-runner-universal-wave1-integration-20260507T213125Z`.
-7. Re-run the focused runner gate above from the fetched branch checkout.
-8. Before final promotion, run the broader non-slow runner gate recommended by W4-04 on the integrated tree.
+1. Before final promotion, run the broader non-slow runner gate recommended by W4-04 on the integrated tree.
+2. Preserve the remote head SHA in any downstream merge or release-hardening artifact. If W5-01 advances past `e0664de6e02dd45832068de427666dbcc2bd3d10`, re-run this validator gate against the new head.
 
 ## Non-Claims
 
-- This artifact does not claim final W5-01 integration readiness.
+- This artifact claims only focused remote-branch validation of the observed W5-01 head.
 - This artifact does not claim full integrated CI passed.
 - This artifact does not make external benchmark, leaderboard, novelty, or
   estimator-performance claims.
