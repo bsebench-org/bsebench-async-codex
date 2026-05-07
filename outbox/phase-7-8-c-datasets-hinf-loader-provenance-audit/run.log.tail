@@ -1,0 +1,200 @@
++    "cache_identity_for_config",
++    "default_runner_root",
++    "format_summary",
++    "load_runner_snapshot",
++    "run_audit",
++]
+diff --git a/tests/test_hinf_loader_provenance_audit.py b/tests/test_hinf_loader_provenance_audit.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..3b2bae6f8942bfe6716e8e58d082cb6c81b78066
+--- /dev/null
++++ b/tests/test_hinf_loader_provenance_audit.py
+@@ -0,0 +1,169 @@
++"""Tests for the strict Hinf loader/cache provenance audit."""
++
++from __future__ import annotations
++
++from dataclasses import replace
++from pathlib import Path
++
++import pytest
++
++from bsebench_datasets.hinf_loader_provenance import (
++    STRICT_HINF_LOADER_CONTRACTS,
++    HinfLoaderProvenanceAuditError,
++    StrictHinfConfig,
++    cache_identity_for_config,
++    format_summary,
++    run_audit,
++)
++
++STRICT_CONFIGS = (
++    ('"Yao BCDC T25"', '"yao"', '"BCDC"', "25.0"),
++    ('"Yao US06 T25"', '"yao"', '"US06"', "25.0"),
++    ('"Panasonic US06 T25"', '"panasonic"', '"US06"', "25.0"),
++    ('"NASA B0005 T24"', '"nasa"', '"CC-discharge"', "24.0"),
++    ('"CALCE A123 DST T25"', '"calce_legacy"', '"DST"', "25.0"),
++)
++
++
++def _write_runner_files(
++    runner_root: Path,
++    *,
++    configs: tuple[tuple[str, str, str, str], ...] = STRICT_CONFIGS,
++    filters: tuple[str, ...] = ("EnsembleMeta", "EKF", "UKFDef", "JUKFV6B", "Hinf"),
++) -> None:
++    scripts_dir = runner_root / "scripts"
++    scripts_dir.mkdir(parents=True)
++    config_lines = "\n".join(
++        f"    SweepConfig({label}, {wrapper}, {profile}, {t_c}),"
++        for label, wrapper, profile, t_c in configs
++    )
++    filter_lines = "\n".join(
++        f'    SweepFilter("{label}", "{label}"),'
++        for label in filters
++    )
++    (scripts_dir / "chi2_sweep_5x5.py").write_text(
++        "\n".join(
++            [
++                "from dataclasses import dataclass",
++                "@dataclass(frozen=True)",
++                "class SweepConfig:",
++                "    label: str",
++                "    wrapper: str",
++                "    profile: str",
++                "    t_c: float",
++                "@dataclass(frozen=True)",
++                "class SweepFilter:",
++                "    label: str",
++                "    registry_name: str",
++                "CONFIG_TARGETS = (",
++                config_lines,
++                ")",
++                "FILTER_TARGETS = (",
++                filter_lines,
++                ")",
++                "",
++            ]
++        ),
++        encoding="utf-8",
++    )
++    (scripts_dir / "hinf_residual_cache_preflight.py").write_text(
++        "from chi2_sweep_5x5 import CONFIG_TARGETS, REPO_ROOT, SweepConfig\n",
++        encoding="utf-8",
++    )
++
++
++def test_strict_hinf_loader_provenance_audit_passes_with_synthetic_cache(
++    tmp_path: Path,
++) -> None:
++    runner_root = tmp_path / "runner"
++    _write_runner_files(runner_root)
++    output_path = tmp_path / "audit.json"
++
++    payload = run_audit(runner_root=runner_root, output_path=output_path)
++
++    assert output_path.is_file()
++    assert payload["downloads_performed"] is False
++    assert payload["synthetic_fixtures_only"] is True
++    assert payload["summary"] == {
++        "strict_configs": 5,
++        "strict_filters": 5,
++        "ok_configs": 5,
++        "provenance_gap_configs": 1,
++        "provenance_gaps": 3,
++    }
++    assert payload["configs"]["Yao BCDC T25"]["loader"]["module"].endswith(
++        "yao_tu_berlin_2024_loader"
++    )
++    assert payload["configs"]["Panasonic US06 T25"]["cache_identity"]["required_files"] == [
++        "pan_US06_T25.parquet"
++    ]
++    nasa = payload["configs"]["NASA B0005 T24"]
++    assert nasa["cache_identity"]["mode"] == "metadata_driven_local_cache"
++    assert nasa["runtime_identity"]["selected_file"] == "B0005_test1.parquet"
++    assert nasa["runtime_identity"]["missing_explicit_fields"] == [
++        "dataset",
++        "chemistry",
++        "source_url",
++    ]
++    assert {
++        "field": "source_url",
++        "status": "missing_explicit_runtime_provenance",
++        "disposition": "documented_gap_not_fabricated",
++    } in nasa["provenance_gaps"]
++    assert "strict Hinf loader provenance audit ok" in format_summary(payload)
++
++
++def test_cache_identity_pins_static_and_metadata_driven_files() -> None:
++    assert cache_identity_for_config(
++        StrictHinfConfig("Yao US06 T25", "yao", "US06", 25.0)
++    )["required_files"] == ["Yao-US06-T25.parquet"]
++    assert cache_identity_for_config(
++        StrictHinfConfig("CALCE A123 DST T25", "calce_legacy", "DST", 25.0)
++    )["required_files"] == ["calce_a123_DST_T25.parquet"]
++    nasa_identity = cache_identity_for_config(
++        StrictHinfConfig("NASA B0005 T24", "nasa", "CC-discharge", 24.0)
++    )
++    assert nasa_identity["required_files"] == ["metadata.csv"]
++    assert nasa_identity["derived_files"][0]["selector"] == "nasa_pcoe_loader._select_row_paper2b"
++
++
++def test_audit_fails_when_hinf_filter_disappears(tmp_path: Path) -> None:
++    runner_root = tmp_path / "runner"
++    _write_runner_files(
++        runner_root,
++        filters=("EnsembleMeta", "EKF", "UKFDef", "JUKFV6B", "Other"),
++    )
++
++    with pytest.raises(HinfLoaderProvenanceAuditError, match="filter label 'Hinf' is missing"):
++        run_audit(runner_root=runner_root)
++
++
++def test_audit_fails_when_strict_wrapper_has_no_contract(tmp_path: Path) -> None:
++    runner_root = tmp_path / "runner"
++    configs = (*STRICT_CONFIGS[:-1], ('"Unknown strict"', '"unknown"', '"DST"', "25.0"))
++    _write_runner_files(runner_root, configs=configs)
++
++    with pytest.raises(HinfLoaderProvenanceAuditError, match="has no loader provenance contract"):
++        run_audit(runner_root=runner_root)
++
++
++def test_audit_fails_when_required_runtime_identity_field_disappears(
++    tmp_path: Path,
++) -> None:
++    runner_root = tmp_path / "runner"
++    _write_runner_files(runner_root)
++    contracts = dict(STRICT_HINF_LOADER_CONTRACTS)
++    panasonic = contracts["panasonic"]
++    contracts["panasonic"] = replace(
++        panasonic,
++        required_runtime_identity_fields=(
++            *panasonic.required_runtime_identity_fields,
++            "deterministic_loader_path",
++        ),
++    )
++
++    with pytest.raises(
++        HinfLoaderProvenanceAuditError,
++        match="required runtime identity fields disappeared",
++    ):
++        run_audit(runner_root=runner_root, loader_contracts=contracts)
+
+tokens used
+140,494
+Implemented and committed `f62a4da` (`test(loaders): audit strict Hinf provenance`).
+
+Added:
+- [hinf_loader_provenance.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-8-c-datasets-hinf-loader-provenance-audit/src/bsebench_datasets/hinf_loader_provenance.py): parses runner strict 5x5 configs, maps wrappers to dataset loaders/HF repos/cache identities, and exercises loaders with synthetic local fixtures only.
+- [audit_hinf_loader_provenance.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-8-c-datasets-hinf-loader-provenance-audit/scripts/audit_hinf_loader_provenance.py): CLI audit wrapper.
+- [test_hinf_loader_provenance_audit.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-8-c-datasets-hinf-loader-provenance-audit/tests/test_hinf_loader_provenance_audit.py): falsification tests for missing Hinf filter, unknown wrapper, and vanished runtime identity fields.
+
+The audit records NASA PCoE missing `dataset`, `chemistry`, and `source_url` as machine-readable gaps, without inventing values.
+
+Validation passed:
+- `uv run python scripts/audit_hinf_loader_provenance.py --runner-root /mnt/c/doctorat/bsebench-org/bsebench-runner`
+- `uv run pytest tests/test_hinf_loader_provenance_audit.py -q`
+- `uv run pytest tests/ -m "not slow" -q` (`227 passed, 29 deselected`)
+- `uv run ruff check .`
+
+Working tree is clean and the branch is ahead by 1 commit.
