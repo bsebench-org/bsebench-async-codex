@@ -3,6 +3,8 @@
 #
 # Default mode checks staged and untracked Phase 7/8/11 BRIEF.md files. Pass
 # explicit files for local review, or --all to audit every matching BRIEF.
+# This also accepts curated autonomy backlog BRIEFs under
+# cto/AUTONOMY_BACKLOG/<phase-id>/BRIEF.md before they are copied to inbox.
 
 set -euo pipefail
 
@@ -11,10 +13,11 @@ usage() {
 Usage:
   scripts/check-research-brief-gates.sh [--dry-run] [--staged|--all] [BRIEF.md ...]
 
-Checks Phase 7/8/11 BRIEFs for minimum research-gate wording:
+Checks Phase 7/8/11 inbox or autonomy-backlog BRIEFs for minimum research-gate wording:
   - falsification condition
   - validation/replay wording
   - no thesis/claim registry edits
+  - no claim_55 targeting
   - no unsupported SOTA claims
 
 With no files, the default is --staged, which includes untracked BRIEFs.
@@ -66,7 +69,7 @@ fi
 
 is_research_brief() {
   local path="$1"
-  [[ "$path" =~ (^|/)inbox/phase-(7|8|11)[^/]*/BRIEF\.md$ ]]
+  [[ "$path" =~ (^|/)(inbox|cto/AUTONOMY_BACKLOG)/phase-(7|8|11)[^/]*/BRIEF\.md$ ]]
 }
 
 collect_files() {
@@ -75,18 +78,27 @@ collect_files() {
       printf '%s\n' "${explicit_files[@]}"
       ;;
     all)
-      find inbox -type f -path '*/BRIEF.md' | sort
+      {
+        find inbox -type f -path '*/BRIEF.md'
+        find cto/AUTONOMY_BACKLOG -type f -path '*/BRIEF.md' 2>/dev/null || true
+      } | sort
       ;;
     staged)
       {
         git diff --name-only --cached --diff-filter=AM -- \
           'inbox/phase-7*/BRIEF.md' \
           'inbox/phase-8*/BRIEF.md' \
-          'inbox/phase-11*/BRIEF.md'
+          'inbox/phase-11*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-7*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-8*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-11*/BRIEF.md'
         git ls-files --others --exclude-standard -- \
           'inbox/phase-7*/BRIEF.md' \
           'inbox/phase-8*/BRIEF.md' \
-          'inbox/phase-11*/BRIEF.md'
+          'inbox/phase-11*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-7*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-8*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-11*/BRIEF.md'
       } | sort -u
       ;;
     *)
@@ -148,6 +160,11 @@ check_brief() {
     "$path" \
     "no thesis/claim registry edits" \
     '(do not|must not|no)[[:alnum:]_ ./,-]{0,140}(thesis|claim registry|claims/registry\.yaml|registry)'
+
+  require_pattern \
+    "$path" \
+    "no claim_55 targeting" \
+    '((do not|must not|no|not).{0,180}claim_55|claim_55.{0,180}(protected|not|no|forbid|avoid|target|unrelated))'
 
   require_pattern \
     "$path" \
