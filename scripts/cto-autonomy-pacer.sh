@@ -87,6 +87,11 @@ block_count() {
     tr -d ' '
 }
 
+is_queueable_phase_id() {
+  local phase_id="$1"
+  [[ "$phase_id" =~ ^phase-(7|8|11)(-|$) ]]
+}
+
 reserve_candidates() {
   { find cto/AUTONOMY_BACKLOG -mindepth 2 -maxdepth 2 -name BRIEF.md -print 2>/dev/null || true; } |
     sort |
@@ -94,6 +99,7 @@ reserve_candidates() {
       local phase_dir phase_id
       phase_dir="$(dirname "$brief")"
       phase_id="$(basename "$phase_dir")"
+      is_queueable_phase_id "$phase_id" || continue
       [[ -f "$phase_dir/QUEUED.json" ]] && continue
       [[ -d "inbox/$phase_id" ]] && continue
       printf '%s\n' "$brief"
@@ -222,6 +228,11 @@ queue_backlog_brief() {
   base_branch="$(base_branch_from_brief "$brief")"
   base_branch="${base_branch:-main}"
 
+  if ! is_queueable_phase_id "$phase_id" ; then
+    log "SKIP non-research backlog phase: $phase_id"
+    return 1
+  fi
+
   if [[ -z "$target_repo" || -z "$target_branch" ]] ; then
     log "SKIP malformed backlog brief missing frontmatter: $brief"
     return 1
@@ -286,7 +297,7 @@ replenishment_recent_or_open() {
 
 queue_replenishment_task() {
   local queued_this_tick="${1:-0}"
-  local now compact phase_id phase_dir branch reserve
+  local now compact phase_id phase_dir branch reserve gate_dir gate_brief
   reserve="$(reserve_count)"
   if [[ "$reserve" -ge "$MIN_RESERVE" ]] ; then
     return 0
@@ -306,14 +317,10 @@ queue_replenishment_task() {
   branch="$phase_id"
   phase_dir="inbox/$phase_id"
 
-  log "QUEUE replenishment task: reserve=$reserve min=$MIN_RESERVE phase=$phase_id"
-  if [[ "$DRY_RUN" -eq 1 ]] ; then
-    QUEUED_PHASES+=("$phase_id")
-    return 0
-  fi
-
-  mkdir -p "$phase_dir"
-  cat > "$phase_dir/BRIEF.md" <<EOF
+  gate_dir="$(mktemp -d "$STATE_DIR/replenishment-brief.XXXXXX")"
+  gate_brief="$gate_dir/inbox/$phase_id/BRIEF.md"
+  mkdir -p "$(dirname "$gate_brief")"
+  cat > "$gate_brief" <<EOF
 ---
 target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
 target_branch: $branch
@@ -359,6 +366,23 @@ Run and record:
 
 Commit with GLASSBOX metadata. No \`Co-Authored-By Claude\`.
 EOF
+
+  if ! bash scripts/check-research-brief-gates.sh --dry-run "$gate_brief" >> "$LOG_FILE" 2>&1 ; then
+    rm -rf "$gate_dir"
+    log "FATAL generated replenishment brief failed gate before queue"
+    return 1
+  fi
+
+  log "QUEUE replenishment task: reserve=$reserve min=$MIN_RESERVE phase=$phase_id"
+  if [[ "$DRY_RUN" -eq 1 ]] ; then
+    rm -rf "$gate_dir"
+    QUEUED_PHASES+=("$phase_id")
+    return 0
+  fi
+
+  mkdir -p "$phase_dir"
+  cp "$gate_brief" "$phase_dir/BRIEF.md"
+  rm -rf "$gate_dir"
   cat > "$phase_dir/STATUS.json" <<EOF
 {
   "phase_id": "$phase_id",
@@ -375,11 +399,6 @@ EOF
   "source_backlog": "dynamic-reserve-low"
 }
 EOF
-
-  if ! bash scripts/check-research-brief-gates.sh --dry-run "$phase_dir/BRIEF.md" >> "$LOG_FILE" 2>&1 ; then
-    log "FATAL generated replenishment brief failed gate"
-    return 1
-  fi
   QUEUED_PHASES+=("$phase_id")
 }
 
