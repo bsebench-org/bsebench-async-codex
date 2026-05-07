@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [FIX] phase-7-8-b-stats-hinf-replay-summary (panel 77/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T08:42:29+02:00
+
+Phase    : phase-7-8-b-stats-hinf-replay-summary
+Etat     : needs_fix (needs_fix)
+Panel    : 77/100 (seuil 89)
+Quoi     : Phase 7.8.b — machine-readable Hinf stats replay summary
+Prochaine: phase-7-8-h-datasets-auditj-local-cache-manifest
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-b-stats-hinf-replay-summary/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-b-stats-hinf-replay-summary/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-b-stats-hinf-replay-summary/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
