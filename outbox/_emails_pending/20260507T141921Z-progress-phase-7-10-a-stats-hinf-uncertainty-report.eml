@@ -1,0 +1,23 @@
+To: akir.oussama@gmail.com
+Subject: [BLOCKED] phase-7-10-a-stats-hinf-uncertainty-report (panel 77/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T16:19:21+02:00
+
+Phase    : phase-7-10-a-stats-hinf-uncertainty-report
+Etat     : blocked (needs_fix)
+Panel    : 77/100 (seuil 89)
+Quoi     : Phase 7.10.a - stats Hinf uncertainty report
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-a-stats-hinf-uncertainty-report/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-a-stats-hinf-uncertainty-report/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-a-stats-hinf-uncertainty-report/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
+
+ATTENTION : chef-daemon est PAUSE.
+Action :
+  (a) supprime outbox/_blocks/phase-7-10-a-stats-hinf-uncertainty-report.block pour reprendre, OU
+  (b) queue une fix-BRIEF dans inbox/ qui repond aux preoccupations.
+
+ADVISOR_CHECK : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-a-stats-hinf-uncertainty-report/ADVISOR_CHECK.md
