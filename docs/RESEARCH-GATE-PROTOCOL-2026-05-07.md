@@ -138,18 +138,60 @@ Minimum ledger fields:
 |---|---|
 | `source_id` | Stable local identifier. |
 | `title` | Paper, benchmark, repository, or report title. |
-| `doi_or_url` | DOI, arXiv URL, official repo URL, or other stable URL. |
-| `retrieved_at` | Retrieval date in ISO format. |
+| `stable_url_or_doi` | DOI, arXiv URL, official repo URL, or other stable URL. |
+| `retrieval_date` | Retrieval date in `YYYY-MM-DD` format. |
 | `metric` | Exact metric name and units. |
 | `dataset` | Dataset and variant/profile. |
 | `split` | Train/test split, validation protocol, horizon, or run condition. |
-| `reported_value` | Exact value, table/figure/page if available. |
+| `method` | Method/model/baseline name exactly as the source reports it. |
+| `claimed_number` | Exact external value, table/figure/page if available. |
 | `bsebench_value` | Frozen BSEBench value being compared. |
 | `comparability` | `comparable`, `partial`, or `not_comparable`. |
-| `caveat` | Reason for any limitation or missing field. |
+| `comparability_caveat` | Reason for any limitation or missing field. |
 
 If any required field is unknown, the ledger row must mark the comparison
 `partial` or `not_comparable`. It must not silently fill gaps from memory.
+
+Canonical machine-readable placeholder:
+
+```yaml
+source_ledger:
+  schema_version: source-ledger/v1
+  ledger_status: incomplete_placeholder
+  entries:
+    - source_id: placeholder-only
+      title: "<paper, benchmark, repository, or report title>"
+      stable_url_or_doi: "<stable URL or DOI>"
+      retrieval_date: "<YYYY-MM-DD>"
+      metric: "<metric name and units>"
+      dataset: "<dataset and variant/profile>"
+      split: "<train/test split, validation protocol, horizon, or run condition>"
+      method: "<source-reported method/model/baseline name>"
+      claimed_number: "<numeric value plus units, with table/figure/page if available>"
+      bsebench_value: "<frozen BSEBench value and artifact path>"
+      comparability: "<comparable|partial|not_comparable>"
+      comparability_caveat: "<reason for comparability decision or missing field>"
+
+comparability_table:
+  schema_version: comparability-table/v1
+  table_status: incomplete_placeholder
+  rows:
+    - source_id: placeholder-only
+      metric: "<same metric basis checked>"
+      dataset: "<same dataset basis checked>"
+      split: "<same split/protocol basis checked>"
+      method: "<method family and preprocessing basis checked>"
+      claimed_number: "<external numeric value>"
+      bsebench_value: "<frozen BSEBench numeric value>"
+      comparability: "<comparable|partial|not_comparable>"
+      comparability_caveat: "<specific caveat; never blank>"
+```
+
+The placeholder above is documentation only. A BRIEF or report that uses SOTA,
+novelty, leaderboard, breakthrough, or "better than prior work" wording must
+replace every placeholder value with source-backed metadata before that wording
+is allowed. The checker treats placeholder or missing canonical fields as
+incomplete evidence for claim-style wording.
 
 ### G5 - No Claim Until Validated
 

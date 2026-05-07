@@ -19,6 +19,7 @@ Checks Phase 7/8/11 inbox or autonomy-backlog BRIEFs for minimum research-gate w
   - no thesis/claim registry edits
   - no claim_55 targeting
   - no unsupported SOTA claims
+  - source-ledger evidence when claim-style SOTA/novelty wording appears
 
 With no files, the default is --staged, which includes untracked BRIEFs.
 USAGE
@@ -127,6 +128,90 @@ require_pattern() {
   fi
 }
 
+claim_language_lines() {
+  local path="$1"
+
+  awk '
+    BEGIN { IGNORECASE = 1 }
+    {
+      line = $0
+      if (line !~ /(sota|state[- ]of[- ]the[- ]art|novelty|novel|leaderboard|better than prior work|breakthrough)/) {
+        next
+      }
+      if (line ~ /(do not|must not|may not|cannot|can not|no[[:space:][:punct:]]|without|unsupported|forbid|forbidden|prohibit|prohibition|blocked|blocks|block |guard|gate|flag|flags|catch|catches|linter|checklist|pending|required|requires|requirement|allowed|disallowed|avoid|unless|incomplete|must fail|fail if)/) {
+        next
+      }
+      if (line ~ /sota comparison/ && line !~ /(is|are|achieves?|achieved|beats?|outperforms?|surpasses?|exceeds?|better|novel|leaderboard|breakthrough)/) {
+        next
+      }
+      print FNR ":" line
+    }
+  ' "$path"
+}
+
+require_source_ledger_for_claim_language() {
+  local path="$1"
+  local claim_lines missing_fields field ledger_fields_re
+  claim_lines="$(claim_language_lines "$path")"
+
+  if [[ -z "$claim_lines" ]] ; then
+    echo "  [OK]   no claim-style SOTA/novelty wording"
+    return
+  fi
+
+  echo "  [INFO] claim-style SOTA/novelty wording requires source-ledger evidence:"
+  while IFS= read -r line ; do
+    [[ -n "$line" ]] && echo "         $line"
+  done <<< "$claim_lines"
+
+  missing_fields=()
+  if ! grep -Eiq '^[[:space:]]*source_ledger:' "$path" ; then
+    missing_fields+=("source_ledger")
+  fi
+  if ! grep -Eiq '^[[:space:]]*comparability_table:' "$path" ; then
+    missing_fields+=("comparability_table")
+  fi
+
+  for field in stable_url_or_doi retrieval_date metric dataset split method claimed_number comparability_caveat ; do
+    if ! grep -Eiq "^[[:space:]]*${field}:[[:space:]]*[^[:space:]#]" "$path" ; then
+      missing_fields+=("$field")
+    fi
+  done
+
+  if [[ "${#missing_fields[@]}" -gt 0 ]] ; then
+    echo "  [FAIL] source ledger evidence for claim-style wording (missing: ${missing_fields[*]})"
+    failures=$((failures + 1))
+    return
+  fi
+
+  ledger_fields_re='stable_url_or_doi|retrieval_date|metric|dataset|split|method|claimed_number|comparability_caveat'
+  if grep -Eiq "^[[:space:]]*(${ledger_fields_re}):[[:space:]]*($|#|[\"']?(TODO|TBD|FIXME|UNKNOWN|N/A|null|none|<|\\.\\.\\.))" "$path" ; then
+    echo "  [FAIL] source ledger evidence for claim-style wording contains placeholder values"
+    failures=$((failures + 1))
+    return
+  fi
+
+  if ! grep -Eiq "^[[:space:]]*stable_url_or_doi:[[:space:]]*[\"']?(https?://|doi:|10\\.)" "$path" ; then
+    echo "  [FAIL] source ledger stable_url_or_doi must be a stable URL or DOI"
+    failures=$((failures + 1))
+    return
+  fi
+
+  if ! grep -Eiq '^[[:space:]]*retrieval_date:[[:space:]]*["'\'']?[0-9]{4}-[0-9]{2}-[0-9]{2}["'\'']?([[:space:]#]|$)' "$path" ; then
+    echo "  [FAIL] source ledger retrieval_date must use YYYY-MM-DD"
+    failures=$((failures + 1))
+    return
+  fi
+
+  if ! grep -Eiq '^[[:space:]]*claimed_number:[[:space:]]*["'\'']?[-+]?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?' "$path" ; then
+    echo "  [FAIL] source ledger claimed_number must start with a numeric value"
+    failures=$((failures + 1))
+    return
+  fi
+
+  echo "  [OK]   source ledger evidence for claim-style wording"
+}
+
 check_brief() {
   local path="$1"
 
@@ -170,6 +255,8 @@ check_brief() {
     "$path" \
     "no unsupported SOTA claims" \
     '((do not|must not|no|not|without|unsupported)[[:alnum:]_ ./,-]{0,140}sota|sota[[:alnum:]_ ./,-]{0,140}(unsupported|source ledger|doi|stable url|comparability|claim|status|novelty))'
+
+  require_source_ledger_for_claim_language "$path"
 }
 
 if [[ "$dry_run" -eq 1 ]] ; then

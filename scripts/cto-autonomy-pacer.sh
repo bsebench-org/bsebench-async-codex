@@ -349,7 +349,7 @@ Restore the curated autonomy reserve to at least six useful future tasks under \
 - Prefer tasks that validate Hinf evidence fragility, manifest replay, dataset provenance, source-ledger comparability, CI gates, or Phase 8/11 preflight tooling.
 - Do not edit thesis files, \`claims/registry.yaml\`, claim registry files, or \`docs/RESEARCH-ROADMAP-2026-05-06.md\`.
 - Do not target \`claim_55\`; it is protected and unrelated to this backlog replenishment.
-- Do not make SOTA claims without a source ledger, stable URL or DOI, retrieval date, and comparability table.
+- Do not make SOTA claims without a completed \`source_ledger:\` and \`comparability_table:\` containing \`stable_url_or_doi\`, \`retrieval_date\`, \`metric\`, \`dataset\`, \`split\`, \`method\`, \`claimed_number\`, and \`comparability_caveat\`.
 
 ## Falsification gate
 
