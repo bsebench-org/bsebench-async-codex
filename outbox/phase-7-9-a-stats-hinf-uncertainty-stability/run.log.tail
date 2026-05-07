@@ -1,0 +1,200 @@
++            ),
++        },
++        "correlation_uncertainty": correlation_uncertainty,
+         "covariance": {
+             "equal_config_aggregation": {
+                 "n_configs": equal_covariance.get("n_configs"),
+@@ -1251,6 +1918,8 @@
+             "status": (
+                 "material_sensitivity_detected" if risks else "no_material_sensitivity_detected"
+             ),
++            "strict_5x5_interpretation": strict_5x5_stability,
++            "statement": falsification_statement,
+             "risk_count": len(risks),
+             "risks": risks,
+         },
+@@ -1270,6 +1939,9 @@
+     effect_delta_material_threshold: float = DEFAULT_EFFECT_DELTA_MATERIAL_THRESHOLD,
+     correlation_delta_material_threshold: float = DEFAULT_CORRELATION_DELTA_MATERIAL_THRESHOLD,
+     sample_imbalance_ratio_threshold: float = DEFAULT_SAMPLE_IMBALANCE_RATIO_THRESHOLD,
++    correlation_interval_confidence: float = DEFAULT_CORRELATION_INTERVAL_CONFIDENCE,
++    correlation_jackknife_min_samples: int = DEFAULT_CORRELATION_JACKKNIFE_MIN_SAMPLES,
++    correlation_strength_threshold: float = DEFAULT_CORRELATION_STRENGTH_THRESHOLD,
+ ) -> dict[str, object]:
+     """Read strict evidence, build sensitivity output, and optionally write JSON."""
+     payload = build_hinf_residual_sensitivity(
+@@ -1280,6 +1952,9 @@
+         effect_delta_material_threshold=effect_delta_material_threshold,
+         correlation_delta_material_threshold=correlation_delta_material_threshold,
+         sample_imbalance_ratio_threshold=sample_imbalance_ratio_threshold,
++        correlation_interval_confidence=correlation_interval_confidence,
++        correlation_jackknife_min_samples=correlation_jackknife_min_samples,
++        correlation_strength_threshold=correlation_strength_threshold,
+     )
+     source = {
+         "evidence_path": str(Path(evidence_path)),
+@@ -1294,6 +1969,9 @@
+ 
+ 
+ __all__ = [
++    "DEFAULT_CORRELATION_INTERVAL_CONFIDENCE",
++    "DEFAULT_CORRELATION_JACKKNIFE_MIN_SAMPLES",
++    "DEFAULT_CORRELATION_STRENGTH_THRESHOLD",
+     "HinfResidualSensitivityError",
+     "build_hinf_residual_sensitivity",
+     "run_hinf_residual_sensitivity",
+diff --git a/tests/test_hinf_residual_sensitivity.py b/tests/test_hinf_residual_sensitivity.py
+index 0e3d1e7e274360e84ddae53a16b05f30b3b33aaf..1226e94631721a978506acf25a273e87cb2edcee
+--- a/tests/test_hinf_residual_sensitivity.py
++++ b/tests/test_hinf_residual_sensitivity.py
+@@ -45,6 +45,23 @@
+     }
+ 
+ 
++def _config_from_residuals(
++    label: str,
++    residuals_by_filter: Mapping[str, Sequence[float]],
++) -> dict[str, object]:
++    sample_counts = {len(values) for values in residuals_by_filter.values()}
++    assert len(sample_counts) == 1
++    sample_count = sample_counts.pop()
++    return {
++        "status": "ok",
++        "config": {"label": label},
++        "retained_samples": sample_count,
++        "filters": {
++            filter_label: _ok_filter(values) for filter_label, values in residuals_by_filter.items()
++        },
++    }
++
++
+ def _trace_payload() -> dict[str, object]:
+     variances = [
+         {"EKF": 1.0, "Hinf": 2.0, "UKFDef": 3.0},
+@@ -74,8 +91,7 @@
+     }
+ 
+ 
+-def _evidence_payload() -> dict[str, object]:
+-    trace = _trace_payload()
++def _evidence_payload_from_trace(trace: dict[str, object]) -> dict[str, object]:
+     return {
+         "schema_version": "1.0",
+         "script": "scripts/hinf_residual_evidence_5x5.py",
+@@ -101,6 +117,37 @@
+     }
+ 
+ 
++def _evidence_payload() -> dict[str, object]:
++    return _evidence_payload_from_trace(_trace_payload())
++
++
++def _correlation_trace_payload(*, unstable: bool) -> dict[str, object]:
++    labels = ["cfg_a", "NASA B0005 T24", "cfg_b"]
++    hinf = [-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5]
++    if unstable:
++        ekf = [-3.0, -1.0, 0.0, 1.0, 2.0, 3.0, 0.0, 1.0]
++    else:
++        ekf = list(hinf)
++    residuals = {
++        "EKF": ekf,
++        "Hinf": hinf,
++        "UKFDef": [value * 2.0 for value in hinf],
++    }
++    return {
++        "schema_version": "1.0",
++        "script": "scripts/residual_trace_5x5.py",
++        "config_labels": labels,
++        "filter_labels": list(FILTER_LABELS),
++        "summary": {
++            "ok_configs": 3,
++            "error_configs": 0,
++            "ok_filter_runs": 9,
++            "error_filter_runs": 0,
++        },
++        "configs": {label: _config_from_residuals(label, residuals) for label in labels},
++    }
++
++
+ @pytest.mark.fast
+ def test_hinf_sensitivity_surfaces_unequal_sample_weighting_risk() -> None:
+     report = build_hinf_residual_sensitivity(
+@@ -114,6 +161,10 @@
+     assert report["scientific_verdict"] == "none"
+     assert report["sample_counts"]["shortest_config_labels"] == ["NASA B0005 T24"]
+     assert report["sample_counts"]["max_to_min_retained_sample_ratio"] == pytest.approx(25.0)
++    assert report["short_sample_config"]["config_label"] == "NASA B0005 T24"
++    assert report["correlation_uncertainty"]["short_sample_config"]["status"] == (
++        "reported_separately"
++    )
+ 
+     decomposition = report["decomposition"]
+     equal_hinf = decomposition["equal_config_aggregation"]["target_filter"]["mean_metric"]
+@@ -128,6 +179,46 @@
+     assert "sample_count_imbalance" in risk_ids
+     assert "target_filter_weighted_mean_metric_delta" in risk_ids
+     assert any(risk_id.startswith("short_config_loo_") for risk_id in risk_ids)
++    assert report["falsification_gate"]["strict_5x5_interpretation"] == (
++        "unstable_under_uncertainty_or_leave_one_config_out"
++    )
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_hinf_correlation_jackknife_intervals_stable_synthetic_case() -> None:
++    report = build_hinf_residual_sensitivity(
++        _evidence_payload_from_trace(_correlation_trace_payload(unstable=False)),
++        share_delta_material_threshold=10.0,
++        effect_delta_material_threshold=10.0,
++    )
++
++    summary = report["correlation_uncertainty"]["summary"]
++    assert summary["n_per_config_strength_threshold_crossing_intervals"] == 0
++    assert summary["n_aggregate_strength_threshold_crossing_intervals"] == 0
++    assert report["decomposition"]["leave_one_config_out"]["share_delta_summary_vs_equal_config"]
++    assert report["falsification_gate"]["strict_5x5_interpretation"] == (
++        "no_material_instability_detected"
++    )
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_hinf_correlation_jackknife_intervals_flag_unstable_synthetic_case() -> None:
++    report = build_hinf_residual_sensitivity(
++        _evidence_payload_from_trace(_correlation_trace_payload(unstable=True)),
++        share_delta_material_threshold=10.0,
++        effect_delta_material_threshold=10.0,
++    )
++
++    summary = report["correlation_uncertainty"]["summary"]
++    assert summary["n_per_config_strength_threshold_crossing_intervals"] == 3
++    risk_ids = {risk["id"] for risk in report["falsification_gate"]["risks"]}
++    assert "hinf_per_config_correlation_interval_strength_threshold_crossed" in risk_ids
++    assert report["falsification_gate"]["strict_5x5_interpretation"] == (
++        "unstable_under_uncertainty_or_leave_one_config_out"
++    )
++    assert "unstable" in report["falsification_gate"]["statement"]
+     json.dumps(report, allow_nan=False)
+ 
+ 
+
+tokens used
+155,927
+Implemented and committed as `e96e2746d421ba45ed05154dba36c2db21dc3c06`.
+
+Changed:
+- Added deterministic delete-1 jackknife Hinf correlation intervals in [hinf_sensitivity.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-9-a-stats-hinf-uncertainty-stability/src/bsebench_stats/runners/hinf_sensitivity.py).
+- Extended the CLI in [hinf_residual_sensitivity.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-9-a-stats-hinf-uncertainty-stability/scripts/hinf_residual_sensitivity.py).
+- Added all-config LOO decomposition share summaries and explicit NASA short-sample handling.
+- Added stable/unstable synthetic tests in [test_hinf_residual_sensitivity.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-9-a-stats-hinf-uncertainty-stability/tests/test_hinf_residual_sensitivity.py).
+
+Real strict evidence result: JSON-safe output at `/tmp/hinf_residual_sensitivity_phase_7_9_a.json`, gate `material_sensitivity_detected`, strict 5x5 interpretation `unstable_under_uncertainty_or_leave_one_config_out`, `risk_count=13`. NASA B0005 T24 is shortest at 97 samples with max/short ratio `29.896907216494846`; 4 per-config Hinf correlation intervals cross the 0.5 strength threshold.
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_hinf_residual_sensitivity.py -q`
+- real command against `../bsebench-runner/outputs/hinf_residual_evidence_5x5.json`
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`
+- `uv run --locked --all-extras ruff check .`
+- `uv run --locked --all-extras ruff format --check .`
+
+Working tree is clean and ahead by one commit.
