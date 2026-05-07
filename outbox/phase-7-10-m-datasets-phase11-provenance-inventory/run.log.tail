@@ -1,0 +1,200 @@
+ 
+     try:
+         payload["load_probe"] = _loader_probe(entry, cache_root, plan.loader_kwargs)
+@@ -1081,11 +1742,15 @@
+         payload["status"] = STATUS_PRESENT_UNREADABLE
+         payload["gap_kind"] = "loader_read_error"
+         payload["load_probe"] = {"status": "error", "error": _redacted_exception(exc)}
+-        return _finalize_config_payload(payload)
++        return _finalize_config_payload(
++            payload,
++            trace_path=trace_path,
++            manifests_dir=manifests_dir,
++        )
+ 
+     payload["status"] = STATUS_LOADER_READABLE
+     payload["gap_kind"] = None
+-    return _finalize_config_payload(payload)
++    return _finalize_config_payload(payload, trace_path=trace_path, manifests_dir=manifests_dir)
+ 
+ 
+ def _cache_roots_payload(
+@@ -1281,6 +1946,7 @@
+             cache_resolutions[config.wrapper],
+             hash_max_bytes=hash_max_bytes,
+             probe_loaders=probe_loaders,
++            manifests_dir=manifest_root,
+         )
+         for config in evidence_configs
+     ]
+@@ -1380,6 +2046,11 @@
+         },
+         "scope_errors": scope_errors,
+         "metadata_datasets": metadata_dataset_payloads,
++        "phase11_inventory": _phase11_inventory_payload(
++            config_payloads,
++            include_metadata_datasets=include_metadata_datasets,
++            manifests_dir=manifest_root,
++        ),
+         "near_future_prep": {
+             "phase8": {
+                 "scope": PHASE8_LG_HG2_SCOPE,
+@@ -1485,6 +2156,7 @@
+ __all__ = [
+     "AUDIT_J_SCOPE",
+     "AVAILABILITY_MISSING",
++    "AVAILABILITY_NOT_APPLICABLE",
+     "AVAILABILITY_READY",
+     "AVAILABILITY_STATUSES",
+     "AVAILABILITY_UNKNOWN_METADATA",
+@@ -1495,6 +2167,7 @@
+     "LOCAL_CACHE_ENV_VARS",
+     "MANIFEST_SCHEMA_VERSION",
+     "PHASE8_LG_HG2_SCOPE",
++    "PHASE11_INVENTORY_SCHEMA_VERSION",
+     "PHASE11_METADATA_SCOPE",
+     "STATUS_LOADER_READABLE",
+     "STATUS_MISSING",
+diff --git a/tests/test_auditj_local_cache_manifest.py b/tests/test_auditj_local_cache_manifest.py
+index 28b84bbd0c0ea513ded4dd5f83cded2e29c80e05..0a53a2be1416b1f8ce5224f6aca53aa174f944b5
+--- a/tests/test_auditj_local_cache_manifest.py
++++ b/tests/test_auditj_local_cache_manifest.py
+@@ -12,7 +12,9 @@
+ import pytest
+ 
+ from bsebench_datasets.auditj_local_cache_manifest import (
++    AVAILABILITY_NOT_APPLICABLE,
+     LOCAL_CACHE_ENV_VARS,
++    PHASE11_INVENTORY_SCHEMA_VERSION,
+     STATUS_LOADER_READABLE,
+     STATUS_MISSING,
+     STATUS_PRESENT_UNREADABLE,
+@@ -106,6 +108,11 @@
+     return {str(config["label"]): config for config in payload["configs"]}  # type: ignore[index]
+ 
+ 
++def _phase11_by_label(payload: dict[str, object]) -> dict[str, dict[str, object]]:
++    phase11 = payload["phase11_inventory"]  # type: ignore[index]
++    return {str(config["label"]): config for config in phase11["configs"]}  # type: ignore[index]
++
++
+ def test_manifest_distinguishes_ready_missing_unreadable_and_unknown_metadata(
+     tmp_path: Path,
+ ) -> None:
+@@ -180,6 +187,7 @@
+         "missing": 1,
+         "unreadable": 1,
+         "unknown_metadata": 1,
++        "not_applicable": 0,
+     }
+     assert payload["availability"]["ready"]["config_labels"] == [  # type: ignore[index]
+         "calce_legacy:DST:T25"
+@@ -191,6 +199,23 @@
+     assert payload["availability"]["unknown_metadata"]["config_labels"] == [  # type: ignore[index]
+         "nasa:CC-discharge:T24"
+     ]
++
++    phase11 = _phase11_by_label(payload)
++    assert payload["phase11_inventory"]["schema_version"] == PHASE11_INVENTORY_SCHEMA_VERSION  # type: ignore[index]
++    assert AVAILABILITY_NOT_APPLICABLE in payload["phase11_inventory"]["status_vocabulary"]  # type: ignore[index]
++    assert phase11["calce_legacy:DST:T25"]["phase11_status"] == "ready"
++    assert phase11["calce_legacy:DST:T25"]["fields"]["chemistry"] == {  # type: ignore[index]
++        "status": "ready",
++        "value": "LFP_A123_APR18650M1A",
++        "source": "calce_a123_2014 adapter metadata",
++    }
++    assert phase11["calce_legacy:DST:T25"]["fields"]["voltage_unit"]["value"] == "V"  # type: ignore[index]
++    assert phase11["calce_legacy:DST:T25"]["fields"]["current_unit"]["value"] == "A"  # type: ignore[index]
++    assert phase11["calce_legacy:DST:T25"]["fields"]["sampling_cadence"]["status"] == "ready"  # type: ignore[index]
++    assert phase11["panasonic:US06:T25"]["phase11_status"] == "unreadable"
++    assert phase11["yao:BCDC:T35"]["phase11_status"] == "missing"
++    assert phase11["nasa:CC-discharge:T24"]["phase11_status"] == "unknown_metadata"
++    assert "voltage_unit" in phase11["nasa:CC-discharge:T24"]["blocking_gap_fields"]  # type: ignore[index]
+     json.dumps(payload, allow_nan=False)
+ 
+ 
+@@ -238,6 +263,49 @@
+     assert payload["evidence_ready"] is True
+ 
+ 
++def test_phase11_inventory_marks_unit_and_cadence_gaps_without_filename_inference(
++    tmp_path: Path,
++) -> None:
++    split_path = _write_split(tmp_path / "split.yaml", [("calce_legacy", "DST", 25.0)])
++    calce_root = tmp_path / "calce"
++    calce_root.mkdir()
++    table = pa.table(
++        {
++            "time_s": pa.array([0.0], type=pa.float64()),
++            "voltage_V": pa.array([4.0], type=pa.float64()),
++            "temperature_C": pa.array([25.0], type=pa.float64()),
++        }
++    )
++    pq.write_table(table, str(calce_root / "calce_a123_DST_T25.parquet"))
++
++    payload = build_auditj_local_cache_manifest(
++        split_path,
++        cache_root_overrides={"calce_legacy": calce_root},
++        datasets_roots=(),
++        env={},
++    )
++
++    config = _status_by_label(payload)["calce_legacy:DST:T25"]
++    phase11 = _phase11_by_label(payload)["calce_legacy:DST:T25"]
++    assert config["status"] == STATUS_PRESENT_UNREADABLE
++    assert config["gap_kind"] == "loader_read_error"
++    assert phase11["phase11_status"] == "unreadable"
++    assert phase11["fields"]["voltage_unit"] == {  # type: ignore[index]
++        "status": "ready",
++        "value": "V",
++        "source": "local Parquet column voltage_V",
++    }
++    assert phase11["fields"]["current_unit"]["status"] == "unknown_metadata"  # type: ignore[index]
++    assert "value" not in phase11["fields"]["current_unit"]  # type: ignore[index]
++    assert phase11["fields"]["sampling_cadence"]["status"] == "unknown_metadata"  # type: ignore[index]
++    assert set(phase11["blocking_gap_fields"]) >= {  # type: ignore[arg-type]
++        "local_cache",
++        "current_unit",
++        "sampling_cadence",
++    }
++    json.dumps(payload, allow_nan=False)
++
++
+ def test_manifest_marks_missing_cache_root_as_gap(tmp_path: Path) -> None:
+     split_path = _write_split(tmp_path / "split.yaml", [("calce_legacy", "DST", 25.0)])
+ 
+@@ -473,6 +541,16 @@
+             "metadata_datasets"
+         ]
+     )
++    phase11_metadata = {
++        item["dataset"]: item
++        for item in payload["phase11_inventory"]["metadata_datasets"]  # type: ignore[index]
++        if "dataset" in item
++    }
++    assert phase11_metadata["lg_hg2_stroebl_2024"]["phase11_status"] == "not_applicable"
++    assert (
++        phase11_metadata["lg_hg2_stroebl_2024"]["local_cache_readiness"]["status"]
++        == "not_applicable"
++    )
+ 
+ 
+ def test_manifest_redacts_token_like_path_fragments(tmp_path: Path) -> None:
+
+tokens used
+213,754
+Implemented and committed Phase 11 provenance inventory as `2b97c25`.
+
+Changed:
+- [auditj_local_cache_manifest.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-m-datasets-phase11-provenance-inventory/src/bsebench_datasets/auditj_local_cache_manifest.py): adds `phase11_inventory` JSON with dataset id, chemistry/profile/temperature, local readiness, voltage/current units from local Parquet schema, cadence availability, `ready/missing/unreadable/unknown_metadata/not_applicable`, and explicit provenance gaps.
+- [test_auditj_local_cache_manifest.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-m-datasets-phase11-provenance-inventory/tests/test_auditj_local_cache_manifest.py): adds focused coverage for ready, missing, unreadable, unknown metadata, not applicable, and unit/cadence gaps.
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_auditj_local_cache_manifest.py -q`
+- local read-only inventory command wrote `/tmp/bsebench_phase11_provenance_inventory.json`
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q` (`241 passed, 29 deselected`)
+- `uv run --locked --all-extras ruff check .`
+- `uv run --locked --all-extras ruff format --check .`
+- `git diff --check`
+
+Local inventory result: no loader-facing Tier 2 cache roots were available, so Phase 11 marked 58 candidate configs `missing` and 13 metadata-only registry entries `not_applicable`. Worktree is clean and the phase branch is ahead by one commit.
