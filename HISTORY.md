@@ -181,3 +181,9 @@
   `plan=docs/CTO-48H-AUTONOMY-PLAN-2026-05-07.md watchdog=scripts/cto-watchdog-10min.sh`
 - **06:09 UTC** | [actor: codex-cto-FR] | [QUEUE] | phase-7-8-a..h | queued eight roadmap-mapped tasks for the next autonomy window: runner neutral Hinf report, stats replay summary, datasets provenance audit, async research gate protocol, runner CI Hinf audit, stats lock policy, stats weighting sensitivity, and datasets local-cache manifest. All briefs ban thesis/registry/roadmap edits, `claim_55` targeting, unsupported SOTA wording, and scientific verdicts.
   `queued=8 repos=runner,stats,datasets,async guardrails=falsification+validation+no_claim_without_evidence`
+- **06:15 UTC** | [actor: codex-cto-FR] | [INSTALL] | autonomy-watchdog-cron | installed the audit-only CTO watchdog in user crontab every 10 minutes, manually smoke-ran it, and confirmed logs under `/home/oakir/.local/state/bsebench-async-watchdog/watchdog.log`. Cron writes no repo state, runs no `git`, no `uv`, no `pytest`, and performs no daemon restarts.
+  `cron="*/10 * * * * .../scripts/cto-watchdog-10min.sh" log=/home/oakir/.local/state/bsebench-async-watchdog/watchdog.log`
+- **06:15 UTC** | [actor: codex-cto-FR] | [START] | phase-7-8-a,phase-7-8-b | both workers consumed the first two queued tasks after `fb4a8cf`: runner report generator on `france-personal-2` and stats replay summary on `france-personal`. The remaining six Phase 7.8 tasks stayed queued for continuation.
+  `running=2 queued=6 worker2=phase-7-8-a-runner-claim63-report-generator worker1=phase-7-8-b-stats-hinf-replay-summary`
+- **06:15 UTC** | [actor: codex-cto-FR] | [INSTALL] | cto-daemon-persistence | relaunched `cto-daemon.sh` with `setsid` and added a `.bashrc` auto-start block so new WSL shells restore the CTO daemon alongside existing worker and chef auto-start blocks.
+  `log=/home/oakir/.async-cto.log state=/home/oakir/.async-cto-daemon.running`
