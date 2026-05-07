@@ -1,0 +1,38 @@
+{
+  "schema_version": "bsebench-source-ledger-fixture-pack/v1",
+  "pack_id": "phase8-alpha-20260507",
+  "created_at": "2026-05-07",
+  "owner": "worker-W7-c",
+  "status": "synthetic_fixture",
+  "non_claim_artifact": true,
+  "source_schema_references": [
+    "docs/RESEARCH-GATE-PROTOCOL-2026-05-07.md#G4",
+    "origin/phase-8-3-k-source-ledger-schema-spec-20260507T204627Z:specs/universal/source-ledger-schema-20260507T204627Z.md"
+  ],
+  "files": [
+    {
+      "path": "fixtures/source-ledger/phase8-alpha-20260507/bsebench-values.json",
+      "row_class": "bsebench_frozen_values",
+      "required_by": "comparison-bindings.json"
+    },
+    {
+      "path": "fixtures/source-ledger/phase8-alpha-20260507/external-sources.json",
+      "row_class": "external_sources",
+      "required_by": "comparison-bindings.json"
+    },
+    {
+      "path": "fixtures/source-ledger/phase8-alpha-20260507/comparison-bindings.json",
+      "row_class": "comparison_bindings",
+      "required_by": "comparability audit gate"
+    }
+  ],
+  "blockers_for_real_alpha_rows": [
+    "No committed Phase 8 alpha BSEBench evidence artifact was available in this branch.",
+    "No completed external-source ledger with real retrieved literature or benchmark rows was available in this branch.",
+    "No claim-registration authorization was present, so all rows remain fixture-only."
+  ],
+  "validation": {
+    "manual_field_completeness": "recorded in validation/wave-7/source-ledger-fixture-pack-20260507.md",
+    "diff_check": "git diff --check"
+  }
+}

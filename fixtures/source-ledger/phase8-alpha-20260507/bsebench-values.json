@@ -1,0 +1,50 @@
+{
+  "schema_version": "bsebench-source-ledger/v1",
+  "row_class": "bsebench_frozen_values",
+  "pack_id": "phase8-alpha-20260507",
+  "non_claim_artifact": true,
+  "rows": [
+    {
+      "bsebench_value_id": "bsev-synth-soc-mae-001",
+      "value_kind": "synthetic_fixture",
+      "bsebench_value": "1.20 percent",
+      "bsebench_metric": "synthetic SOC MAE percent",
+      "metric_direction": "lower_is_better",
+      "bsebench_dataset": "SyntheticCellSet fixture-v1",
+      "bsebench_split": "fixture-test-split",
+      "bsebench_method": "SyntheticECMObserver",
+      "artifact_repo": "bsebench-async-codex-cto-report",
+      "artifact_branch": "phase-8-6-c-source-ledger-fixture-pack-20260507T214305Z",
+      "artifact_commit": "0000000000000000000000000000000000000000",
+      "artifact_path": "fixtures/source-ledger/phase8-alpha-20260507/bsebench-values.json",
+      "artifact_hash": "hash-gap: synthetic fixture row is frozen by git commit, not by empirical replay",
+      "generation_command": "not_applicable: synthetic fixture row",
+      "replay_command": "not_applicable: synthetic fixture row",
+      "validation_log": "validation/wave-7/source-ledger-fixture-pack-20260507.md",
+      "environment": "not_applicable: synthetic fixture row",
+      "evidence_status": "frozen",
+      "caveat": "Synthetic fixture value only; not an empirical BSEBench result."
+    },
+    {
+      "bsebench_value_id": "bsev-synth-soc-rmse-001",
+      "value_kind": "synthetic_fixture",
+      "bsebench_value": "2.40 percent",
+      "bsebench_metric": "synthetic SOC RMSE percent",
+      "metric_direction": "lower_is_better",
+      "bsebench_dataset": "SyntheticCellSet fixture-v1",
+      "bsebench_split": "fixture-test-split",
+      "bsebench_method": "SyntheticECMObserver",
+      "artifact_repo": "bsebench-async-codex-cto-report",
+      "artifact_branch": "phase-8-6-c-source-ledger-fixture-pack-20260507T214305Z",
+      "artifact_commit": "0000000000000000000000000000000000000000",
+      "artifact_path": "fixtures/source-ledger/phase8-alpha-20260507/bsebench-values.json",
+      "artifact_hash": "hash-gap: synthetic fixture row is frozen by git commit, not by empirical replay",
+      "generation_command": "not_applicable: synthetic fixture row",
+      "replay_command": "not_applicable: synthetic fixture row",
+      "validation_log": "validation/wave-7/source-ledger-fixture-pack-20260507.md",
+      "environment": "not_applicable: synthetic fixture row",
+      "evidence_status": "frozen",
+      "caveat": "Synthetic fixture value only; not an empirical BSEBench result."
+    }
+  ]
+}

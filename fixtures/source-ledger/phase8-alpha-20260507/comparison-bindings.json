@@ -1,0 +1,66 @@
+{
+  "schema_version": "bsebench-source-ledger/v1",
+  "row_class": "comparison_bindings",
+  "pack_id": "phase8-alpha-20260507",
+  "non_claim_artifact": true,
+  "rows": [
+    {
+      "comparison_id": "cmp-synth-comparable-001",
+      "source_id": "src-synth-comparable-001",
+      "bsebench_value_ids": [
+        "bsev-synth-soc-mae-001"
+      ],
+      "comparison_scope": "context_only",
+      "comparability": "comparable",
+      "metric_match": "same",
+      "dataset_match": "same",
+      "split_match": "same",
+      "method_basis_match": "same_class",
+      "preprocessing_match": "same",
+      "leakage_risk": "none_known",
+      "caveat": "none",
+      "review_status": "reviewed",
+      "reviewer": "worker-W7-c manual fixture audit",
+      "expected_gate_decision": "pass_fixture_only"
+    },
+    {
+      "comparison_id": "cmp-synth-partial-001",
+      "source_id": "src-synth-partial-001",
+      "bsebench_value_ids": [
+        "bsev-synth-soc-mae-001"
+      ],
+      "comparison_scope": "context_only",
+      "comparability": "partial",
+      "metric_match": "same",
+      "dataset_match": "same",
+      "split_match": "different",
+      "method_basis_match": "same_class",
+      "preprocessing_match": "same",
+      "leakage_risk": "none_known",
+      "caveat": "Synthetic source row uses a shifted horizon/split, so only caveated context wording is allowed.",
+      "review_status": "reviewed",
+      "reviewer": "worker-W7-c manual fixture audit",
+      "expected_gate_decision": "needs_caveat"
+    },
+    {
+      "comparison_id": "cmp-synth-not-comparable-001",
+      "source_id": "src-synth-not-comparable-001",
+      "bsebench_value_ids": [
+        "bsev-synth-soc-mae-001",
+        "bsev-synth-soc-rmse-001"
+      ],
+      "comparison_scope": "context_only",
+      "comparability": "not_comparable",
+      "metric_match": "different",
+      "dataset_match": "different",
+      "split_match": "different",
+      "method_basis_match": "different_class",
+      "preprocessing_match": "different",
+      "leakage_risk": "possible",
+      "caveat": "Synthetic source row differs on task, metric, dataset, split, method basis, and preprocessing; positive comparison wording must be blocked.",
+      "review_status": "reviewed",
+      "reviewer": "worker-W7-c manual fixture audit",
+      "expected_gate_decision": "block_positive_comparison"
+    }
+  ]
+}
