@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [OK] phase-6-11-b-chi2-multi-cfg-sweep-fix-2 (panel 92/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T03:08:16+02:00
+
+Phase    : phase-6-11-b-chi2-multi-cfg-sweep-fix-2
+Etat     : approved (approved)
+Panel    : 92/100 (seuil 89)
+Quoi     : Phase 6.11.b fix-2 - chi2 sweep evidence hygiene
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep-fix-2/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep-fix-2/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-6-11-b-chi2-multi-cfg-sweep-fix-2/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
