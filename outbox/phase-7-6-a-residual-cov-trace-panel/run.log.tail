@@ -1,0 +1,200 @@
++            "cfg_a": _config(
++                "cfg_a",
++                {
++                    "EKF": _ok_filter([1.0, 2.0, 3.0, 4.0]),
++                    "UKF": _ok_filter([1.1, 2.1, 3.1, 4.1]),
++                    "Hinf": _ok_filter([0.5, 1.0, 0.5, 1.0]),
++                },
++            ),
++            "cfg_b": _config(
++                "cfg_b",
++                {
++                    "EKF": _ok_filter([2.0, 3.0, 4.0, 5.0]),
++                    "UKF": _ok_filter([2.2, 3.2, 4.2, 5.2]),
++                    "Hinf": _ok_filter([1.0, 1.5, 1.0, 1.5]),
++                },
++            ),
++        },
++    }
++
++
++@pytest.mark.fast
++def test_build_residual_covariance_panel_two_configs_three_filters():
++    report = build_residual_covariance_panel(_payload(), require_ok_configs=2)
++
++    assert report["schema_version"] == "1.0"
++    assert report["source_schema_version"] == "1.0"
++    assert report["config_labels"] == ["cfg_a", "cfg_b"]
++    assert report["filter_labels"] == ["EKF", "UKF", "Hinf"]
++    assert set(report["per_config_reports"]) == {"cfg_a", "cfg_b"}
++    assert report["aggregate_report"]["n_configs"] == 2
++    assert report["aggregate_report"]["filter_names"] == ["EKF", "UKF", "Hinf"]
++    assert report["summary"] == {
++        "total_configs": 2,
++        "ok_configs": 2,
++        "skipped_configs": 0,
++        "error_configs": 0,
++        "ok_filter_traces": 6,
++    }
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_failed_filter_is_excluded_without_fabricating_evidence():
++    payload = _payload()
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["filters"]["Hinf"] = _error_filter()
++    configs["cfg_b"]["filters"]["Hinf"] = _error_filter()
++
++    report = build_residual_covariance_panel(payload, require_ok_configs=2)
++
++    assert report["summary"]["ok_filter_traces"] == 4
++    assert report["per_config_reports"]["cfg_a"]["filter_names"] == ["EKF", "UKF"]
++    assert report["per_config_reports"]["cfg_a"]["excluded_filter_labels"] == ["Hinf"]
++    assert report["aggregate_report"]["filter_names"] == ["EKF", "UKF"]
++    assert report["aggregate_report"]["n_configs"] == 2
++
++
++@pytest.mark.fast
++def test_config_with_fewer_than_two_ok_filters_is_skipped_and_can_fail_loud():
++    payload = _payload()
++    payload["config_labels"] = ["cfg_a"]
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["filters"]["UKF"] = _error_filter()
++    configs["cfg_a"]["filters"]["Hinf"] = _error_filter()
++
++    with pytest.raises(
++        ResidualCovariancePanelRequirementError, match="below required minimum"
++    ) as exc:
++        build_residual_covariance_panel(payload, require_ok_configs=1)
++
++    partial = exc.value.payload
++    assert partial["summary"]["ok_configs"] == 0
++    assert partial["summary"]["skipped_configs"] == 1
++    assert partial["skipped_configs"] == [
++        {
++            "config_label": "cfg_a",
++            "status": "skipped",
++            "reason": "fewer_than_min_ok_filters",
++            "ok_filter_count": 1,
++            "ok_filter_labels": ["EKF"],
++            "min_ok_filters": 2,
++        }
++    ]
++    assert partial["aggregate_report"] is None
++
++
++@pytest.mark.fast
++def test_unequal_residual_lengths_raise_clear_error():
++    payload = _payload()
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["filters"]["UKF"] = _ok_filter([1.0, 2.0, 3.0])
++
++    with pytest.raises(ValueError, match="equal lengths"):
++        build_residual_covariance_panel(payload)
++
++
++@pytest.mark.fast
++def test_non_finite_residuals_raise_clear_error():
++    payload = _payload()
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["filters"]["UKF"] = _ok_filter([1.0, float("nan"), 3.0, 4.0])
++
++    with pytest.raises(ValueError, match="finite"):
++        build_residual_covariance_panel(payload)
++
++
++@pytest.mark.fast
++def test_duplicate_filter_labels_raise_clear_error():
++    payload = _payload()
++    payload["filter_labels"] = ["EKF", "UKF", "UKF"]
++
++    with pytest.raises(ValueError, match=r"filter_labels.*unique"):
++        build_residual_covariance_panel(payload)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "message"),
++    [
++        (lambda payload: payload.pop("configs"), "trace_payload must include configs"),
++        (
++            lambda payload: payload["configs"]["cfg_a"].pop("filters"),
++            r"configs\['cfg_a'\] must include filters",
++        ),
++        (
++            lambda payload: payload["configs"]["cfg_a"]["filters"]["EKF"].pop("residual_mV"),
++            r"filters\['EKF'\] must include residual_mV",
++        ),
++    ],
++)
++def test_missing_required_keys_raise_clear_errors(mutate, message: str):
++    payload = _payload()
++    mutate(payload)
++
++    with pytest.raises(ValueError, match=message):
++        build_residual_covariance_panel(payload)
++
++
++@pytest.mark.fast
++def test_file_runner_writes_json_only_after_ok_config_requirement_passes(tmp_path):
++    payload = _payload()
++    payload["config_labels"] = ["cfg_a"]
++    input_path = tmp_path / "trace.json"
++    output_path = tmp_path / "panel.json"
++    input_path.write_text(json.dumps(payload), encoding="utf-8")
++
++    with pytest.raises(ResidualCovariancePanelRequirementError):
++        run_residual_covariance_panel(input_path, output_path, require_ok_configs=2)
++    assert not output_path.exists()
++
++    report = run_residual_covariance_panel(input_path, output_path, require_ok_configs=1)
++
++    assert output_path.exists()
++    loaded = json.loads(output_path.read_text(encoding="utf-8"))
++    assert loaded == report
++    json.dumps(loaded, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_top_level_export_matches_runner_export():
++    assert build_residual_covariance_panel_top_level is build_residual_covariance_panel
++
++
++@pytest.mark.fast
++def test_constant_filter_correlation_remains_json_safe():
++    payload = copy.deepcopy(_payload())
++    configs = payload["configs"]
++    assert isinstance(configs, dict)
++    configs["cfg_a"]["filters"]["Hinf"] = _ok_filter([1.0, 1.0, 1.0, 1.0])
++    configs["cfg_b"]["filters"]["Hinf"] = _ok_filter([1.0, 1.0, 1.0, 1.0])
++
++    report = build_residual_covariance_panel(payload, require_ok_configs=2)
++
++    assert report["per_config_reports"]["cfg_a"]["correlation_matrix"][0][2] is None
++    json.dumps(report, allow_nan=False)
++    assert np.asarray(report["aggregate_report"]["covariance_matrix"], dtype=float).shape == (3, 3)
+
+tokens used
+153,344
+Implemented and committed the Phase 7.6.a stats-side trace-panel consumer.
+
+Commit: `2da10f86b6366a01036d11fd9479b0a8aab54eb7`  
+Subject: `GLASSBOX [role: worker-codex-FR] Add residual covariance trace panel`
+
+Changes:
+- Added [residual_cov.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-6-a-residual-cov-trace-panel/src/bsebench_stats/runners/residual_cov.py:273) with `build_residual_covariance_panel` and `run_residual_covariance_panel`.
+- Exported the new API from runner and top-level packages.
+- Added focused synthetic tests in [test_residual_cov_panel_runner.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-6-a-residual-cov-trace-panel/tests/test_residual_cov_panel_runner.py:69).
+- Removed generated `uv.lock`; none is present or committed.
+
+Acceptance gates passed:
+- `uv run --all-extras pytest -m "not slow" --tb=short`
+- `uv run --all-extras ruff format --check .`
+- `uv run --all-extras ruff check .`
+
+Worktree is clean and the branch is ahead by 1 commit.
