@@ -1,0 +1,200 @@
++        raise ValueError("require_ok_cells must be >= 0")
+ 
+     adapters = dict(adapter_factories or build_sweep_adapter_factories())
+     filters = dict(filter_factories or build_sweep_filter_factories(checkpoints_dir))
+@@ -359,6 +388,8 @@
+         "summary": _status_counts(matrix),
+     }
+ 
++    _enforce_required_ok_cells(payload, require_ok_cells)
++
+     if output_path is not None:
+         write_result_json(payload, output_path)
+     return payload
+@@ -420,6 +451,16 @@
+         default=str(CHECKPOINTS_DIR),
+         help="Directory containing Audit J filter checkpoint JSON files.",
+     )
++    parser.add_argument(
++        "--require-ok-cells",
++        type=int,
++        default=_env_int("BSEBENCH_CHI2_SWEEP_REQUIRE_OK_CELLS", DEFAULT_REQUIRE_OK_CELLS),
++        help=(
++            "Fail without writing output unless at least this many cells have "
++            "status='ok'. Defaults to 1; use 25 for publishable 5x5 evidence "
++            "or 0 only for intentional diagnostics."
++        ),
++    )
+     return parser.parse_args(argv)
+ 
+ 
+@@ -430,15 +471,21 @@
+     filter_factories: Mapping[str, FilterFactory] | None = None,
+ ) -> int:
+     args = parse_args(argv)
+-    payload = run_sweep(
+-        output_path=args.output,
+-        adapter_factories=adapter_factories,
+-        filter_factories=filter_factories,
+-        checkpoints_dir=args.checkpoints_dir,
+-        n_max=args.n_max,
+-        warmup_samples=args.warmup_samples,
+-        sigma_v=args.sigma_v,
+-    )
++    try:
++        payload = run_sweep(
++            output_path=args.output,
++            adapter_factories=adapter_factories,
++            filter_factories=filter_factories,
++            checkpoints_dir=args.checkpoints_dir,
++            n_max=args.n_max,
++            warmup_samples=args.warmup_samples,
++            sigma_v=args.sigma_v,
++            require_ok_cells=args.require_ok_cells,
++        )
++    except OkCellRequirementError as exc:
++        print(format_summary_table(exc.payload))
++        print(str(exc), file=sys.stderr)
++        return 2
+     print(format_summary_table(payload))
+     print(f"wrote {args.output}")
+     return 0
+diff --git a/tests/test_chi2_sweep_5x5.py b/tests/test_chi2_sweep_5x5.py
+index 35733f462a9a08dfc28b2a4090b7b6fba96bc8ec..4a88303292ff4c3041e3c828e0ea3ef1c184b988
+--- a/tests/test_chi2_sweep_5x5.py
++++ b/tests/test_chi2_sweep_5x5.py
+@@ -62,14 +62,23 @@
+     }
+ 
+ 
+-def _mock_adapter_factories(sweep_module, *, unavailable_wrapper: str | None = None):
++def _mock_adapter_factories(
++    sweep_module,
++    *,
++    unavailable_wrapper: str | set[str] | None = None,
++):
++    unavailable_wrappers = (
++        {unavailable_wrapper}
++        if isinstance(unavailable_wrapper, str)
++        else set(unavailable_wrapper or ())
++    )
+     factories = {}
+     for config in sweep_module.CONFIG_TARGETS:
+         if config.wrapper in factories:
+             continue
+ 
+         def factory(wrapper=config.wrapper):
+-            if wrapper == unavailable_wrapper:
++            if wrapper in unavailable_wrappers:
+ 
+                 def missing_loader(profile: str, t_c: float) -> dict[str, Any]:
+                     del profile, t_c
+@@ -114,6 +123,8 @@
+             "2",
+             "--sigma-v",
+             "0.01",
++            "--require-ok-cells",
++            "25",
+         ],
+         adapter_factories=_mock_adapter_factories(sweep_module),
+         filter_factories=_mock_filter_factories(sweep_module),
+@@ -129,6 +140,75 @@
+ 
+ 
+ @pytest.mark.fast
++def test_default_requirement_rejects_all_skipped_run(
++    sweep_module,
++    tmp_path: Path,
++    capsys,
++) -> None:
++    output_path = tmp_path / "chi2_sweep.json"
++    all_wrappers = {config.wrapper for config in sweep_module.CONFIG_TARGETS}
++
++    rc = sweep_module.main(
++        [
++            "--output",
++            str(output_path),
++            "--n-max",
++            "12",
++            "--warmup-samples",
++            "2",
++            "--sigma-v",
++            "0.01",
++        ],
++        adapter_factories=_mock_adapter_factories(
++            sweep_module,
++            unavailable_wrapper=all_wrappers,
++        ),
++        filter_factories=_mock_filter_factories(sweep_module),
++    )
++
++    captured = capsys.readouterr()
++    assert rc == 2
++    assert not output_path.exists()
++    assert "summary: ok=0, skipped=25, error=0" in captured.out
++    assert "below required minimum 1" in captured.err
++
++
++@pytest.mark.fast
++def test_require_ok_cells_failure_is_loud_and_does_not_write(
++    sweep_module,
++    tmp_path: Path,
++    capsys,
++) -> None:
++    output_path = tmp_path / "chi2_sweep.json"
++
++    rc = sweep_module.main(
++        [
++            "--output",
++            str(output_path),
++            "--n-max",
++            "12",
++            "--warmup-samples",
++            "2",
++            "--sigma-v",
++            "0.01",
++            "--require-ok-cells",
++            "21",
++        ],
++        adapter_factories=_mock_adapter_factories(
++            sweep_module,
++            unavailable_wrapper="panasonic",
++        ),
++        filter_factories=_mock_filter_factories(sweep_module),
++    )
++
++    captured = capsys.readouterr()
++    assert rc == 2
++    assert not output_path.exists()
++    assert "summary: ok=20, skipped=5, error=0" in captured.out
++    assert "below required minimum 21" in captured.err
++
++
++@pytest.mark.fast
+ def test_mocked_data_run_produces_expected_5x5_matrix(sweep_module) -> None:
+     payload = sweep_module.run_sweep(
+         output_path=None,
+
+tokens used
+188,214
+Implemented and committed `d258288`.
+
+What changed:
+- Deleted `outputs/chi2_sweep_5x5.json`; no versioned 0-ok sweep JSON remains.
+- Added `--require-ok-cells`, defaulting to `1`, so all-skipped runs fail before writing output. Use `--require-ok-cells 25` for publishable 5x5 evidence, or `0` only for intentional diagnostics.
+- Added tests for:
+  - 25/25 mocked pass case
+  - default all-skipped rejection
+  - explicit threshold failure without writing output
+
+Real-data probe result: no HF auth env was present, no exact local Tier 2 Parquet files were found, and all five config loads raised `RepositoryNotFoundError`, so I used the tooling-only path.
+
+Acceptance gates:
+- `uv run --all-extras pytest tests/test_chi2_sweep_5x5.py -q` -> 5 passed
+- `uv run --all-extras pytest -m "not slow" --tb=short` -> 60 passed
+- `uv run --all-extras ruff format --check .` -> passed
+- `uv run --all-extras ruff check .` -> passed
+- Default real-data probe now exits `2` and writes no temp output
+- Commit subject includes `GLASSBOX` and `[role: worker-codex-FR]`
+- No `Co-Authored-By: Claude` trailer
+- No claim registry, thesis prose, or roadmap edits.
