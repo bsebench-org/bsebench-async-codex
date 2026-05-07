@@ -1,0 +1,200 @@
++
++## Falsification gate
++
++The task must fail if the audit reports Phase 11 readiness while any required sensor/provenance field is missing, if unknown metadata is silently filled, if two distinct datasets collapse to the same identity, or if the JSON cannot tell metadata-missing from cache-missing.
++
++## Validation
++
++Run and record:
++
++- focused tests for complete metadata, metadata unknown, cache missing, loader unavailable, duplicate identity, and unsupported provenance-source cases;
++- `uv run --locked --all-extras python scripts/audit_phase11_sensor_provenance_gaps.py --output /tmp/phase11_sensor_provenance_gaps.json`;
++- a real dry-run audit over the current candidate set that performs no downloads and no filter runs;
++- `uv run --locked --all-extras pytest tests/test_phase11_sensor_provenance_gaps.py -q`;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-sota-ledger-numeric-claim-lint/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-sota-ledger-numeric-claim-lint/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..5e764fb064aa4f893ebcbc49c300b29d87bd8b40
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-sota-ledger-numeric-claim-lint/BRIEF.md
+@@ -0,0 +1,45 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-t-async-sota-ledger-numeric-claim-lint
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 75
++---
++
++# Phase 7.10.t - async SOTA ledger numeric-claim lint
++
++You are a rigorous BSEBench async research-gate engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Block future unsupported comparison language by adding a lightweight async lint that detects external numeric performance claims unless they are tied to a complete source-ledger row and comparability table.
++
++## Required behavior
++
++- Active lane: SOTA comparison, limited to source-ledger validation and anti-hallucination CI fixtures.
++- Add a script or shell gate that can lint Markdown/JSON comparison drafts and source-ledger files for numeric external baselines, `SOTA`/novelty language, source IDs, stable URL or DOI, retrieval date, exact metric, dataset, split, BSEBench artifact reference, comparability status, and caveat.
++- Include positive and negative fixtures that cover complete ledger rows, missing DOI/URL, missing retrieval date, missing split, unlinked numeric baseline, and forbidden `SOTA` wording.
++- The gate must not perform live literature search, invent source metadata, generate new empirical evidence, or edit any claim registry.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, the roadmap, or manuscript prose.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this source-ledger lint.
++- Do not make unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim statements; any SOTA comparison requires a source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++The task must fail if a fixture can contain a numeric external baseline or SOTA/novelty wording without a linked complete ledger row, if a missing comparability caveat passes, or if the linter permits a claim-verification sentence in a SOTA-comparison draft.
++
++## Validation
++
++Run and record:
++
++- fixture tests for complete source ledger, missing stable URL/DOI, missing retrieval date, missing metric, missing dataset/split, unlinked numeric baseline, missing comparability caveat, and forbidden claim-verification wording;
++- `bash scripts/check-sota-source-ledger.sh --fixtures tests/fixtures/sota-ledger`;
++- `bash scripts/check-sota-source-ledger.sh outbox/claim-candidate-63-hinf-residual-cov-decomp || true` with the result explained as pass, skip, or expected non-applicability;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `bash -n scripts/check-sota-source-ledger.sh scripts/check-research-brief-gates.sh`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-u-datasets-cache-root-equivalence-audit/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-u-datasets-cache-root-equivalence-audit/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..36dea4bdb8331597fc1bbcacdb79ed797471d092
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-u-datasets-cache-root-equivalence-audit/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-datasets
++target_branch: phase-7-10-u-datasets-cache-root-equivalence-audit
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.u - datasets cache-root equivalence audit
++
++You are a rigorous BSEBench dataset reproducibility engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Prove that local-cache manifests used for Hinf, Phase 8, and Phase 11 preflights compare dataset identity and provenance rather than machine-specific root paths.
++
++## Required behavior
++
++- Active lane: Evidence generation, limited to cache/provenance replay tooling.
++- Add or extend a datasets-owned audit that compares two local-cache manifest JSON files and reports whether they are equivalent after normalizing allowed root-specific fields.
++- The comparison must preserve dataset ID, loader ID, split/config ID, required-file identity, file size/hash when available, provenance source, and unavailable-reason fields; absolute root paths may be normalized only when the underlying identities match.
++- Include a mode that can generate synthetic fixture manifests so CI can test equivalence without private local caches.
++- The audit must fail loud on missing hashes, duplicate dataset identities, path-only identity, mismatched provenance source, or a manifest that claims readiness without required files.
++- Do not generate empirical filter evidence, modify caches, or commit local-machine paths as scientific evidence.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, the roadmap, or manuscript prose.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this cache-root equivalence audit.
++- Do not make unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim statements; any SOTA comparison requires a source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++The task must fail if two manifests with different dataset/provenance identities compare equal, if two root-shifted but otherwise identical manifests compare unequal, if readiness is derived from an absolute path alone, or if missing file hashes are not surfaced as explicit gaps.
++
++## Validation
++
++Run and record:
++
++- focused tests for root-shift equivalence, dataset mismatch, provenance mismatch, missing hash, duplicate identity, path-only identity rejection, and readiness-with-missing-file rejection;
++- `uv run --locked --all-extras python scripts/audit_cache_root_equivalence.py --left tests/fixtures/cache_manifest/root_a.json --right tests/fixtures/cache_manifest/root_b.json`;
++- if local Hinf cache manifests are available, run the audit on real manifests and mark any unavailable local cache as a gap rather than inferred readiness;
++- `uv run --locked --all-extras pytest tests/test_cache_root_equivalence_audit.py -q`;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-v-async-phase8-11-preflight-dispatch-gate/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-v-async-phase8-11-preflight-dispatch-gate/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..338c9ce23636e81f1609d232cba9ef6653d56018
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-v-async-phase8-11-preflight-dispatch-gate/BRIEF.md
+@@ -0,0 +1,46 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-v-async-phase8-11-preflight-dispatch-gate
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 75
++---
++
++# Phase 7.10.v - async Phase 8/11 preflight dispatch gate
++
++You are a rigorous BSEBench async validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Prevent the autonomy pacer from dispatching expensive Phase 8 or Phase 11 empirical tasks unless the queued BRIEF cites concrete preflight artifacts and falsification gates.
++
++## Required behavior
++
++- Active lane: Evidence generation, limited to async validation and dispatch-safety tooling.
++- Add or extend an async-side gate that inspects inbox or autonomy-backlog BRIEFs before dispatch and detects Phase 8/11 tasks that request filter runs, evidence generation, SOTA comparison, or claim registration.
++- For expensive Phase 8/11 empirical work, the gate must require cited preflight artifacts or commands covering dataset/config identity, cache/provenance readiness, filter availability, stats dependency identity, validation commands, and a concrete falsification gate.
++- The gate must distinguish safe validation/preflight tasks from expensive empirical runs so useful tooling tasks are not blocked.
++- It must report actionable reasons in machine-readable form or stable text suitable for pacer logs.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, the roadmap, or manuscript prose.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 8/11 dispatch gate.
++- Do not make unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim statements; any SOTA comparison requires a source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++The task must fail if a fixture Phase 8/11 expensive empirical BRIEF can be dispatched without preflight artifact identity and validation commands, if a BRIEF lacking a falsification gate passes, if claim-registration wording passes without explicit authorization, or if a harmless preflight-only BRIEF is incorrectly blocked.
++
++## Validation
++
++Run and record:
++
++- fixture tests for safe preflight task, expensive task with complete preflight, expensive task missing artifact, missing validation command, missing falsification gate, forbidden claim-registration wording, and unsupported SOTA wording;
++- `bash scripts/check-phase8-11-preflight-dispatch-gate.sh --fixtures tests/fixtures/phase8-11-preflight-dispatch`;
++- `bash scripts/check-phase8-11-preflight-dispatch-gate.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `bash -n scripts/check-phase8-11-preflight-dispatch-gate.sh scripts/check-research-brief-gates.sh scripts/cto-autonomy-pacer.sh`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+100,086
+Implemented and pushed `f2fbb3f` on `phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z`.
+
+Added six new unqueued backlog BRIEFs under `cto/AUTONOMY_BACKLOG/`:
+
+- `phase-7-10-q-runner-hinf-evidence-audit-matrix-ci`
+- `phase-7-10-r-stats-hinf-fragility-bootstrap-sidecar`
+- `phase-7-10-s-datasets-phase11-sensor-provenance-gaps`
+- `phase-7-10-t-async-sota-ledger-numeric-claim-lint`
+- `phase-7-10-u-datasets-cache-root-equivalence-audit`
+- `phase-7-10-v-async-phase8-11-preflight-dispatch-gate`
+
+Validation passed:
+
+- `check-research-brief-gates`: `22 checked, 0 skipped`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`
+- `git diff --check`
+- `git diff --cached --check`
+- reserve proof: `unqueued_reserve_count=13`
+
+No thesis, claim registry, roadmap, or `claim_55` edits were made. No `Co-Authored-By Claude` trailer was added.
