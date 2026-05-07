@@ -1,0 +1,200 @@
++        "material_sensitivity": {
++            "status": material_status,
++            "risk_count": len(risk_ids),
++            "risk_ids": risk_ids,
++            "caution": caution,
++        },
++        "falsification_gate": falsification_gate,
++        "stats_sensitivity": stats_payload,
++    }
++    _assert_finite_numbers(payload, "hinf_residual_sensitivity_sidecar")
++    json_payload = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
++    output_file = Path(output_path)
++    output_file.parent.mkdir(parents=True, exist_ok=True)
++    output_file.write_text(json_payload, encoding="utf-8")
++    return payload
++
++
++def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument(
++        "--stats-output", required=True, help="JSON emitted by stats sensitivity CLI."
++    )
++    parser.add_argument("--evidence", default=str(DEFAULT_EVIDENCE_PATH))
++    parser.add_argument("--output", default=str(DEFAULT_OUTPUT_PATH))
++    parser.add_argument("--stats-repo", default=str(DEFAULT_STATS_REPO))
++    parser.add_argument("--stats-ref", default="main")
++    parser.add_argument("--stats-git-sha")
++    parser.add_argument(
++        "--stats-command",
++        default="",
++        help="Exact stats command used to create --stats-output.",
++    )
++    return parser.parse_args(argv)
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = parse_args(argv)
++    try:
++        sidecar = build_hinf_residual_sensitivity_sidecar(
++            stats_output_path=args.stats_output,
++            evidence_path=args.evidence,
++            output_path=args.output,
++            stats_repo=args.stats_repo,
++            stats_ref=args.stats_ref,
++            stats_git_sha=args.stats_git_sha,
++            stats_command=args.stats_command,
++        )
++    except HinfResidualSensitivitySidecarError as exc:
++        print(f"hinf residual sensitivity sidecar build failed: {exc}")
++        return 2
++    material = sidecar["material_sensitivity"]
++    print("hinf residual sensitivity sidecar build ok")
++    print(f"output: {args.output}")
++    print(f"material sensitivity: {material['status']} risks={material['risk_count']}")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/tests/test_audit_hinf_residual_sensitivity_sidecar.py b/tests/test_audit_hinf_residual_sensitivity_sidecar.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..5d93992b74738f46bf44d5c0858cccea1b51aa28
+--- /dev/null
++++ b/tests/test_audit_hinf_residual_sensitivity_sidecar.py
+@@ -0,0 +1,109 @@
++from __future__ import annotations
++
++import copy
++import importlib.util
++import json
++import sys
++from pathlib import Path
++
++import pytest
++
++AUDIT_SCRIPT_PATH = (
++    Path(__file__).resolve().parents[1] / "scripts" / "audit_hinf_residual_sensitivity_sidecar.py"
++)
++BUILD_SCRIPT_PATH = (
++    Path(__file__).resolve().parents[1] / "scripts" / "build_hinf_residual_sensitivity_sidecar.py"
++)
++REPO_ROOT = Path(__file__).resolve().parents[1]
++SIDECAR_PATH = REPO_ROOT / "outputs" / "hinf_residual_sensitivity_5x5.json"
++
++
++def _load_script_module(path: Path, name: str):
++    spec = importlib.util.spec_from_file_location(name, path)
++    assert spec is not None
++    assert spec.loader is not None
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[spec.name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++@pytest.fixture(scope="module")
++def audit_module():
++    return _load_script_module(AUDIT_SCRIPT_PATH, "audit_hinf_residual_sensitivity_sidecar")
++
++
++@pytest.fixture(scope="module")
++def build_module():
++    return _load_script_module(BUILD_SCRIPT_PATH, "build_hinf_residual_sensitivity_sidecar")
++
++
++def _write_sidecar(tmp_path: Path, payload: dict[str, object]) -> Path:
++    path = tmp_path / "hinf_residual_sensitivity_5x5.json"
++    path.write_text(json.dumps(payload, allow_nan=False), encoding="utf-8")
++    return path
++
++
++@pytest.mark.fast
++def test_sidecar_scripts_import_without_side_effects(audit_module, build_module) -> None:
++    assert callable(audit_module.audit_sidecar)
++    assert callable(audit_module.main)
++    assert callable(build_module.build_hinf_residual_sensitivity_sidecar)
++    assert callable(build_module.main)
++
++
++@pytest.mark.fast
++def test_committed_hinf_sensitivity_sidecar_passes_audit(audit_module, capsys) -> None:
++    summary = audit_module.audit_sidecar()
++
++    assert summary["stats_sha"] == "6a892ee56aba401537d658fbfafca7443b3e559f"
++    assert summary["material_sensitivity_status"] == "material_sensitivity_detected"
++    assert summary["risk_count"] == 9
++
++    rc = audit_module.main([])
++    captured = capsys.readouterr()
++    assert rc == 0
++    assert "hinf residual sensitivity sidecar audit ok" in captured.out
++    assert "material sensitivity: material_sensitivity_detected risks=9" in captured.out
++
++
++@pytest.mark.fast
++def test_sidecar_rejects_runner_evidence_hash_mismatch(audit_module, tmp_path: Path) -> None:
++    sidecar = json.loads(SIDECAR_PATH.read_text(encoding="utf-8"))
++    bad_sidecar = copy.deepcopy(sidecar)
++    bad_sidecar["provenance"]["runner_evidence"]["sha256"] = "0" * 64
++    bad_path = _write_sidecar(tmp_path, bad_sidecar)
++
++    with pytest.raises(
++        audit_module.HinfResidualSensitivitySidecarAuditError,
++        match=r"runner_evidence\.sha256",
++    ):
++        audit_module.audit_sidecar(sidecar_path=bad_path)
++
++
++@pytest.mark.fast
++def test_sidecar_rejects_hidden_material_sensitivity(audit_module, tmp_path: Path) -> None:
++    sidecar = json.loads(SIDECAR_PATH.read_text(encoding="utf-8"))
++    bad_sidecar = copy.deepcopy(sidecar)
++    bad_sidecar["material_sensitivity"]["status"] = "no_material_sensitivity_detected"
++    bad_path = _write_sidecar(tmp_path, bad_sidecar)
++
++    with pytest.raises(
++        audit_module.HinfResidualSensitivitySidecarAuditError,
++        match=r"material_sensitivity\.status",
++    ):
++        audit_module.audit_sidecar(sidecar_path=bad_path)
++
++
++@pytest.mark.fast
++def test_sidecar_rejects_positive_claim_language(audit_module, tmp_path: Path) -> None:
++    sidecar = json.loads(SIDECAR_PATH.read_text(encoding="utf-8"))
++    bad_sidecar = copy.deepcopy(sidecar)
++    bad_sidecar["material_sensitivity"]["caution"] = "Hinf is verified SOTA."
++    bad_path = _write_sidecar(tmp_path, bad_sidecar)
++
++    with pytest.raises(
++        audit_module.HinfResidualSensitivitySidecarAuditError,
++        match=r"forbidden positive claim term",
++    ):
++        audit_module.audit_sidecar(sidecar_path=bad_path)
+
+tokens used
+150,737
+Committed `90146f3`:
+
+`GLASSBOX [role: codex-evidence-engineer] Add Hinf sensitivity sidecar`
+
+Added:
+- [outputs/hinf_residual_sensitivity_5x5.json](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-9-c-runner-hinf-sensitivity-sidecar/outputs/hinf_residual_sensitivity_5x5.json)
+- [scripts/build_hinf_residual_sensitivity_sidecar.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-9-c-runner-hinf-sensitivity-sidecar/scripts/build_hinf_residual_sensitivity_sidecar.py)
+- [scripts/audit_hinf_residual_sensitivity_sidecar.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-9-c-runner-hinf-sensitivity-sidecar/scripts/audit_hinf_residual_sensitivity_sidecar.py)
+- [tests/test_audit_hinf_residual_sensitivity_sidecar.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-phase-7-9-c-runner-hinf-sensitivity-sidecar/tests/test_audit_hinf_residual_sensitivity_sidecar.py)
+
+The sidecar records evidence SHA `35c255c696fd9b63552c2206d08009aea834c17f3f09e2bd49b7ac5666917f78`, stats `main` SHA `6a892ee56aba401537d658fbfafca7443b3e559f`, `scientific_verdict: none`, `mechanical_evidence_only: true`, and preserves `material_sensitivity_detected` with 9 risks as a caution.
+
+Validation passed:
+- stats sensitivity command against runner evidence
+- sidecar audit
+- runner output audit
+- manifest audit
+- focused sidecar tests: `5 passed`
+- full non-slow tests: `124 passed, 5 deselected`
+- `ruff check .`
+- `ruff format --check .`
+
+No thesis, claim registry, roadmap, or original strict evidence files were edited. No `Co-Authored-By Claude` trailer was added.
