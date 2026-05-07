@@ -1,0 +1,200 @@
+   495	            "loo_config_stability.summary.config_share",
+   496	        ),
+   497	        "filter_share": _range_summary(
+   498	            share_values["filter_share"],
+   499	            "loo_config_stability.summary.filter_share",
+   500	        ),
+   501	        "residual_or_interaction_share": _range_summary(
+   502	            share_values["residual_or_interaction_share"],
+   503	            "loo_config_stability.summary.residual_or_interaction_share",
+   504	        ),
+   505	        "filter_effect_deltas_vs_full": {
+   506	            filter_label: {
+   507	                "mean_metric": _range_summary(
+   508	                    delta_values["mean_metric"],
+   509	                    "loo_config_stability.summary."
+   510	                    f"filter_effect_deltas_vs_full[{filter_label!r}].mean_metric",
+   511	                ),
+   512	                "effect_vs_grand_mean": _range_summary(
+   513	                    delta_values["effect_vs_grand_mean"],
+   514	                    "loo_config_stability.summary."
+   515	                    f"filter_effect_deltas_vs_full[{filter_label!r}].effect_vs_grand_mean",
+   516	                ),
+   517	            }
+   518	            for filter_label, delta_values in filter_effect_delta_values.items()
+   519	        },
+   520	    }
+   521	    return {
+   522	        "status": "ok",
+   523	        "min_retained_configs": minimum_configs,
+   524	        "n_retained_configs": len(config_labels),
+   525	        "runs": runs,
+   526	        "summary": summary,
+   527	    }
+   528	
+   529	
+   530	def build_residual_variance_decomposition(
+   531	    trace_payload: object,
+   532	    *,
+   533	    min_ok_filters: int = 2,
+   534	    require_ok_configs: int = 1,
+   535	    metric: str = "log_residual_var",
+   536	    epsilon: float = DEFAULT_EPSILON,
+   537	) -> dict[str, object]:
+   538	    """Build a JSON-safe residual variance decomposition report.
+   539	
+   540	    The input is the Phase 7.6 residual trace payload. Only ok filters with
+   541	    finite one-dimensional ``residual_mV`` arrays enter the analysis. Retained
+   542	    configs must form a balanced config x filter table with identical ok filter
+   543	    labels in identical order; mismatched cells fail loud instead of being
+   544	    imputed.
+   545	    """
+   546	    required, minimum, metric_name, eps = _validate_policy(
+   547	        require_ok_configs=require_ok_configs,
+   548	        min_ok_filters=min_ok_filters,
+   549	        metric=metric,
+   550	        epsilon=epsilon,
+   551	    )
+   552	    _, source_schema_version, source_config_labels, source_filter_labels, configs = (
+   553	        _validate_top_level_payload(trace_payload)
+   554	    )
+   555	
+   556	    per_config_filter_metrics: dict[str, dict[str, dict[str, float]]] = {}
+   557	    skipped_configs: list[dict[str, object]] = []
+   558	    error_configs = 0
+   559	    ok_filter_traces = 0
+   560	
+   561	    for config_label in source_config_labels:
+   562	        raw_config = _require_mapping(
+   563	            _required(configs, config_label, "trace_payload.configs"),
+   564	            f"trace_payload.configs[{config_label!r}]",
+   565	        )
+   566	        metrics, skip, included_traces = _config_filter_metrics(
+   567	            config_label,
+   568	            raw_config,
+   569	            source_filter_labels,
+   570	            min_ok_filters=minimum,
+   571	            metric=metric_name,
+   572	            epsilon=eps,
+   573	        )
+   574	        if metrics is not None:
+   575	            per_config_filter_metrics[config_label] = metrics
+   576	            ok_filter_traces += included_traces
+   577	        if skip is not None:
+   578	            skipped_configs.append(skip)
+   579	            if skip["status"] == "error":
+   580	                error_configs += 1
+   581	
+   582	    summary = {
+   583	        "total_configs": len(source_config_labels),
+   584	        "ok_configs": len(per_config_filter_metrics),
+   585	        "skipped_configs": sum(1 for skip in skipped_configs if skip["status"] == "skipped"),
+   586	        "error_configs": error_configs,
+   587	        "ok_filter_traces": ok_filter_traces,
+   588	    }
+   589	    retained_config_labels = list(per_config_filter_metrics)
+   590	    payload: dict[str, object] = {
+   591	        "schema_version": DECOMP_SCHEMA_VERSION,
+   592	        "source_schema_version": source_schema_version,
+   593	        "metric": metric_name,
+   594	        "source_config_labels": source_config_labels,
+   595	        "source_filter_labels": source_filter_labels,
+   596	        "retained_config_labels": retained_config_labels,
+   597	        "retained_filter_labels": [],
+   598	        "per_config_filter_metrics": per_config_filter_metrics,
+   599	        "decomposition": None,
+   600	        "filter_effects": {},
+   601	        "config_effects": {},
+   602	        "loo_config_stability": None,
+   603	        "summary": summary,
+   604	        "skipped_configs": skipped_configs,
+   605	        "policy": _policy(required, minimum, metric_name, eps),
+   606	    }
+   607	
+   608	    _enforce_required_ok_configs(payload, require_ok_configs=required)
+   609	
+   610	    retained_filter_labels = _retained_filter_labels(per_config_filter_metrics)
+   611	    payload["retained_filter_labels"] = retained_filter_labels
+   612	    metric_table = _metric_table(
+   613	        per_config_filter_metrics,
+   614	        config_labels=retained_config_labels,
+   615	        filter_labels=retained_filter_labels,
+   616	        metric=metric_name,
+   617	    )
+   618	    payload["decomposition"] = _decompose_metric_table(
+   619	        metric_table,
+   620	        config_labels=retained_config_labels,
+   621	        filter_labels=retained_filter_labels,
+   622	    )
+   623	    config_effects, filter_effects = _effect_summaries(
+   624	        per_config_filter_metrics,
+   625	        metric_table,
+   626	        config_labels=retained_config_labels,
+   627	        filter_labels=retained_filter_labels,
+   628	    )
+   629	    payload["config_effects"] = config_effects
+   630	    payload["filter_effects"] = filter_effects
+   631	    payload["loo_config_stability"] = _loo_config_stability(
+   632	        per_config_filter_metrics,
+   633	        filter_effects,
+   634	        config_labels=retained_config_labels,
+   635	        filter_labels=retained_filter_labels,
+   636	        metric=metric_name,
+   637	    )
+   638	    json.dumps(payload, allow_nan=False)
+   639	    return payload
+   640	
+   641	
+   642	def run_residual_variance_decomposition(
+   643	    input_path: str | Path,
+   644	    output_path: str | Path,
+   645	    *,
+   646	    min_ok_filters: int = 2,
+   647	    require_ok_configs: int = 1,
+   648	    metric: str = "log_residual_var",
+   649	    epsilon: float = DEFAULT_EPSILON,
+   650	) -> dict[str, object]:
+   651	    """Read a trace payload, build the decomposition report, then write JSON output."""
+   652	    with Path(input_path).open(encoding="utf-8") as fh:
+   653	        trace_payload = json.load(fh)
+   654	
+   655	    payload = build_residual_variance_decomposition(
+   656	        trace_payload,
+   657	        min_ok_filters=min_ok_filters,
+   658	        require_ok_configs=require_ok_configs,
+   659	        metric=metric,
+   660	        epsilon=epsilon,
+
+codex
+Implemented and committed on `phase-7-7-c-stats-residual-decomp-loo-stability`.
+
+Commit: `d7e86b7 GLASSBOX [role: worker-codex-FR] Add residual decomp LOO stability`
+
+Changes:
+- Added `loo_config_stability` to balanced residual decomposition output in [residual_decomp.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-7-c-stats-residual-decomp-loo-stability/src/bsebench_stats/runners/residual_decomp.py:397).
+- Added synthetic coverage for 5x5 LOO runs, JSON-safe finite ranges, retained filter keys including `Hinf`, and the fewer-than-3-config explicit status in [test_residual_decomp_runner.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-7-c-stats-residual-decomp-loo-stability/tests/test_residual_decomp_runner.py:141).
+
+Acceptance gates passed:
+- `uv run --locked --all-extras pytest tests/test_residual_decomp_runner.py -m fast --tb=short`
+- `uv run --locked --all-extras pytest -m "not slow" --tb=short`
+- `uv run --locked --all-extras ruff format --check .`
+- `uv run --locked --all-extras ruff check .`
+
+Only source/test files were committed. `uv.lock` is untracked and not committed. No README, roadmap, claim registry, thesis prose, real outputs, or verdict text were touched.
+tokens used
+143,174
+Implemented and committed on `phase-7-7-c-stats-residual-decomp-loo-stability`.
+
+Commit: `d7e86b7 GLASSBOX [role: worker-codex-FR] Add residual decomp LOO stability`
+
+Changes:
+- Added `loo_config_stability` to balanced residual decomposition output in [residual_decomp.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-7-c-stats-residual-decomp-loo-stability/src/bsebench_stats/runners/residual_decomp.py:397).
+- Added synthetic coverage for 5x5 LOO runs, JSON-safe finite ranges, retained filter keys including `Hinf`, and the fewer-than-3-config explicit status in [test_residual_decomp_runner.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-7-c-stats-residual-decomp-loo-stability/tests/test_residual_decomp_runner.py:141).
+
+Acceptance gates passed:
+- `uv run --locked --all-extras pytest tests/test_residual_decomp_runner.py -m fast --tb=short`
+- `uv run --locked --all-extras pytest -m "not slow" --tb=short`
+- `uv run --locked --all-extras ruff format --check .`
+- `uv run --locked --all-extras ruff check .`
+
+Only source/test files were committed. `uv.lock` is untracked and not committed. No README, roadmap, claim registry, thesis prose, real outputs, or verdict text were touched.
