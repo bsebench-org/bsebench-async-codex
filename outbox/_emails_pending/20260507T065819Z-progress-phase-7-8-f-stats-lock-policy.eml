@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [OK] phase-7-8-f-stats-lock-policy (panel 93/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-07T08:58:19+02:00
+
+Phase    : phase-7-8-f-stats-lock-policy
+Etat     : approved (approved)
+Panel    : 93/100 (seuil 89)
+Quoi     : Phase 7.8.f — stats lockfile and CI reproducibility policy
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-f-stats-lock-policy/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-f-stats-lock-policy/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-8-f-stats-lock-policy/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
