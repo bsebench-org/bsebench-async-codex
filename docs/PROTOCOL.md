@@ -167,6 +167,12 @@ Then the body is the actual prompt fed to codex via stdin.
 - Started : (see STATUS.json ts_started)
 - Finished : 2026-05-06T11:23:45+02:00
 
+## BRIEF gate audit
+
+- Static checker : passed (exit 0)
+- Ruff check requested : yes
+- Ruff format --check requested : yes
+
 ## Tail of codex stdout (last 200 lines)
 
 \`\`\`

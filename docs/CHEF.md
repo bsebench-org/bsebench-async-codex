@@ -39,7 +39,7 @@ The cron tick is **idempotent**. It is safe to run again immediately if interrup
 For each phase whose worker SUMMARY.md says branch was pushed :
 
 ```
-1. Read SUMMARY.md to get : target_repo, target_branch, branch SHA, slow-test claim.
+1. Read SUMMARY.md to get : target_repo, target_branch, branch SHA, slow-test claim, BRIEF gate audit.
 2. cd to the target_repo on chef PC.
 3. git fetch origin && git checkout <target_branch>.
 4. Re-run the gate suite (FAST tests + ruff only) :

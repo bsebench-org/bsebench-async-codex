@@ -60,6 +60,9 @@ Generated at : <iso>
 ## Verification commands
 ```bash
 # what the dev should run before declaring done
+# Python repos using ruff must include both formatter and lint gates:
+# uv run ruff format --check .
+# uv run ruff check .
 <command 1>
 <command 2>
 ```

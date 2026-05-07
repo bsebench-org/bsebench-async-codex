@@ -14,6 +14,7 @@ Usage:
 Checks Phase 7/8/11 BRIEFs for minimum research-gate wording:
   - falsification condition
   - validation/replay wording
+  - ruff format --check when ruff check is requested
   - no thesis/claim registry edits
   - no unsupported SOTA claims
 
@@ -115,6 +116,19 @@ require_pattern() {
   fi
 }
 
+require_ruff_format_gate_parity() {
+  local path="$1"
+
+  if has_pattern "$path" '(^|[^[:alnum:]_-])ruff[[:space:]]+check([^[:alnum:]_-]|$)' ; then
+    require_pattern \
+      "$path" \
+      "ruff format --check paired with ruff check" \
+      '(^|[^[:alnum:]_-])ruff[[:space:]]+format[[:space:]]+--check([^[:alnum:]_-]|$)'
+  else
+    echo "  [OK]   ruff format --check paired with ruff check (ruff check absent)"
+  fi
+}
+
 check_brief() {
   local path="$1"
 
@@ -143,6 +157,8 @@ check_brief() {
     "$path" \
     "validation or replay wording" \
     'validation|validat|replay|independent validator|verify'
+
+  require_ruff_format_gate_parity "$path"
 
   require_pattern \
     "$path" \

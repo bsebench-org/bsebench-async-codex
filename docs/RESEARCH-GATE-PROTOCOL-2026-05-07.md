@@ -196,6 +196,8 @@ equivalent explicit wording:
 
 - A falsification condition.
 - A validation/replay command list.
+- For Python repos with a `ruff check` gate, an adjacent
+  `ruff format --check` gate before workers report green validation.
 - A prohibition on thesis and claim registry edits unless the task is explicit
   claim registration.
 - A prohibition on unsupported SOTA, novelty, or claim language.

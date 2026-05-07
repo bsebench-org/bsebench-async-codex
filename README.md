@@ -91,6 +91,12 @@ hard_wallclock_min: 90
 
 The worker parses these YAML keys, sets up the worktree, runs codex, and pushes the resulting branch.
 
+For Python repos whose validation gates include `ruff check`, the BRIEF must
+also include `ruff format --check`. The worker runs the lightweight
+`scripts/check-research-brief-gates.sh` audit before dispatching Phase 7/8/11
+research BRIEFs and records the ruff check / formatter-check parity in
+`outbox/<id>/SUMMARY.md`.
+
 ## Concurrency model
 
 - One worker per `workers/<id>.json` entry. Workers select phases atomically by writing `running` to STATUS.json + pushing first ; loser-pushes are detected by `git push` rejection and the worker tries the next queued phase.

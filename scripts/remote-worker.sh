@@ -24,11 +24,17 @@ WORKER_ID="${WORKER_ID:-france-personal}"
 LOCK_FILE="${REMOTE_WORKER_LOCK_FILE:-/tmp/codex-async-worker-${WORKER_ID}.lock}"
 LOG_TAIL_LINES=200
 DEFAULT_WALLCLOCK_MIN=90
+RUFF_CHECK_PATTERN='(^|[^[:alnum:]_-])ruff[[:space:]]+check([^[:alnum:]_-]|$)'
+RUFF_FORMAT_CHECK_PATTERN='(^|[^[:alnum:]_-])ruff[[:space:]]+format[[:space:]]+--check([^[:alnum:]_-]|$)'
 
 # Initialized later when a phase is picked
 queued_phase=""
 status_file=""
 phase_marked_running=0
+brief_gate_check_exit=0
+brief_gate_check_output="BRIEF checker not run."
+brief_ruff_check_gate="no"
+brief_ruff_format_check_gate="no"
 
 push_async_main_with_rebase() {
   local label="${1:-async state}"
@@ -45,6 +51,32 @@ push_async_main_with_rebase() {
   done
   echo "worker: push failed after retries for $label" >&2
   return 1
+}
+
+run_brief_gate_check() {
+  local path="$1"
+  local checker="$ASYNC_REPO/scripts/check-research-brief-gates.sh"
+
+  brief_ruff_check_gate="no"
+  brief_ruff_format_check_gate="no"
+  if grep -Eiq "$RUFF_CHECK_PATTERN" "$path" ; then
+    brief_ruff_check_gate="yes"
+  fi
+  if grep -Eiq "$RUFF_FORMAT_CHECK_PATTERN" "$path" ; then
+    brief_ruff_format_check_gate="yes"
+  fi
+
+  if [[ ! -f "$checker" ]] ; then
+    brief_gate_check_exit=0
+    brief_gate_check_output="SKIP: $checker not found; worker could not run the static BRIEF checker."
+    return
+  fi
+
+  if brief_gate_check_output=$(bash "$checker" --dry-run "$path" 2>&1) ; then
+    brief_gate_check_exit=0
+  else
+    brief_gate_check_exit=$?
+  fi
 }
 
 # ------------------------------------------------------------------ ERR trap
@@ -171,6 +203,65 @@ while IFS= read -r line ; do
   [[ -n "$line" ]] && add_dirs+=("$line")
 done < <(awk '/^---$/{flag=!flag; next} flag && /^  - /{sub(/^  - /,""); print; next} flag && /^add_dir:/{}' "$brief")
 
+# ------------------------------------------------------------------ static BRIEF gate check
+run_brief_gate_check "$brief"
+if [[ "$brief_gate_check_exit" -ne 0 ]] ; then
+  mkdir -p "outbox/$queued_phase"
+  cat > "outbox/$queued_phase/SUMMARY.md" <<EOF
+# Phase $queued_phase summary (BRIEF gate failure)
+
+- Worker : $WORKER_ID
+- Codex exit : not run
+- Wallclock cap : $hard_wallclock_min min
+- Target repo : $target_repo
+- Target branch : $target_branch
+- Branch SHA : none
+- Push result : not-attempted
+- Started : not started
+- Finished : $(date -Iseconds)
+
+## BRIEF gate audit
+
+- Static checker : failed (exit $brief_gate_check_exit)
+- Ruff check requested : $brief_ruff_check_gate
+- Ruff format --check requested : $brief_ruff_format_check_gate
+
+\`\`\`
+$brief_gate_check_output
+\`\`\`
+
+## Next step for chef
+
+Fix inbox/$queued_phase/BRIEF.md and re-queue. If the BRIEF asks workers to run \`ruff check\`, it must also ask them to run \`ruff format --check\` before reporting green validation.
+EOF
+
+  jq --arg w "$WORKER_ID" \
+     '.status="error"|.ts_done=(now|todate)|.exit_code=-4|.worker_id=$w|.error_at_line="static BRIEF gate check failed"' \
+     "$status_file" > "$status_file.tmp"
+  mv "$status_file.tmp" "$status_file"
+  git add "$status_file" "outbox/$queued_phase/"
+  git commit -m "chore(async): reject invalid BRIEF $queued_phase
+
+[role: worker-FR]
+
+## Context
+Worker picked up a queued Phase 7/8/11 BRIEF before launching codex exec.
+
+## Objective
+Reject BRIEFs whose validation wording would let formatter drift reach chef.
+
+## Problem
+The static BRIEF checker failed before codex exec. No target repo worktree was mutated.
+
+## Result
+- exit_code=-4 records a pre-dispatch BRIEF gate failure.
+- SUMMARY.md records the checker output and ruff format-gate audit.
+
+Verified-By: scripts/check-research-brief-gates.sh --dry-run inbox/$queued_phase/BRIEF.md" --quiet
+  push_async_main_with_rebase "BRIEF gate failure for $queued_phase" || true
+  exit 0
+fi
+
 # ------------------------------------------------------------------ mark running
 jq --arg w "$WORKER_ID" --arg tr "$target_repo" --arg tb "$target_branch" --arg bb "$base_branch" \
    '.status="running"|.ts_started=(now|todate)|.worker_id=$w|.target_repo=$tr|.target_branch=$tb|.base_branch=$bb' \
@@ -294,6 +385,16 @@ cat > "outbox/$queued_phase/SUMMARY.md" <<EOF
 ## Push stderr (if push failed)
 
 $([ "$push_result" = "push-failed" ] && echo -e "\`\`\`\n${push_stderr:-(no stderr captured)}\n\`\`\`" || echo "(push succeeded — no stderr)")
+
+## BRIEF gate audit
+
+- Static checker : passed (exit $brief_gate_check_exit)
+- Ruff check requested : $brief_ruff_check_gate
+- Ruff format --check requested : $brief_ruff_format_check_gate
+
+\`\`\`
+$brief_gate_check_output
+\`\`\`
 
 ## Tail of codex stdout (last $LOG_TAIL_LINES lines)
 
