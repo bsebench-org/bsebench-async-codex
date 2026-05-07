@@ -33,6 +33,8 @@ Codex process accounting is intentionally limited to worker-style invocations: `
 
 Backlog candidate selection also skips tasks whose target branch already exists locally or on `origin`, so manual CTO launches cannot be duplicated merely because they were not queued by the pacer.
 
+The worker and chef daemons explicitly check out `main` before resetting to `origin/main`. A reset alone is not enough when a clone was left on a feature branch; async state commits must land on the branch that will be pushed.
+
 ## Self-Audit Probe
 
 `scripts/probe-autonomy-pacer-safety.sh` builds isolated temporary async repos and runs the pacer in dry-run mode. The probe checks three incident-review cases:

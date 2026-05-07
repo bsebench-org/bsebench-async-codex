@@ -759,6 +759,7 @@ while true ; do
   cd "$ASYNC_REPO" || { sleep "$INTERVAL_SEC" ; continue ; }
   clear_stale_git_index_lock "$ASYNC_REPO"
   git fetch origin main --quiet || true
+  git checkout -f main --quiet || true
   git reset --hard origin/main --quiet || true
 
   # Self-respawn : if our own script changed (just pulled a patched

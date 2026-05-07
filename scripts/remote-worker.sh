@@ -130,6 +130,7 @@ fi
 cd "$ASYNC_REPO"
 clear_stale_git_index_lock "$ASYNC_REPO"
 git fetch origin main --quiet
+git checkout -f main --quiet
 git reset --hard origin/main --quiet
 
 # ------------------------------------------------------------------ pick a queued phase

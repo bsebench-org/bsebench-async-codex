@@ -12,6 +12,7 @@ From 2026-05-07T16:20:05+02:00 through 2026-05-07T18:50:04+02:00, `cto-autonomy-
 2. The stats commit was later amended and pushed as `ad248425b3eaf2a27c2d4ea014e9173f5b1f459c` with `Oussama Akir <claude@cosmocomply.com>`, and that commit is now on `origin/main` and `origin/phase-7-10-a-stats-hinf-uncertainty-report`.
 3. The async block file remained after the fix. The pacer was designed to pause on any block and had no remediation queue path, so the safety stop became a silent global idle condition.
 4. A separate stale `.git/index.lock` failure appeared in `bsebench-async-codex-worker-2`, making one live worker tick fail before useful work. This made daemon liveness a poor proxy for actual forward progress.
+5. During recovery, the active async clone was found on a feature branch. `git reset --hard origin/main` does not switch branches, so a daemon tick could commit async state on the wrong local branch and then push `main` without the state commit.
 
 ## Blast Radius
 
@@ -26,6 +27,7 @@ From 2026-05-07T16:20:05+02:00 through 2026-05-07T18:50:04+02:00, `cto-autonomy-
 - The pacer now counts live worker Codex CLI processes by accepting `codex exec` or Codex wrapper/vendor processes that include `-C <worktree>`, so monitoring is not blind to wrapper process names and does not count the long-lived interactive CTO session.
 - The pacer now skips backlog BRIEFs whose target branch already exists locally or on `origin`, preventing duplicate re-queue of work that was launched manually rather than by pacer.
 - `scripts/remote-worker.sh` and `scripts/chef-daemon.sh` now remove stale `.git/index.lock` files only when they are older than `STALE_GIT_LOCK_MIN` and no `git` process references the repo.
+- `scripts/remote-worker.sh` and `scripts/chef-daemon.sh` now explicitly `git checkout main` before resetting to `origin/main`, so async state commits land on the branch that is pushed.
 - `scripts/probe-autonomy-pacer-safety.sh` now asserts that a block queues remediation only and does not queue ordinary backlog work.
 
 ## Current Recovery
