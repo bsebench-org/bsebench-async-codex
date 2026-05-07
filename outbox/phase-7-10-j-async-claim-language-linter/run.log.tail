@@ -1,0 +1,200 @@
++  done < "$path"
++
++  if [[ "$file_failures" -eq 0 ]] ; then
++    echo "  [OK]   claim language lint"
++  else
++    failures=$((failures + file_failures))
++  fi
++}
++
++if [[ "$dry_run" -eq 1 ]] ; then
++  echo "DRY-RUN: checking claim language; no files will be modified."
++fi
++
++mapfile -t files < <(collect_files)
++
++failures=0
++checked=0
++skipped=0
++
++for path in "${files[@]}" ; do
++  [[ -n "$path" ]] || continue
++  check_file "$path"
++done
++
++if [[ "$checked" -eq 0 ]] ; then
++  echo "No matching async claim-language files found."
++fi
++
++if [[ "$failures" -gt 0 ]] ; then
++  echo "Claim language lint failed: $failures failure(s), $checked checked, $skipped skipped." >&2
++  exit 1
++fi
++
++echo "Claim language lint passed: $checked checked, $skipped skipped."
+diff --git a/scripts/check-research-brief-gates.sh b/scripts/check-research-brief-gates.sh
+index 4f03e030d19aa40ca409b0054b8d6da79e5db122..0d96a75c6ad382d03fd48dc45f5421569a1efc41
+--- a/scripts/check-research-brief-gates.sh
++++ b/scripts/check-research-brief-gates.sh
+@@ -19,6 +19,7 @@
+   - no thesis/claim registry edits
+   - no claim_55 targeting
+   - no unsupported SOTA claims
++  - no unsupported claim-promotion language
+ 
+ With no files, the default is --staged, which includes untracked BRIEFs.
+ USAGE
+@@ -170,6 +171,13 @@
+     "$path" \
+     "no unsupported SOTA claims" \
+     '((do not|must not|no|not|without|unsupported)[[:alnum:]_ ./,-]{0,140}sota|sota[[:alnum:]_ ./,-]{0,140}(unsupported|source ledger|doi|stable url|comparability|claim|status|novelty))'
++
++  if bash scripts/check-claim-language.sh "$path" ; then
++    echo "  [OK]   unsupported claim-promotion language"
++  else
++    echo "  [FAIL] unsupported claim-promotion language"
++    failures=$((failures + 1))
++  fi
+ }
+ 
+ if [[ "$dry_run" -eq 1 ]] ; then
+diff --git a/scripts/test-claim-language-linter.sh b/scripts/test-claim-language-linter.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..872860141c859fca3394fe75544b6bbd54eb33a2
+--- /dev/null
++++ b/scripts/test-claim-language-linter.sh
+@@ -0,0 +1,64 @@
++#!/usr/bin/env bash
++# Fixture checks for check-claim-language.sh and the BRIEF falsification gate.
++
++set -euo pipefail
++
++tmp_dir="$(mktemp -d)"
++trap 'rm -rf "$tmp_dir"' EXIT
++
++pass_fixtures=(
++  tests/fixtures/claim-language/pass-neutral.md
++  tests/fixtures/claim-language/pass-quoted-examples.md
++)
++
++fail_fixtures=(
++  tests/fixtures/claim-language/fail-promote-hinf.md
++  tests/fixtures/claim-language/fail-sota-breakthrough.md
++)
++
++for fixture in "${pass_fixtures[@]}" ; do
++  bash scripts/check-claim-language.sh --dry-run "$fixture" >"$tmp_dir/pass.out"
++  echo "[OK] expected pass: $fixture"
++done
++
++for fixture in "${fail_fixtures[@]}" ; do
++  if bash scripts/check-claim-language.sh --dry-run "$fixture" >"$tmp_dir/fail.out" 2>&1 ; then
++    echo "[FAIL] expected lint failure: $fixture" >&2
++    cat "$tmp_dir/fail.out" >&2
++    exit 1
++  fi
++  echo "[OK] expected fail: $fixture"
++done
++
++brief="$tmp_dir/inbox/phase-7-10-lint-falsification/BRIEF.md"
++mkdir -p "$(dirname "$brief")"
++cat > "$brief" <<'BRIEF'
++# Phase 7.10 lint falsification fixture
++
++## Goal
++
++Promote Hinf to a verified claim and target claim_55 in the worker report.
++
++## Required behavior
++
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not make SOTA claims without a source ledger and comparability table.
++- Do not target `claim_55`.
++
++## Falsification gate
++
++If the guard can miss forbidden claim language, it must fail validation.
++
++## Validation
++
++Run validation and replay checks.
++BRIEF
++
++if bash scripts/check-research-brief-gates.sh --dry-run "$brief" >"$tmp_dir/fail.out" 2>&1 ; then
++  echo "[FAIL] expected BRIEF falsification fixture to fail" >&2
++  cat "$tmp_dir/fail.out" >&2
++  exit 1
++fi
++echo "[OK] expected fail: BRIEF falsification fixture"
++
++echo "Claim language fixture checks passed."
+diff --git a/tests/fixtures/claim-language/fail-promote-hinf.md b/tests/fixtures/claim-language/fail-promote-hinf.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..e6d90db823541eb5d2688ce5d43b07dd6a32ef49
+--- /dev/null
++++ b/tests/fixtures/claim-language/fail-promote-hinf.md
+@@ -0,0 +1,3 @@
++# Forbidden Hinf Promotion Fixture
++
++Promote Hinf to a verified claim and target claim_55 in the worker report.
+diff --git a/tests/fixtures/claim-language/fail-sota-breakthrough.md b/tests/fixtures/claim-language/fail-sota-breakthrough.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..5661fd840c5bddc4647e1e10b2a82a2ea109355c
+--- /dev/null
++++ b/tests/fixtures/claim-language/fail-sota-breakthrough.md
+@@ -0,0 +1,3 @@
++# Forbidden SOTA Promotion Fixture
++
++Hinf is SOTA, novel, and a breakthrough for this benchmark.
+diff --git a/tests/fixtures/claim-language/pass-neutral.md b/tests/fixtures/claim-language/pass-neutral.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..773627f231e9d40577ba101f99d27e2baca058e7
+--- /dev/null
++++ b/tests/fixtures/claim-language/pass-neutral.md
+@@ -0,0 +1,10 @@
++# Neutral Claim Language Fixture
++
++This report records mechanical evidence only.
++
++The Hinf result remains a claim candidate and is not ready for claim promotion.
++The falsification section explains how future evidence could fail.
++
++Do not make SOTA, novelty, breakthrough, or verified-claim statements without a
++source ledger and comparability table.
++Do not target `claim_55`; it is protected and unrelated to this artifact.
+diff --git a/tests/fixtures/claim-language/pass-quoted-examples.md b/tests/fixtures/claim-language/pass-quoted-examples.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..be2c215f23cf7c326c8da3e0630aaeed68489ea7
+--- /dev/null
++++ b/tests/fixtures/claim-language/pass-quoted-examples.md
+@@ -0,0 +1,12 @@
++# Quoted Claim Language Fixture
++
++Forbidden wording examples:
++
++- "Hinf is a verified claim."
++- "Hinf is SOTA and a breakthrough."
++- "Target claim_55 in the registry patch."
++
++> Historical context: claim_55 was mentioned in an older roadmap, but this
++> artifact does not target it.
++
++This artifact is mechanical evidence only and remains a candidate.
+
+tokens used
+130,144
+Implemented and committed: `fb57ab3 GLASSBOX [role: worker-FR] Add async claim language linter`.
+
+What changed:
+- Added [check-claim-language.sh](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-phase-7-10-j-async-claim-language-linter/scripts/check-claim-language.sh:1) for async BRIEFs/reports/evidence cards.
+- Wired it into [check-research-brief-gates.sh](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-phase-7-10-j-async-claim-language-linter/scripts/check-research-brief-gates.sh:171).
+- Added positive/negative fixtures plus a falsification fixture runner in [test-claim-language-linter.sh](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-phase-7-10-j-async-claim-language-linter/scripts/test-claim-language-linter.sh:1).
+
+Validation passed:
+- `bash scripts/test-claim-language-linter.sh`
+- Phase 7.8/7.9 BRIEF + evidence-card dry-run scan: `17 checked`
+- `bash -n scripts/check-claim-language.sh scripts/check-research-brief-gates.sh scripts/test-claim-language-linter.sh`
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`: `10 checked`
+- `git diff --check`
+
+No thesis, claim registry, `claims/registry.yaml`, `claim_55`, or roadmap files were edited. Commit metadata has no `Co-Authored-By Claude` trailer.
