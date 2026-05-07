@@ -1,0 +1,200 @@
+         ),
+     }
+ 
+@@ -692,7 +708,11 @@
+         "mechanical_evidence": {
+             "target_filter": target_filter,
+             "sample_count_imbalance": _sample_count_imbalance(current_sensitivity),
+-            "nasa_short_sample_handling": _nasa_short_sample_handling(current_sensitivity),
++            "nasa_short_sample_handling": _nasa_short_sample_handling(
++                current_sensitivity,
++                short_config_label=short_config_label,
++                uncertainty=uncertainty,
++            ),
+             "uncertainty": uncertainty,
+             "sensitivity_material": sensitivity_material,
+             "apparent_hinf_ordering": ordering,
+@@ -787,6 +807,9 @@
+ 
+ 
+ __all__ = [
++    "DEFAULT_CORRELATION_INTERVAL_CONFIDENCE",
++    "DEFAULT_CORRELATION_JACKKNIFE_MIN_SAMPLES",
++    "DEFAULT_CORRELATION_STRENGTH_THRESHOLD",
+     "REPORT_SCHEMA_VERSION",
+     "HinfUncertaintyReportError",
+     "build_hinf_uncertainty_report",
+diff --git a/tests/test_hinf_uncertainty_report.py b/tests/test_hinf_uncertainty_report.py
+index 2d7b54d21cecfd61dc9dbc36906be34e1ff6e97e..aafc62c3f5f7145d87e43860ef38b6bb2ecba470
+--- a/tests/test_hinf_uncertainty_report.py
++++ b/tests/test_hinf_uncertainty_report.py
+@@ -1,21 +1,107 @@
+ from __future__ import annotations
+ 
+ import json
++import math
++from collections.abc import Mapping, Sequence
+ 
+ import pytest
+ 
+ from bsebench_stats.runners import (
+     build_hinf_residual_sensitivity,
+     build_hinf_uncertainty_report,
++    build_residual_covariance_panel,
++    build_residual_variance_decomposition,
+     run_hinf_uncertainty_report,
+ )
+-from tests.test_hinf_residual_sensitivity import (
+-    _correlation_trace_payload,
+-    _evidence_payload,
+-    _evidence_payload_from_trace,
+-)
++from tests.test_hinf_residual_sensitivity import _evidence_payload
++
++STABLE_CONFIG_LABELS = ["cfg_long_a", "NASA B0005 T24", "cfg_long_b"]
++STABLE_FILTER_LABELS = ["EKF", "Hinf", "UKFDef"]
++
++
++def _ok_filter(values: Sequence[float]) -> dict[str, object]:
++    return {"status": "ok", "residual_mV": list(values)}
++
++
++def _residuals_for_variance(residual_var_m_v2: float, sample_count: int) -> list[float]:
++    pattern = [-1.0 if index % 2 == 0 else 1.0 for index in range(sample_count)]
++    pattern_var = sample_count / (sample_count - 1)
++    scale = math.sqrt(residual_var_m_v2 / pattern_var)
++    return [scale * value for value in pattern]
++
++
++def _config(
++    label: str,
++    sample_count: int,
++    variances_by_filter: Mapping[str, float],
++) -> dict[str, object]:
++    return {
++        "status": "ok",
++        "config": {"label": label},
++        "retained_samples": sample_count,
++        "filters": {
++            filter_label: _ok_filter(_residuals_for_variance(variance, sample_count))
++            for filter_label, variance in variances_by_filter.items()
++        },
++    }
+ 
+ 
++def _stable_trace_payload() -> dict[str, object]:
++    sample_count = 20
++    variances = [
++        {"EKF": 1.0, "Hinf": 2.0, "UKFDef": 3.0},
++        {"EKF": 1.1, "Hinf": 2.1, "UKFDef": 3.1},
++        {"EKF": 1.2, "Hinf": 2.2, "UKFDef": 3.2},
++    ]
++    return {
++        "schema_version": "1.0",
++        "script": "scripts/residual_trace_5x5.py",
++        "config_labels": list(STABLE_CONFIG_LABELS),
++        "filter_labels": list(STABLE_FILTER_LABELS),
++        "summary": {
++            "ok_configs": 3,
++            "error_configs": 0,
++            "ok_filter_runs": 9,
++            "error_filter_runs": 0,
++        },
++        "configs": {
++            config_label: _config(config_label, sample_count, config_variances)
++            for config_label, config_variances in zip(
++                STABLE_CONFIG_LABELS,
++                variances,
++                strict=True,
++            )
++        },
++    }
++
++
++def _stable_evidence_payload() -> dict[str, object]:
++    trace = _stable_trace_payload()
++    return {
++        "schema_version": "1.0",
++        "script": "scripts/hinf_residual_evidence_5x5.py",
++        "scientific_verdict": "none",
++        "claim_target": "new_hinf_candidate_not_claim_55",
++        "mechanical_evidence_only": True,
++        "claim_55_targeted": False,
++        "requirements": {
++            "stats_require_ok_configs": 3,
++            "stats_min_ok_filters": 3,
++        },
++        "trace": trace,
++        "residual_covariance_panel": build_residual_covariance_panel(
++            trace,
++            require_ok_configs=3,
++            min_ok_filters=3,
++        ),
++        "residual_variance_decomposition": build_residual_variance_decomposition(
++            trace,
++            require_ok_configs=3,
++            min_ok_filters=3,
++        ),
++    }
++
++
+ def _assert_no_nulls(value: object) -> None:
+     if value is None:
+         raise AssertionError("compact report must not contain JSON null")
+@@ -30,7 +116,7 @@
+ @pytest.mark.fast
+ def test_hinf_uncertainty_report_stable_synthetic_case() -> None:
+     report = build_hinf_uncertainty_report(
+-        _evidence_payload_from_trace(_correlation_trace_payload(unstable=False)),
++        _stable_evidence_payload(),
+         share_delta_material_threshold=10.0,
+         effect_delta_material_threshold=10.0,
+     )
+@@ -94,9 +180,12 @@
+     }
+     assert mechanical["sensitivity_material"]["is_material"] is True
+     assert mechanical["apparent_hinf_ordering"]["material_ordering_change"] is True
+-    assert mechanical["apparent_hinf_ordering"]["sample_count_weighted"][
+-        "target_rank_changed_vs_equal_config"
+-    ] is True
++    assert (
++        mechanical["apparent_hinf_ordering"]["sample_count_weighted"][
++            "target_rank_changed_vs_equal_config"
++        ]
++        is True
++    )
+     assert report["falsification_gate"]["candidate_status"] == "unstable"
+     assert report["falsification_gate"]["candidate_unstable"] is True
+     assert report["falsification_gate"]["ordering_materially_changed"] is True
+
+tokens used
+222,480
+Implemented and committed:
+
+`d046231 GLASSBOX [role: codex-stats-engineer] Add Hinf uncertainty fragility report`
+
+What changed:
+- Added deterministic `scripts/hinf_uncertainty_report.py`.
+- Added `bsebench_stats.runners.hinf_uncertainty_report`.
+- Extended Hinf sensitivity with correlation uncertainty, NASA short-sample reporting, and stricter instability risks.
+- Added focused stable/unstable synthetic tests.
+- Did not edit thesis files, claim registry files, `claim_55`, or roadmap files.
+
+Real artifact result:
+- Report command completed against committed runner artifacts.
+- `candidate_status`: `unstable`
+- NASA short sample: `97` retained samples vs `2900` max, ratio `29.8969`
+- `material_sensitivity_detected`: `true`
+- `ordering_materially_changed`: `true`
+- `uncertainty_material`: `true`
+- risk count: `13`
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_hinf_residual_sensitivity.py tests/test_hinf_uncertainty_report.py -q`
+- `uv run --locked --all-extras python scripts/hinf_uncertainty_report.py --output /tmp/hinf_uncertainty_report_5x5.json`
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q` (`81 passed`)
+- `uv run --locked --all-extras ruff check .`
+- `uv run --locked --all-extras ruff format --check .`
+- `git diff --check`
+
+Worktree is clean and the branch is ahead of `origin/main` by 1 commit.
