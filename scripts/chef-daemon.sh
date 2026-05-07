@@ -90,6 +90,11 @@ log() {
   echo "[$(date -Iseconds)] chef: $*"
 }
 
+changed_files_unavailable() {
+  local reason="$1"
+  printf 'unavailable: %s\n' "$reason"
+}
+
 # Verify a phase's branch + write CHEF_VERDICT
 verify_and_merge() {
   local phase_id="$1"
@@ -109,12 +114,12 @@ verify_and_merge() {
   local repo_dir
   repo_dir=$(eval echo "$target_repo")
   if [[ ! -d "$repo_dir/.git" ]] ; then
-    write_verdict "$phase_id" "escalated" "target_repo not on this PC : $repo_dir" ""
+    write_verdict "$phase_id" "escalated" "target_repo not on this PC : $repo_dir" "" "$(changed_files_unavailable "target repo missing before chef could inspect branch diff")"
     return
   fi
 
   cd "$repo_dir" || {
-    write_verdict "$phase_id" "escalated" "cannot cd to $repo_dir" ""
+    write_verdict "$phase_id" "escalated" "cannot cd to $repo_dir" "" "$(changed_files_unavailable "cannot cd to target repo before chef could inspect branch diff")"
     return
   }
 
@@ -124,7 +129,7 @@ verify_and_merge() {
   # untracked artifacts in the working tree. Without `git clean -fdx`, those
   # block `git checkout` with "would overwrite untracked files" errors.
   if ! git fetch origin --prune --quiet ; then
-    write_verdict "$phase_id" "escalated" "git fetch failed on $repo_dir" ""
+    write_verdict "$phase_id" "escalated" "git fetch failed on $repo_dir" "" "$(changed_files_unavailable "git fetch failed before chef could inspect origin branch diff")"
     return
   fi
 
@@ -132,12 +137,14 @@ verify_and_merge() {
   # of origin/main, the phase has been merged (manually by claude-TN, or by
   # an earlier chef tick). No checkout / re-test needed — write approved.
   local summary_path="$ASYNC_REPO/outbox/$phase_id/SUMMARY.md"
+  local worker_sha=""
   if [[ -f "$summary_path" ]] ; then
-    local worker_sha
     worker_sha=$(grep -E '^- Branch SHA :' "$summary_path" | awk '{print $5}' | head -1)
     if [[ -n "$worker_sha" && "$worker_sha" != "none" ]] ; then
       if git merge-base --is-ancestor "$worker_sha" origin/main 2>/dev/null ; then
-        write_verdict "$phase_id" "approved" "branch SHA $worker_sha already in origin/main — manual chef merge or prior chef tick handled this" ""
+        local fast_path_changed_files
+        fast_path_changed_files=$(git diff-tree --no-commit-id --name-status -r "$worker_sha" 2>/dev/null || true)
+        write_verdict "$phase_id" "approved" "branch SHA $worker_sha already in origin/main — manual chef merge or prior chef tick handled this" "" "$fast_path_changed_files"
         log "$phase_id approved (already-in-main fast path, sha=$worker_sha)"
         return
       fi
@@ -153,14 +160,22 @@ verify_and_merge() {
 
   # Now check out the target branch from origin (force-create local tracking)
   if ! git checkout -B "$target_branch" "origin/$target_branch" --quiet 2>/dev/null ; then
+    local checkout_changed_files
+    checkout_changed_files=$(git diff-tree --no-commit-id --name-status -r "$worker_sha" 2>/dev/null || true)
+    if [[ -z "$checkout_changed_files" ]] ; then
+      checkout_changed_files=$(changed_files_unavailable "target branch could not be checked out and worker SHA diff was unavailable")
+    fi
     # Fallback : maybe origin already deleted the branch (chef merged earlier)
     if git show-ref --verify --quiet "refs/remotes/origin/$target_branch" ; then
-      write_verdict "$phase_id" "escalated" "git checkout origin/$target_branch failed despite ref existing — investigate working tree state" ""
+      write_verdict "$phase_id" "escalated" "git checkout origin/$target_branch failed despite ref existing — investigate working tree state" "" "$checkout_changed_files"
     else
-      write_verdict "$phase_id" "escalated" "branch $target_branch missing on origin (already merged + cleaned by another chef tick ?)" ""
+      write_verdict "$phase_id" "escalated" "branch $target_branch missing on origin (already merged + cleaned by another chef tick ?)" "" "$checkout_changed_files"
     fi
     return
   fi
+
+  local changed_files
+  changed_files=$(git diff --name-status "origin/$base_branch"...HEAD 2>/dev/null || git diff-tree --no-commit-id --name-status -r HEAD 2>/dev/null || true)
 
   # Verify commit metadata
   local author email body
@@ -169,17 +184,17 @@ verify_and_merge() {
   body=$(git log -1 --format=%B)
 
   if [[ "$author" != "Oussama Akir" ]] ; then
-    write_verdict "$phase_id" "needs_fix" "commit author '$author' != 'Oussama Akir'" ""
+    write_verdict "$phase_id" "needs_fix" "commit author '$author' != 'Oussama Akir'" "" "$changed_files"
     git checkout main --quiet
     return
   fi
   if [[ "$email" != "claude@cosmocomply.com" ]] ; then
-    write_verdict "$phase_id" "needs_fix" "commit email '$email' != 'claude@cosmocomply.com'" ""
+    write_verdict "$phase_id" "needs_fix" "commit email '$email' != 'claude@cosmocomply.com'" "" "$changed_files"
     git checkout main --quiet
     return
   fi
   if echo "$body" | grep -qi 'Co-Authored-By:.*Claude' ; then
-    write_verdict "$phase_id" "needs_fix" "Co-Authored-By: Claude trailer present in commit body" ""
+    write_verdict "$phase_id" "needs_fix" "Co-Authored-By: Claude trailer present in commit body" "" "$changed_files"
     git checkout main --quiet
     return
   fi
@@ -220,24 +235,24 @@ verify_and_merge() {
   rm -f "$gate_log"
 
   if [[ "$gates_ok" -eq 0 ]] ; then
-    write_verdict "$phase_id" "needs_fix" "chef-side gate failure" "$gate_tail"
+    write_verdict "$phase_id" "needs_fix" "chef-side gate failure" "$gate_tail" "$changed_files"
     git checkout main --quiet
     return
   fi
 
   # Gates green : merge ff to main, push, delete branch
   if ! git checkout main --quiet ; then
-    write_verdict "$phase_id" "escalated" "could not checkout main for merge" ""
+    write_verdict "$phase_id" "escalated" "could not checkout main for merge" "" "$changed_files"
     return
   fi
 
   if ! git merge --ff-only "$target_branch" --quiet ; then
-    write_verdict "$phase_id" "escalated" "ff-merge $target_branch -> main failed (non-linear ?)" ""
+    write_verdict "$phase_id" "escalated" "ff-merge $target_branch -> main failed (non-linear ?)" "" "$changed_files"
     return
   fi
 
   if ! git push origin main --quiet ; then
-    write_verdict "$phase_id" "escalated" "git push origin main failed (auth ?)" ""
+    write_verdict "$phase_id" "escalated" "git push origin main failed (auth ?)" "" "$changed_files"
     return
   fi
 
@@ -246,7 +261,7 @@ verify_and_merge() {
 
   local merged_sha
   merged_sha=$(git rev-parse HEAD)
-  write_verdict "$phase_id" "approved" "merged $target_branch -> main at $merged_sha" "$gate_tail"
+  write_verdict "$phase_id" "approved" "merged $target_branch -> main at $merged_sha" "$gate_tail" "$changed_files"
 
   log "$phase_id approved + merged at $merged_sha"
 }
@@ -257,6 +272,7 @@ write_verdict() {
   local decision="$2"     # approved | needs_fix | escalated
   local summary="$3"
   local gate_evidence="${4:-}"
+  local changed_files="${5:-}"
 
   cd "$ASYNC_REPO" || return
   mkdir -p "outbox/$phase_id"
@@ -273,6 +289,8 @@ write_verdict() {
 $summary
 
 $( [[ -n "$gate_evidence" ]] && echo -e "## Gate evidence\n\n\`\`\`\n$gate_evidence\n\`\`\`" )
+
+$( [[ -n "$changed_files" ]] && echo -e "## Changed files\n\n\`\`\`\n$changed_files\n\`\`\`" )
 
 ## Cross-references
 
@@ -307,7 +325,7 @@ classify_error() {
   write_verdict "$phase_id" "escalated" "Worker reported status=error. Manual investigation needed (see SUMMARY + run.log.tail above for context). V1 chef-daemon does not auto-fix errors." "$sum
 
 --- run.log.tail ---
-$log_tail"
+$log_tail" "$(changed_files_unavailable "worker status=error; chef did not check out target branch")"
 }
 
 # Kaizen retro : after a verdict is written, dispatch codex with a tight
