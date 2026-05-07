@@ -1,0 +1,9 @@
+{
+  "phase_id": "phase-7-5-b-runner-residual-trace-export",
+  "status": "queued",
+  "ts_queued": "2026-05-07T01:18:00Z",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-runner",
+  "target_branch": "phase-7-5-b-runner-residual-trace-export",
+  "base_branch": "main",
+  "hard_wallclock_min": 40
+}
