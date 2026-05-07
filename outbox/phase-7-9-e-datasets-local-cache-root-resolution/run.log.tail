@@ -1,0 +1,200 @@
+     "MANIFEST_SCHEMA_VERSION",
+@@ -665,7 +962,9 @@
+     "STATUS_PRESENT_UNREADABLE",
+     "AuditJLocalCacheManifestError",
+     "build_auditj_local_cache_manifest",
++    "discover_default_datasets_roots",
+     "format_summary",
+     "parse_cache_root_overrides",
++    "resolve_cache_root",
+     "write_manifest",
+ ]
+diff --git a/tests/test_auditj_local_cache_manifest.py b/tests/test_auditj_local_cache_manifest.py
+index 71ac8e9d73948c2f1658498dc2ece6409dca3a2d..f4dba33c57d67b728ce14d7f4c11df4008d9f8ee
+--- a/tests/test_auditj_local_cache_manifest.py
++++ b/tests/test_auditj_local_cache_manifest.py
+@@ -12,11 +12,13 @@
+ import pytest
+ 
+ from bsebench_datasets.auditj_local_cache_manifest import (
++    LOCAL_CACHE_ENV_VARS,
+     STATUS_LOADER_READABLE,
+     STATUS_MISSING,
+     STATUS_PRESENT_UNREADABLE,
+     AuditJLocalCacheManifestError,
+     build_auditj_local_cache_manifest,
++    format_summary,
+     parse_cache_root_overrides,
+ )
+ 
+@@ -99,6 +101,7 @@
+             "panasonic": panasonic_root,
+             "yao": yao_root,
+         },
++        datasets_roots=(),
+         env={},
+     )
+ 
+@@ -143,6 +146,7 @@
+     payload = build_auditj_local_cache_manifest(
+         split_path,
+         cache_root_overrides={"nasa": nasa_root},
++        datasets_roots=(),
+         env={},
+     )
+ 
+@@ -168,7 +172,7 @@
+ def test_manifest_marks_missing_cache_root_as_gap(tmp_path: Path) -> None:
+     split_path = _write_split(tmp_path / "split.yaml", [("calce_legacy", "DST", 25.0)])
+ 
+-    payload = build_auditj_local_cache_manifest(split_path, env={})
++    payload = build_auditj_local_cache_manifest(split_path, datasets_roots=(), env={})
+ 
+     config = payload["configs"][0]
+     assert config["status"] == STATUS_MISSING
+@@ -187,6 +191,7 @@
+     payload = build_auditj_local_cache_manifest(
+         split_path,
+         cache_root_overrides={"calce_legacy": calce_root},
++        datasets_roots=(),
+         hash_max_bytes=1,
+         env={},
+     )
+@@ -201,3 +206,116 @@
+ def test_cache_root_override_parser_rejects_unknown_wrapper() -> None:
+     with pytest.raises(AuditJLocalCacheManifestError, match="unknown wrapper"):
+         parse_cache_root_overrides(["unknown=/tmp/cache"])
++
++
++def test_env_var_cache_root_resolves_wrapper(tmp_path: Path) -> None:
++    split_path = _write_split(tmp_path / "split.yaml", [("calce_legacy", "DST", 25.0)])
++    calce_root = tmp_path / "calce_env"
++    calce_root.mkdir()
++    _write_loader_parquet(calce_root / "calce_a123_DST_T25.parquet", temperature_c=25.0)
++
++    payload = build_auditj_local_cache_manifest(
++        split_path,
++        datasets_roots=(),
++        env={LOCAL_CACHE_ENV_VARS["calce_legacy"]: str(calce_root)},
++    )
++
++    config = payload["configs"][0]
++    assert config["status"] == STATUS_LOADER_READABLE
++    assert config["cache_root"] == str(calce_root)
++    assert config["cache_root_source"] == "env"
++    assert payload["cache_roots"]["calce_legacy"]["source"] == "env"
++
++
++def test_cli_override_takes_precedence_over_env_var(tmp_path: Path) -> None:
++    split_path = _write_split(tmp_path / "split.yaml", [("calce_legacy", "DST", 25.0)])
++    env_root = tmp_path / "calce_env"
++    override_root = tmp_path / "calce_override"
++    env_root.mkdir()
++    override_root.mkdir()
++    _write_loader_parquet(override_root / "calce_a123_DST_T25.parquet", temperature_c=25.0)
++
++    payload = build_auditj_local_cache_manifest(
++        split_path,
++        cache_root_overrides={"calce_legacy": override_root},
++        datasets_roots=(),
++        env={LOCAL_CACHE_ENV_VARS["calce_legacy"]: str(env_root)},
++    )
++
++    config = payload["configs"][0]
++    assert config["status"] == STATUS_LOADER_READABLE
++    assert config["cache_root"] == str(override_root)
++    assert config["cache_root_source"] == "explicit"
++    assert payload["cache_roots"]["calce_legacy"]["source"] == "explicit"
++
++
++def test_datasets_root_discovers_tier2_cache_but_not_raw_layout(tmp_path: Path) -> None:
++    split_path = _write_split(
++        tmp_path / "split.yaml",
++        [
++            ("yao", "BCDC", 35.0),
++            ("yao", "BCDC", 15.0),
++        ],
++    )
++    datasets_root = tmp_path / "_datasets"
++    raw_root = datasets_root / "yao_tu_berlin_targeted"
++    tier2_root = datasets_root / "yao_tier2"
++    raw_root.mkdir(parents=True)
++    tier2_root.mkdir()
++    _write_loader_parquet(tier2_root / "Yao-BCDC-T35.parquet", temperature_c=35.0)
++
++    payload = build_auditj_local_cache_manifest(
++        split_path,
++        datasets_roots=(datasets_root,),
++        env={},
++    )
++
++    configs = _status_by_label(payload)
++    assert configs["yao:BCDC:T35"]["status"] == STATUS_LOADER_READABLE
++    assert configs["yao:BCDC:T35"]["cache_root"] == str(tier2_root)
++    assert configs["yao:BCDC:T35"]["cache_root_source"] == "datasets_root"
++    assert configs["yao:BCDC:T15"]["status"] == STATUS_MISSING
++    assert configs["yao:BCDC:T15"]["gap_kind"] == "missing_required_files"
++
++    root_payload = payload["cache_roots"]["yao"]
++    assert root_payload["source"] == "datasets_root"
++    assert root_payload["discovered_tier2_roots"] == [
++        {"path": str(tier2_root), "exists": True, "is_dir": True}
++    ]
++    assert root_payload["datasets_source_layouts"] == [
++        {
++            "path": str(raw_root),
++            "exists": True,
++            "is_dir": True,
++            "supported_as_cache_root": False,
++            "reason": "known _datasets source/raw layout, not a loader-facing Tier 2 root",
++        }
++    ]
++    assert payload["evidence_ready"] is False
++
++
++def test_missing_cache_root_explains_env_override_and_raw_layout(tmp_path: Path) -> None:
++    split_path = _write_split(tmp_path / "split.yaml", [("calce_a123_dyn", "DST", 20.0)])
++    datasets_root = tmp_path / "_datasets"
++    raw_root = datasets_root / "calce_a123_lfp_dynamic"
++    raw_root.mkdir(parents=True)
++
++    payload = build_auditj_local_cache_manifest(
++        split_path,
++        datasets_roots=(datasets_root,),
++        env={},
++    )
++
++    config = payload["configs"][0]
++    assert config["status"] == STATUS_MISSING
++    assert config["gap_kind"] == "missing_cache_root"
++    assert LOCAL_CACHE_ENV_VARS["calce_a123_dyn"] in config["cache_root_setup_hint"]
++    assert "--cache-root calce_a123_dyn=/path/to/tier2" in config["cache_root_setup_hint"]
++    assert payload["cache_roots"]["calce_a123_dyn"]["datasets_source_layouts"][0]["path"] == str(
++        raw_root
++    )
++    assert payload["cache_roots"]["calce_a123_dyn"]["setup_hint"] == config["cache_root_setup_hint"]
++    summary = format_summary(payload)
++    assert LOCAL_CACHE_ENV_VARS["calce_a123_dyn"] in summary
++    assert "--cache-root calce_a123_dyn=/path/to/tier2" in summary
++    assert str(raw_root) in summary
+
+tokens used
+305,349
+Implemented and committed `b25998f`:
+
+`GLASSBOX [role: codex-cto-FR] Resolve Audit J cache roots`
+
+Changed:
+- Added deterministic cache-root resolution in [auditj_local_cache_manifest.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-9-e-datasets-local-cache-root-resolution/src/bsebench_datasets/auditj_local_cache_manifest.py): CLI override, env vars, then read-only `_datasets` discovery.
+- Added `--datasets-root` to [scripts/auditj_local_cache_manifest.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-9-e-datasets-local-cache-root-resolution/scripts/auditj_local_cache_manifest.py).
+- Added README docs for env vars and `_datasets` behavior.
+- Expanded synthetic tests for env var, CLI override precedence, `_datasets` Tier 2 discovery, and missing-root explanations.
+
+Validation passed:
+- `uv run --all-extras pytest tests/test_auditj_local_cache_manifest.py -q` → `9 passed`
+- Local dry-run: `ready=False`, `loader_readable=0`, `missing=26`, with exact env vars/`--cache-root` hints and raw `_datasets` layouts reported
+- `uv run --all-extras pytest tests/ -m "not slow" -q` → `236 passed, 29 deselected`
+- `uv run --all-extras ruff check .` → passed
+- `uv run --all-extras ruff format --check .` → passed
+
+No thesis, claim registry, roadmap, or output artifacts were edited. No `Co-Authored-By Claude` trailer is present.
