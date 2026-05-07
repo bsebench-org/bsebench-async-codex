@@ -302,13 +302,11 @@ EOF
 }
 
 replenishment_recent_or_open() {
-  local cooldown_sec=$((REPLENISHMENT_COOLDOWN_HOURS * 3600))
   find inbox -mindepth 1 -maxdepth 1 -type d -name 'phase-7-10-z-autonomy-backlog-replenishment-*' 2>/dev/null |
     while IFS= read -r dir ; do
-      jq -r --argjson now "$(date +%s)" --argjson cooldown "$cooldown_sec" '
+      jq -r '
         (.status // "unknown") as $status
-        | ((.ts_queued // "") as $ts | try ($ts | fromdateiso8601) catch 0) as $queued
-        | if (($status == "queued") or ($status == "running") or ($status == "needs_fix") or ($queued > 0 and (($now - $queued) <= $cooldown))) then
+        | if (($status == "queued") or ($status == "running") or ($status == "needs_fix")) then
             "recent_or_open"
           else
             empty

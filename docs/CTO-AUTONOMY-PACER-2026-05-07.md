@@ -35,6 +35,8 @@ Backlog candidate selection also skips tasks whose target branch already exists 
 
 The worker and chef daemons explicitly check out `main` before resetting to `origin/main`. A reset alone is not enough when a clone was left on a feature branch; async state commits must land on the branch that will be pushed.
 
+Reserve replenishment cooldown applies only while a replenishment task is open (`queued`, `running`, or `needs_fix`). Once a replenishment exits to a terminal state, the pacer may create another task if reserve is still empty; otherwise a failed or non-merged replenishment can hold the system idle for the cooldown window.
+
 ## Self-Audit Probe
 
 `scripts/probe-autonomy-pacer-safety.sh` builds isolated temporary async repos and runs the pacer in dry-run mode. The probe checks three incident-review cases:
