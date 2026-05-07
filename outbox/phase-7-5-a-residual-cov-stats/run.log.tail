@@ -1,0 +1,200 @@
++    correlations: list[np.ndarray] = []
++    n_samples_per_config: list[int] = []
++
++    for index, raw_report in enumerate(reports):
++        report = _require_report_mapping(raw_report, index)
++        try:
++            report_names = list(report["filter_names"])
++        except KeyError as exc:
++            raise ValueError(f"per_config_reports[{index}] must include filter_names") from exc
++        except TypeError as exc:
++            raise ValueError(
++                f"per_config_reports[{index}].filter_names must be a sequence"
++            ) from exc
++
++        if report_names != names:
++            raise ValueError("all per-config reports must use identical filter_names order")
++
++        n_samples_per_config.append(_report_samples(report, index))
++        covariances.append(
++            _matrix_from_report(
++                report,
++                "covariance_matrix",
++                n_filters=n_filters,
++                allow_non_finite=False,
++            )
++        )
++        correlations.append(
++            _matrix_from_report(
++                report,
++                "correlation_matrix",
++                n_filters=n_filters,
++                allow_non_finite=True,
++            )
++        )
++
++    covariance = np.mean(np.stack(covariances), axis=0)
++    correlation = np.mean(np.stack(correlations), axis=0)
++    np.fill_diagonal(correlation, 1.0)
++
++    return _json_report(
++        filter_names=names,
++        covariance=covariance,
++        correlation=correlation,
++        threshold=threshold,
++        extra={
++            "n_configs": len(reports),
++            "n_samples": int(sum(n_samples_per_config)),
++            "n_samples_per_config": n_samples_per_config,
++        },
++    )
+diff --git a/tests/test_residual_cov.py b/tests/test_residual_cov.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..c898702b77e5b177aa26906f802be0f9e291dc2f
+--- /dev/null
++++ b/tests/test_residual_cov.py
+@@ -0,0 +1,116 @@
++from __future__ import annotations
++
++import json
++
++import numpy as np
++import pytest
++
++from bsebench_stats import aggregate_residual_covariances, compute_residual_covariance
++
++RESIDUALS_4X3 = np.array(
++    [
++        [1.0, 2.0, 1.0],
++        [2.0, 4.0, 0.0],
++        [3.0, 6.0, 1.0],
++        [4.0, 8.0, 0.0],
++    ]
++)
++FILTERS = ["A", "B", "C"]
++
++
++@pytest.mark.fast
++def test_compute_residual_covariance_3_filter_shape_symmetry_and_diagonal():
++    report = compute_residual_covariance(RESIDUALS_4X3, FILTERS)
++
++    assert report["n_samples"] == 4
++    assert report["n_filters"] == 3
++    assert report["filter_names"] == FILTERS
++    covariance = np.asarray(report["covariance_matrix"], dtype=float)
++    correlation = np.asarray(report["correlation_matrix"], dtype=float)
++
++    assert covariance.shape == (3, 3)
++    np.testing.assert_allclose(covariance, np.cov(RESIDUALS_4X3, rowvar=False))
++    np.testing.assert_allclose(correlation, correlation.T)
++    np.testing.assert_allclose(np.diag(correlation), np.ones(3))
++    assert report["off_diagonal_summary"]["threshold"] == 0.5
++    assert report["off_diagonal_summary"]["n_pairs"] == 3
++
++
++@pytest.mark.fast
++def test_compute_residual_covariance_constant_column_is_json_safe():
++    residuals = np.array(
++        [
++            [1.0, 1.0, 0.0],
++            [2.0, 1.0, 1.0],
++            [3.0, 1.0, 0.0],
++            [4.0, 1.0, 1.0],
++        ]
++    )
++
++    report = compute_residual_covariance(residuals, FILTERS)
++
++    correlation = report["correlation_matrix"]
++    assert correlation[0][0] == 1.0
++    assert correlation[1][1] == 1.0
++    assert correlation[2][2] == 1.0
++    assert correlation[0][1] is None
++    assert correlation[1][0] is None
++    assert correlation[1][2] is None
++    assert correlation[2][1] is None
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_compute_residual_covariance_invalid_shape_raises_clear_error():
++    with pytest.raises(ValueError, match=r"2D"):
++        compute_residual_covariance(np.array([1.0, 2.0, 3.0]), FILTERS)
++    with pytest.raises(ValueError, match=r"at least 2 samples"):
++        compute_residual_covariance(np.array([[1.0, 2.0, 3.0]]), FILTERS)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize("filter_names", [["A", "A", "C"], ["A", "", "C"]])
++def test_compute_residual_covariance_invalid_filter_names_raise_clear_error(filter_names):
++    with pytest.raises(ValueError, match=r"filter_names"):
++        compute_residual_covariance(RESIDUALS_4X3, filter_names)
++
++
++@pytest.mark.fast
++def test_compute_residual_covariance_non_finite_residuals_raise_clear_error():
++    residuals = RESIDUALS_4X3.copy()
++    residuals[0, 0] = np.nan
++
++    with pytest.raises(ValueError, match=r"finite"):
++        compute_residual_covariance(residuals, FILTERS)
++
++
++@pytest.mark.fast
++def test_aggregate_residual_covariances_two_configs_preserves_shape_and_count():
++    report_a = compute_residual_covariance(RESIDUALS_4X3, FILTERS)
++    report_b = compute_residual_covariance(RESIDUALS_4X3 * 2.0, FILTERS)
++
++    aggregate = aggregate_residual_covariances([report_a, report_b])
++
++    assert aggregate["n_configs"] == 2
++    assert aggregate["n_samples"] == 8
++    assert aggregate["n_samples_per_config"] == [4, 4]
++    assert aggregate["n_filters"] == 3
++    assert aggregate["filter_names"] == FILTERS
++    assert np.asarray(aggregate["covariance_matrix"], dtype=float).shape == (3, 3)
++    assert np.asarray(aggregate["correlation_matrix"], dtype=float).shape == (3, 3)
++    np.testing.assert_allclose(
++        np.asarray(aggregate["covariance_matrix"], dtype=float),
++        (
++            np.asarray(report_a["covariance_matrix"], dtype=float)
++            + np.asarray(report_b["covariance_matrix"], dtype=float)
++        )
++        / 2.0,
++    )
++    assert aggregate["off_diagonal_summary"]["n_pairs"] == 3
++    json.dumps(aggregate, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_top_level_package_exports_residual_covariance_functions():
++    assert callable(compute_residual_covariance)
++    assert callable(aggregate_residual_covariances)
+
+tokens used
+62,346
+Implemented and committed Phase 7.5.a tooling.
+
+Commit: `ed27ef1 GLASSBOX [role: worker-codex-FR] Add residual covariance stats primitives`
+
+Changes:
+- Added [residual_cov.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-5-a-residual-cov-stats/src/bsebench_stats/residual_cov.py:1) with:
+  - `compute_residual_covariance`
+  - `aggregate_residual_covariances`
+  - JSON-safe `None` for undefined correlations
+  - covariance via `np.cov(..., rowvar=False)`
+  - off-diagonal correlation summary
+- Exported both functions from [__init__.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-5-a-residual-cov-stats/src/bsebench_stats/__init__.py:1)
+- Added focused tests in [test_residual_cov.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-5-a-residual-cov-stats/tests/test_residual_cov.py:1)
+
+Acceptance gates run:
+- `uv run --all-extras pytest tests/test_residual_cov.py --tb=short` passed
+- `uv run --all-extras pytest -m "not slow" --tb=short` passed: 38 passed
+- `uv run --all-extras ruff format --check .` passed
+- `uv run --all-extras ruff check .` passed
+
+Final state:
+- Worktree clean
+- No `uv.lock` committed
+- No claim registry, roadmap, README, or thesis prose edits
+- No `Co-Authored-By: Claude` trailer
