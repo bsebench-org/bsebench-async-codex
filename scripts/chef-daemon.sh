@@ -190,18 +190,23 @@ verify_and_merge() {
   local gates_ok=1
 
   if [[ -f "pyproject.toml" ]] ; then
-    if ! uv run pytest -m "not slow" -v > "$gate_log" 2>&1 ; then
+    # Chef gates must be reproducible from a fresh project environment. The
+    # BSEBench repos keep pytest/ruff in optional extras rather than runtime
+    # dependencies, and some dataset tests need non-dev extras at collection
+    # time. Use all extras so validation does not depend on a worker's warm
+    # local venv.
+    if ! uv run --all-extras pytest -m "not slow" -v > "$gate_log" 2>&1 ; then
       gates_ok=0
       log "$phase_id pytest failed"
     fi
     if [[ "$gates_ok" -eq 1 ]] ; then
-      if ! uv run ruff format --check . >> "$gate_log" 2>&1 ; then
+      if ! uv run --all-extras ruff format --check . >> "$gate_log" 2>&1 ; then
         gates_ok=0
         log "$phase_id ruff format failed"
       fi
     fi
     if [[ "$gates_ok" -eq 1 ]] ; then
-      if ! uv run ruff check . >> "$gate_log" 2>&1 ; then
+      if ! uv run --all-extras ruff check . >> "$gate_log" 2>&1 ; then
         gates_ok=0
         log "$phase_id ruff check failed"
       fi
