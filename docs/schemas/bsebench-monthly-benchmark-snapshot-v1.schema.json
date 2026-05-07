@@ -1,0 +1,558 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bsebench.org/schemas/bsebench-monthly-benchmark-snapshot-v1.schema.json",
+  "title": "BSEBench monthly benchmark snapshot v1",
+  "description": "Schema for frozen monthly BSEBench benchmark snapshots with required caveat fields.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "snapshot_month",
+    "created_at",
+    "release_status",
+    "benchmark_identity",
+    "release_caveats",
+    "evidence_artifacts",
+    "source_ledgers",
+    "method_registry",
+    "dataset_registry",
+    "protocols",
+    "ranking_groups",
+    "result_rows"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "bsebench.monthly_benchmark_snapshot.v1"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^bsebench-monthly-[0-9]{4}-(0[1-9]|1[0-2])(-[A-Za-z0-9._-]+)?$"
+    },
+    "snapshot_month": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "release_status": {
+      "type": "string",
+      "enum": ["draft", "frozen", "withdrawn"]
+    },
+    "benchmark_identity": {
+      "$ref": "#/definitions/benchmark_identity"
+    },
+    "release_caveats": {
+      "$ref": "#/definitions/release_caveats"
+    },
+    "evidence_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/evidence_artifact"
+      }
+    },
+    "source_ledgers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/source_ledger"
+      }
+    },
+    "method_registry": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/method_registry_row"
+      }
+    },
+    "dataset_registry": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/dataset_registry_row"
+      }
+    },
+    "protocols": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/protocol"
+      }
+    },
+    "ranking_groups": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/ranking_group"
+      }
+    },
+    "result_rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/result_row"
+      }
+    }
+  },
+  "definitions": {
+    "non_empty_string": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha1": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "benchmark_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bsebench_version",
+        "async_repo_commit",
+        "runner_commit",
+        "stats_commit",
+        "datasets_commit"
+      ],
+      "properties": {
+        "bsebench_version": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "async_repo_commit": {
+          "$ref": "#/definitions/sha1"
+        },
+        "runner_commit": {
+          "$ref": "#/definitions/sha1"
+        },
+        "stats_commit": {
+          "$ref": "#/definitions/sha1"
+        },
+        "datasets_commit": {
+          "$ref": "#/definitions/sha1"
+        }
+      }
+    },
+    "release_caveats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coverage_caveat",
+        "comparability_caveat",
+        "leakage_caveat",
+        "provenance_caveat",
+        "source_ledger_caveat",
+        "ranking_caveat"
+      ],
+      "properties": {
+        "coverage_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "comparability_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "leakage_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "provenance_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "source_ledger_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "ranking_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        }
+      }
+    },
+    "evidence_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "path",
+        "sha256",
+        "generated_by_command",
+        "frozen_at",
+        "artifact_caveat"
+      ],
+      "properties": {
+        "artifact_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "path": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "generated_by_command": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "frozen_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "artifact_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        }
+      }
+    },
+    "source_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ledger_id",
+        "path",
+        "sha256",
+        "retrieved_at",
+        "status",
+        "source_ledger_caveat"
+      ],
+      "properties": {
+        "ledger_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "path": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "retrieved_at": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["not_used", "complete", "partial", "blocked"]
+        },
+        "source_ledger_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        }
+      }
+    },
+    "method_registry_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method_id",
+        "display_name",
+        "method_family",
+        "adapter_name",
+        "adapter_version",
+        "training_data_policy",
+        "tuning_policy",
+        "method_caveat",
+        "compute_environment_caveat"
+      ],
+      "properties": {
+        "method_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "display_name": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "method_family": {
+          "type": "string",
+          "enum": [
+            "ecm",
+            "kalman_filter",
+            "observer",
+            "ai_estimator",
+            "hybrid",
+            "baseline",
+            "other"
+          ]
+        },
+        "adapter_name": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "adapter_version": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "training_data_policy": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "tuning_policy": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "method_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "compute_environment_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        }
+      }
+    },
+    "dataset_registry_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "display_name",
+        "chemistry",
+        "profile_axis",
+        "temperature_axis",
+        "aging_axis",
+        "split_ids",
+        "provenance_caveat",
+        "availability_caveat"
+      ],
+      "properties": {
+        "dataset_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "display_name": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "chemistry": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "profile_axis": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "temperature_axis": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "aging_axis": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "split_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/non_empty_string"
+          }
+        },
+        "provenance_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "availability_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        }
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol_id",
+        "protocol_version",
+        "task_family",
+        "initialization_policy",
+        "split_policy",
+        "leakage_guard",
+        "metric_set",
+        "protocol_caveat"
+      ],
+      "properties": {
+        "protocol_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "protocol_version": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "task_family": {
+          "type": "string",
+          "enum": ["soc", "soh", "soc_soh"]
+        },
+        "initialization_policy": {
+          "type": "string",
+          "enum": ["nominal", "degraded", "mixed", "unknown"]
+        },
+        "split_policy": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "leakage_guard": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "metric_set": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/non_empty_string"
+          }
+        },
+        "protocol_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        }
+      }
+    },
+    "ranking_group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group_id",
+        "title",
+        "metric",
+        "direction",
+        "eligible_row_ids",
+        "ranking_caveat"
+      ],
+      "properties": {
+        "group_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "title": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "metric": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["lower_is_better", "higher_is_better"]
+        },
+        "eligible_row_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/non_empty_string"
+          }
+        },
+        "ranking_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        }
+      }
+    },
+    "result_caveats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparability_caveat",
+        "dataset_caveat",
+        "split_caveat",
+        "metric_caveat",
+        "leakage_caveat",
+        "provenance_caveat",
+        "compute_caveat",
+        "exclusion_caveat"
+      ],
+      "properties": {
+        "comparability_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "dataset_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "split_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "metric_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "leakage_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "provenance_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "compute_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "exclusion_caveat": {
+          "$ref": "#/definitions/non_empty_string"
+        }
+      }
+    },
+    "result_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_artifact_id",
+        "run_id",
+        "run_command",
+        "config_sha256",
+        "result_sha256"
+      ],
+      "properties": {
+        "evidence_artifact_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "run_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "run_command": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "config_sha256": {
+          "$ref": "#/definitions/sha256"
+        },
+        "result_sha256": {
+          "$ref": "#/definitions/sha256"
+        }
+      }
+    },
+    "result_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "row_id",
+        "protocol_id",
+        "method_id",
+        "dataset_id",
+        "split_id",
+        "metric",
+        "value",
+        "unit",
+        "aggregation",
+        "rank",
+        "status",
+        "comparability",
+        "provenance",
+        "caveats"
+      ],
+      "properties": {
+        "row_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "protocol_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "method_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "dataset_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "split_id": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "metric": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "value": {
+          "type": ["number", "null"]
+        },
+        "unit": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "aggregation": {
+          "$ref": "#/definitions/non_empty_string"
+        },
+        "rank": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": ["valid", "invalid", "missing", "excluded"]
+        },
+        "comparability": {
+          "type": "string",
+          "enum": ["comparable", "partial", "not_comparable"]
+        },
+        "provenance": {
+          "$ref": "#/definitions/result_provenance"
+        },
+        "caveats": {
+          "$ref": "#/definitions/result_caveats"
+        }
+      }
+    }
+  }
+}

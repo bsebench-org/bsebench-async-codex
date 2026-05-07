@@ -138,6 +138,7 @@ Exercise the autonomy pacer guardrails with a harmless validation task.
 - Record a validation command and dry-run output.
 - Do not edit thesis files, claim registry files, \`claims/registry.yaml\`, \`claim_55\`, or the roadmap.
 - Do not make SOTA, novelty, or verified-claim statements without a source ledger and comparability table.
+- Universal benchmark value: keeps BSEBench plug-and-play, comparable, leakage-safe, provenance-aware, and monthly-benchmark ready.
 
 ## Falsification gate
 

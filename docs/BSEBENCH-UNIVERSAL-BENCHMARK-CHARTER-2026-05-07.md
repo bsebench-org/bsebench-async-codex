@@ -139,6 +139,8 @@ BSEBench should support a recurring public workflow:
 - contributors submit a method adapter or ECM definition;
 - BSEBench runs standard protocols across available datasets;
 - results are validated by provenance, split, and leakage checks;
+- public releases pass the
+  [benchmark release checklist](BSEBENCH-PUBLIC-BENCHMARK-RELEASE-CHECKLIST-2026-05-07.md);
 - monthly benchmark snapshots can rank or group methods by multiple criteria;
 - reports must include caveats, missing data, and invalid comparability cases.
 

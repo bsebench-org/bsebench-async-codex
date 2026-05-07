@@ -16,6 +16,7 @@ Usage:
 Checks Phase 7/8/11 inbox or autonomy-backlog BRIEFs for minimum research-gate wording:
   - falsification condition
   - validation/replay wording
+  - universal benchmark value
   - no thesis/claim registry edits
   - no claim_55 targeting
   - no unsupported SOTA claims
@@ -127,6 +128,8 @@ require_pattern() {
   fi
 }
 
+universal_value_pattern='(universal benchmark value|universal[[:alnum:]_ ./,-]{0,120}benchmark[[:alnum:]_ ./,-]{0,160}(plug-and-play|comparab|leakage-safe|anti-leakage|provenance|monthly|SOC/SOH|ECM|Kalman|observer|AI estimator|hybrid|standard|value)|benchmark[[:alnum:]_ ./,-]{0,120}universal[[:alnum:]_ ./,-]{0,160}(plug-and-play|comparab|leakage-safe|anti-leakage|provenance|monthly|SOC/SOH|ECM|Kalman|observer|AI estimator|hybrid|standard|value))'
+
 check_brief() {
   local path="$1"
 
@@ -155,6 +158,11 @@ check_brief() {
     "$path" \
     "validation or replay wording" \
     'validation|validat|replay|independent validator|verify'
+
+  require_pattern \
+    "$path" \
+    "universal benchmark value" \
+    "$universal_value_pattern"
 
   require_pattern \
     "$path" \

@@ -1,0 +1,2 @@
+worker_id	phase_id	target_repo	target_branch	write_set	validation
+A9	unsafe-claim-registry-touch	bsebench-runner	phase-unsafe-claim-registry	claims/registry.yaml;tests/test_claim_registry.py	pytest tests/test_claim_registry.py -q
