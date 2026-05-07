@@ -41,6 +41,8 @@ log() {
   printf '[%s] %s\n' "$(date -Is)" "$*" | tee -a "$LOG_FILE"
 }
 
+trap 'status=$?; log "SUPERVISOR_ERROR line=$LINENO status=$status"; exit "$status"' ERR
+
 unique_codex_workdirs() {
   python3 - "$ROOT" <<'PY'
 import shlex
@@ -140,7 +142,11 @@ run_watchdog_and_pacer() {
 tick() {
   local workdirs count
   log "TICK_BEGIN"
-  mapfile -t workdirs < <(unique_codex_workdirs)
+  workdirs=()
+  if ! mapfile -t workdirs < <(unique_codex_workdirs 2>>"$LOG_FILE") ; then
+    log "WARN_UNIQUE_CODEX_SCAN_FAILED action=continue_with_zero"
+    workdirs=()
+  fi
   count="${#workdirs[@]}"
   log "UNIQUE_CODEX_EXEC count=$count min=$MIN_UNIQUE_CODEX_EXEC"
   printf '%s\n' "${workdirs[@]}" | sed 's/^/[codex-workdir] /' | tee -a "$LOG_FILE" || true
@@ -158,7 +164,11 @@ tick() {
 
   if [[ "$count" -lt "$MIN_UNIQUE_CODEX_EXEC" ]] ; then
     sleep 45
-    mapfile -t workdirs < <(unique_codex_workdirs)
+    workdirs=()
+    if ! mapfile -t workdirs < <(unique_codex_workdirs 2>>"$LOG_FILE") ; then
+      log "WARN_UNIQUE_CODEX_RECHECK_FAILED action=continue_with_zero"
+      workdirs=()
+    fi
     count="${#workdirs[@]}"
     log "RECHECK_UNIQUE_CODEX_EXEC count=$count min=$MIN_UNIQUE_CODEX_EXEC"
     printf '%s\n' "${workdirs[@]}" | sed 's/^/[codex-workdir] /' | tee -a "$LOG_FILE" || true
