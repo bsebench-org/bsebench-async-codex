@@ -1,0 +1,200 @@
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this provenance crosswalk audit.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a candidate config cannot be mapped to deterministic loader metadata and source identity, or if a loader probe fails despite apparent file coverage, the crosswalk must mark that config not ready and block downstream evidence scheduling.
++
++## Validation
++
++Run and record:
++
++- focused tests for complete, cache-missing, source-missing, loader-missing, metadata-incomplete, and probe-failure cases;
++- a real read-only crosswalk over currently known strict Hinf and Phase 8/11 candidate configs;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-sota-ledger-ci-gate/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-sota-ledger-ci-gate/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..35a54a76b8a05572cd2812ac4355f3fa759b006f
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-t-async-sota-ledger-ci-gate/BRIEF.md
+@@ -0,0 +1,48 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-t-async-sota-ledger-ci-gate
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.t - async SOTA ledger CI gate
++
++You are a rigorous anti-hallucination and CI gate engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add a lightweight async-side CI or preflight gate that fails future BRIEFs or reports when SOTA, novelty, leaderboard, or better-than-prior-work wording appears without source-ledger comparability evidence.
++
++## Roadmap map
++
++- Research-gate lane: block unsupported scientific comparison claims before claim registration.
++- Async reliability lane: make the autonomy queue reject unsafe wording early and reproducibly.
++
++## Required behavior
++
++- Extend an existing checker or add a small new script that scans specified Markdown/JSON inputs for SOTA or novelty wording and verifies an accompanying source ledger when such wording is allowed.
++- Required ledger fields must include DOI or stable URL, retrieval date, metric, dataset, split, method, reported value, BSEBench frozen value, comparability status, and comparability caveat.
++- Include fixtures for allowed no-SOTA wording, blocked SOTA wording without a ledger, blocked incomplete ledger rows, and allowed synthetic comparable/partial/not-comparable rows.
++- Use synthetic fixture values unless a real source ledger with stable URL or DOI and retrieval date is already present.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this source-ledger CI gate.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a future task can pass the gate while making a SOTA or novelty comparison with a missing DOI/stable URL, retrieval date, metric, dataset, split, BSEBench frozen value, or comparability caveat, the gate must fail and the task must be marked incomplete.
++
++## Validation
++
++Run and record:
++
++- positive and negative fixture checks for no-SOTA text, unsupported SOTA text, missing-required-field ledger rows, and complete synthetic comparable/partial/not-comparable rows;
++- `bash -n` for changed shell scripts;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-u-runner-phase11-residual-manifest-dry-run/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-u-runner-phase11-residual-manifest-dry-run/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..1b4fa3940f0b906fad6581d881696d200d758778
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-u-runner-phase11-residual-manifest-dry-run/BRIEF.md
+@@ -0,0 +1,50 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-runner
++target_branch: phase-7-10-u-runner-phase11-residual-manifest-dry-run
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.u - runner Phase 11 residual manifest dry run
++
++You are a rigorous BSEBench runner validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Prepare Phase 11 sensor-noise vs model-mismatch decomposition with a dry-run residual manifest that validates inputs, outputs, and stats handoff before real filters are scheduled.
++
++## Roadmap map
++
++- Phase 11 preflight: residual decomposition needs deterministic config, filter, trace, and stats-output contracts.
++- Phase 7 evidence hygiene: reuse strict Hinf manifest lessons without targeting a protected claim.
++
++## Required behavior
++
++- Add or extend a runner-side dry-run command that resolves candidate Phase 11 configs, filter set, residual trace output schema, stats consumer compatibility, local-cache readiness, and intended output paths without running filters.
++- The dry run must distinguish loader unavailable, cache missing, filter unavailable, trace schema unsupported, stats consumer unknown, and output path collision.
++- Output JSON must be deterministic, finite, and suitable for worker pre-dispatch or CI review.
++- Do not generate empirical evidence, run expensive filters, or commit machine-local paths as scientific evidence.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 11 residual manifest dry run.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If any Phase 11 candidate config cannot be mapped to a deterministic loader, cache/provenance source, filter set, residual trace schema, and stats consumer identity, the dry run must mark it not ready and block downstream expensive scheduling.
++
++## Validation
++
++Run and record:
++
++- focused tests for ready, loader-missing, cache-missing, filter-missing, schema-unsupported, stats-unknown, and output-collision cases;
++- a real dry-run manifest over the current Phase 11 candidate config set without running filters;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-v-stats-phase8-pcrlb-comparability-fixtures/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-v-stats-phase8-pcrlb-comparability-fixtures/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..3da4bf2d37224d12b59e16214188c03864457c0e
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-v-stats-phase8-pcrlb-comparability-fixtures/BRIEF.md
+@@ -0,0 +1,50 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-stats
++target_branch: phase-7-10-v-stats-phase8-pcrlb-comparability-fixtures
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.v - stats Phase 8 PCRLB comparability fixtures
++
++You are a rigorous BSEBench statistics and comparison-preflight engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add stats-side synthetic fixtures that make Phase 8 PCRLB/MAD floor comparability decisions testable before any real source-ledger or claim-registration work is allowed.
++
++## Roadmap map
++
++- Phase 8 preflight: PCRLB/MAD floor comparisons need explicit metric, dataset, split, and caveat handling.
++- Research-gate lane: separate comparison mechanics from claim registration and unsupported SOTA language.
++
++## Required behavior
++
++- Add or extend a stats-side fixture, parser, or checker for PCRLB/MAD comparability rows over frozen BSEBench values.
++- Required fields must include DOI or stable URL, retrieval date, metric, dataset, split, method, reported value, BSEBench frozen value, comparability status, and comparability caveat.
++- Fixture rows must be synthetic or empty templates unless a real source ledger already provides stable source metadata.
++- The checker must distinguish comparable, partial, and not-comparable rows, and must reject missing required fields.
++- Do not generate new empirical evidence or compare against uncited literature.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 8 PCRLB comparability fixture task.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a PCRLB/MAD comparison row can pass with a missing stable source, retrieval date, exact metric, dataset, split, frozen BSEBench value, comparability status, or caveat, the checker must fail and block downstream comparison or claim work.
++
++## Validation
++
++Run and record:
++
++- focused tests for comparable, partial, not-comparable, missing-source, missing-split, missing-frozen-value, and missing-caveat rows;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+73,816
+Done. Added six new unqueued backlog BRIEFs under `cto/AUTONOMY_BACKLOG/` and committed them as `278e618` (`docs(cto): replenish autonomy backlog reserve`).
+
+New reserve tasks cover Hinf manifest replay, Hinf fragility smoke testing, dataset provenance crosswalks, SOTA ledger CI gating, Phase 11 residual dry-run manifests, and Phase 8 PCRLB comparability fixtures.
+
+Validation recorded:
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md` passed: `22 checked`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh` passed
+- `git diff --check` passed
+- unqueued reserve count command returned `13`
+
+No thesis, roadmap, claim registry, `claims/registry.yaml`, or `claim_55` files were edited. Commit has GLASSBOX metadata and no `Co-Authored-By Claude` trailer. Worktree is clean; branch is ahead by 1 commit.
