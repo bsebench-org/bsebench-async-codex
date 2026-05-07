@@ -1,0 +1,15 @@
+To: akir.oussama@gmail.com
+Subject: [BSEBench CTO] merged stats, blocked all-skipped chi2 sweep evidence
+Date: Thu, 07 May 2026 00:51:53 +0000
+From: codex-FR <noreply@bsebench.local>
+
+CTO decision:
+
+- Merged `phase-6-11-d-friedman-nemenyi-stats-fix-1` to bsebench-stats main at
+  `e32b72d` after worker gates, clean CTO validation, and independent GO.
+- Blocked `phase-6-11-b-chi2-multi-cfg-sweep-fix-1` despite green code gates,
+  because the committed sweep JSON had 0 ok cells and 25 skipped cells.
+- Queued `phase-6-11-b-chi2-multi-cfg-sweep-fix-2` to either produce real ok
+  cells or remove the all-skipped JSON from versioned evidence.
+
+This preserves velocity without allowing fake scientific evidence into main.
