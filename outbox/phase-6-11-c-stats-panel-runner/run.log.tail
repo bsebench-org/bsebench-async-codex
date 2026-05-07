@@ -1,0 +1,200 @@
++
++def _finite_2d_rmse(rmse_matrix: np.ndarray) -> np.ndarray:
++    try:
++        rmse = np.asarray(rmse_matrix, dtype=float)
++    except (TypeError, ValueError) as exc:
++        raise ValueError("rmse_matrix must be a numeric 2D array") from exc
++
++    if rmse.ndim != 2:
++        raise ValueError("rmse_matrix must be 2D with shape (n_configs, n_filters)")
++    if not np.all(np.isfinite(rmse)):
++        raise ValueError("rmse_matrix must contain only finite values")
++    return rmse
++
++
++def _filter_names(names: Sequence[str], n_filters: int) -> list[str]:
++    if isinstance(names, (str, bytes)):
++        raise ValueError("filter_names must be a sequence of names")
++
++    filter_names = list(names)
++    if len(filter_names) != n_filters:
++        raise ValueError("filter_names length must equal rmse_matrix.shape[1]")
++    if any(not isinstance(name, str) or not name for name in filter_names):
++        raise ValueError("filter_names must contain non-empty strings")
++    if len(set(filter_names)) != len(filter_names):
++        raise ValueError("filter_names must be unique")
++    return filter_names
++
++
++def _json_float(value: float) -> float | None:
++    value = float(value)
++    if math.isfinite(value):
++        return value
++    return None
++
++
++def _spearman_matrix(rmse: np.ndarray) -> list[list[float | None]]:
++    ranks = rankdata(rmse, axis=0, method="average")
++    with np.errstate(invalid="ignore", divide="ignore"):
++        corr = np.corrcoef(ranks, rowvar=False)
++
++    corr = np.asarray(corr, dtype=float)
++    if corr.ndim == 0:
++        corr = np.array([[1.0]])
++    np.fill_diagonal(corr, 1.0)
++    return [[_json_float(value) for value in row] for row in corr]
++
++
++def _significant_pairs(
++    names: list[str],
++    average_ranks: np.ndarray,
++    significant: np.ndarray,
++) -> list[list[str]]:
++    pairs: list[list[str]] = []
++    sorted_idx = list(np.argsort(average_ranks))
++    for pos, i in enumerate(sorted_idx):
++        for j in sorted_idx[pos + 1 :]:
++            if bool(significant[i, j]):
++                pairs.append([names[int(i)], names[int(j)]])
++    return pairs
++
++
++def run_friedman_panel(
++    rmse_matrix: np.ndarray,
++    filter_names: Sequence[str],
++    alpha: float = 0.05,
++) -> dict[str, object]:
++    """Return panel statistics for an RMSE matrix.
++
++    ``rmse_matrix`` uses shape ``(n_configs, n_filters)``. Lower RMSE is
++    better, matching the lower-level :func:`bsebench_stats.friedman_nemenyi`
++    primitives used by this runner.
++    """
++    rmse = _finite_2d_rmse(rmse_matrix)
++    n_configs, n_filters = rmse.shape
++    names = _filter_names(filter_names, n_filters)
++
++    friedman = friedman_test(rmse)
++    nemenyi = nemenyi_test(friedman["ranks"], n_configs=n_configs, alpha=alpha)
++    average_ranks = np.asarray(friedman["average_ranks"], dtype=float)
++    significant = np.asarray(nemenyi["pairwise_significant"], dtype=bool)
++    significant_pairs = _significant_pairs(names, average_ranks, significant)
++
++    alpha_value = float(nemenyi["alpha"])
++    p_value = float(friedman["p_value"])
++    return {
++        "n_configs": int(n_configs),
++        "n_filters": int(n_filters),
++        "filter_names": names,
++        "average_ranks": {name: float(average_ranks[idx]) for idx, name in enumerate(names)},
++        "friedman": {
++            "chi2": float(friedman["chi2"]),
++            "df": int(friedman["df"]),
++            "p_value": p_value,
++            "alpha": alpha_value,
++        },
++        "nemenyi": {
++            "critical_difference": float(nemenyi["critical_difference"]),
++            "pairwise_significant": significant.tolist(),
++            "significant_pairs": significant_pairs,
++            "alpha": alpha_value,
++        },
++        "spearman": {
++            "filter_names": names,
++            "correlation_matrix": _spearman_matrix(rmse),
++        },
++        "verdict": {
++            "alpha": alpha_value,
++            "friedman_rejects_null": bool(p_value < alpha_value),
++            "n_nemenyi_significant_pairs": len(significant_pairs),
++        },
++    }
+diff --git a/tests/test_friedman_panel_runner.py b/tests/test_friedman_panel_runner.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..ca5932c16d8eb1c18dd81182e6a22ec7e87f2a79
+--- /dev/null
++++ b/tests/test_friedman_panel_runner.py
+@@ -0,0 +1,66 @@
++from __future__ import annotations
++
++import json
++
++import numpy as np
++import pytest
++
++from bsebench_stats.runners import run_friedman_panel
++
++RMSE_5X4 = np.array(
++    [
++        [1.0, 2.0, 3.0, 4.0],
++        [1.0, 3.0, 2.0, 4.0],
++        [2.0, 1.0, 3.0, 4.0],
++        [1.0, 2.0, 4.0, 3.0],
++        [1.0, 2.0, 3.0, 4.0],
++    ]
++)
++FILTERS = ["A", "B", "C", "D"]
++
++
++@pytest.mark.fast
++def test_run_friedman_panel_5x4_shape_and_keys():
++    report = run_friedman_panel(RMSE_5X4, FILTERS)
++
++    assert report["n_configs"] == 5
++    assert report["n_filters"] == 4
++    assert report["filter_names"] == FILTERS
++    assert set(report) == {
++        "n_configs",
++        "n_filters",
++        "filter_names",
++        "average_ranks",
++        "friedman",
++        "nemenyi",
++        "spearman",
++        "verdict",
++    }
++    assert report["friedman"]["chi2"] == pytest.approx(11.64)
++    assert report["friedman"]["p_value"] == pytest.approx(0.008723836058328946)
++    assert report["nemenyi"]["critical_difference"] > 0.0
++    assert np.asarray(report["nemenyi"]["pairwise_significant"]).shape == (4, 4)
++    assert report["verdict"]["friedman_rejects_null"] is True
++
++
++@pytest.mark.fast
++def test_run_friedman_panel_spearman_matrix_shape_symmetry_and_diagonal():
++    report = run_friedman_panel(RMSE_5X4, FILTERS)
++
++    spearman = np.asarray(report["spearman"]["correlation_matrix"], dtype=float)
++    assert spearman.shape == (4, 4)
++    np.testing.assert_allclose(spearman, spearman.T)
++    np.testing.assert_allclose(np.diag(spearman), np.ones(4))
++
++
++@pytest.mark.fast
++def test_run_friedman_panel_invalid_filter_name_length_raises_clear_error():
++    with pytest.raises(ValueError, match=r"filter_names length"):
++        run_friedman_panel(RMSE_5X4, ["A", "B", "C"])
++
++
++@pytest.mark.fast
++def test_run_friedman_panel_output_is_json_serializable():
++    report = run_friedman_panel(RMSE_5X4, FILTERS)
++
++    json.dumps(report, allow_nan=False)
+
+tokens used
+83,454
+Implemented and committed `1eb7c42`:
+
+`GLASSBOX [role: worker-codex-FR] Add stats panel runner`
+
+Added `run_friedman_panel` in [friedman.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-6-11-c-stats-panel-runner/src/bsebench_stats/runners/friedman.py), exposed it via package exports, and added focused tests in [test_friedman_panel_runner.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-6-11-c-stats-panel-runner/tests/test_friedman_panel_runner.py). The output includes dimensions, filter names, average ranks, Friedman stats, Nemenyi CD/significance matrix, Spearman matrix, and a neutral verdict dict.
+
+Acceptance gates passed:
+
+- `uv run --all-extras pytest tests/test_friedman_panel_runner.py -q`
+- `uv run --all-extras pytest -m "not slow" --tb=short`
+- `uv run --all-extras ruff format --check .`
+- `uv run --all-extras ruff check .`
+
+Scope is 197 insertions. No `Co-Authored-By: Claude` trailer is present. Working tree is clean and the branch is ahead by 1 commit.

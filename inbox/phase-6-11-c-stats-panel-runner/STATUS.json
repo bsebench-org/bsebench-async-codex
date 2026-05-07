@@ -1,11 +1,13 @@
 {
   "phase_id": "phase-6-11-c-stats-panel-runner",
-  "status": "running",
+  "status": "done",
   "ts_queued": "2026-05-07T00:56:35Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
   "target_branch": "phase-6-11-c-stats-panel-runner",
   "base_branch": "main",
   "hard_wallclock_min": 40,
   "ts_started": "2026-05-07T01:00:04Z",
-  "worker_id": "france-personal-2"
+  "worker_id": "france-personal-2",
+  "ts_done": "2026-05-07T01:07:04Z",
+  "exit_code": 0
 }
