@@ -1,0 +1,200 @@
++
++- focused tests for ready, partial, not-comparable, unknown-metadata, and missing-source-identity cases;
++- one read-only local readiness command against available dataset metadata or local roots;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-ad-async-claim-gate-ci-fixtures/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-ad-async-claim-gate-ci-fixtures/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..7b9329076cb740ec2089a0c198925aeabf20b9d3
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-ad-async-claim-gate-ci-fixtures/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-ad-async-claim-gate-ci-fixtures
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.ad - async claim-gate CI fixtures
++
++You are a rigorous async research-gate infrastructure engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add CI-usable fixtures or probes proving that BRIEF guardrails reject claim promotion, unsupported SOTA wording, and protected-claim targeting before workers start.
++
++## Roadmap mapping
++
++- Research-gate lane: block false scientific claims before evidence, comparison, and claim registration lanes are separated.
++- Async reliability lane: keep autonomous queueing from dispatching unsafe research instructions.
++- Active lane: validation infrastructure only.
++
++## Required behavior
++
++- Review `scripts/check-research-brief-gates.sh`, any claim-language linter, source-ledger schema, and current `cto/AUTONOMY_BACKLOG/` guardrails.
++- Add fixture BRIEFs, a shell probe, or CI documentation that exercises acceptable neutral wording and unacceptable claim-promotion wording.
++- Negative fixtures must include at least missing falsification, missing validation, thesis or claim registry edit authorization, `claim_55` targeting, and unsupported SOTA or novelty language.
++- Any fixture with SOTA wording must be synthetic or explicitly marked forbidden unless it includes a source ledger with stable URL or DOI, retrieval date, metric, dataset, split, and comparability caveat.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to claim-gate fixture validation.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a BRIEF can authorize thesis or claim registry edits, target `claim_55`, or make unsupported SOTA or verified-claim wording while the gate still passes, the task must fail and fix the checker or fixture expectations.
++
++## Validation
++
++Run and record:
++
++- positive and negative fixture checks for all required guardrail categories;
++- `bash -n scripts/check-research-brief-gates.sh scripts/cto-autonomy-pacer.sh`;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-ae-runner-phase11-residual-manifest-dryrun/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-ae-runner-phase11-residual-manifest-dryrun/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..425e594b90103d87e6751a817b80e39c8c5cab6c
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-ae-runner-phase11-residual-manifest-dryrun/BRIEF.md
+@@ -0,0 +1,51 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-runner
++target_branch: phase-7-10-ae-runner-phase11-residual-manifest-dryrun
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.ae - runner Phase 11 residual manifest dry-run
++
++You are a rigorous BSEBench runner validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Prepare Phase 11 sensor-noise versus model-mismatch decomposition with a dry-run residual manifest contract before expensive residual traces are scheduled.
++
++## Roadmap mapping
++
++- Phase 11 preparation: residual decomposition requires deterministic dataset, model, filter, sensor channel, and stats dependency identity.
++- Validation infrastructure lane: fail before expensive evidence generation when provenance or dimensions are incomplete.
++- Active lane: preflight validation only.
++
++## Required behavior
++
++- Add or extend a dry-run command that resolves candidate Phase 11 configs into intended residual-trace manifest rows without running filters.
++- Each row must report dataset/config identifier, loader availability, local-cache readiness, voltage/current channel identity, sample cadence availability, filter set, stats dependency identity, intended output path, and provenance gaps.
++- Output JSON must be finite, deterministic, and explicit about `ready`, `cache_missing`, `loader_missing`, `metadata_incomplete`, `dimension_unknown`, and `stats_unknown`.
++- Do not generate empirical evidence, download data, mutate caches, or commit machine-local absolute paths as scientific evidence.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 11 residual manifest preflight.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a Phase 11 candidate row cannot prove deterministic loader identity, cache/provenance source, channel dimensions, filter set, and stats dependency identity, the dry-run must mark it not ready and block downstream residual-trace scheduling.
++
++## Validation
++
++Run and record:
++
++- focused tests for ready, cache-missing, loader-missing, metadata-incomplete, dimension-unknown, and stats-unknown cases;
++- one real dry-run manifest command over the current candidate config set without running filters;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-af-stats-phase8-cross-dataset-floor-contract/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-af-stats-phase8-cross-dataset-floor-contract/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..4c281de9022d693f83b71fb6525f06c17e155635
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-af-stats-phase8-cross-dataset-floor-contract/BRIEF.md
+@@ -0,0 +1,50 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-stats
++target_branch: phase-7-10-af-stats-phase8-cross-dataset-floor-contract
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.af - stats Phase 8 cross-dataset floor contract
++
++You are a rigorous BSEBench statistics engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Define a synthetic-testable stats contract for Phase 8 cross-dataset MAD/PCRLB floor comparisons before any real cross-chemistry claim work starts.
++
++## Roadmap mapping
++
++- Phase 8 preparation: cross-chemistry BMA ceiling checks need comparable MAD/PCRLB units, splits, and aggregation rules.
++- Phase 11 preparation: the same floor contract supports later sensor-noise versus model-mismatch decomposition.
++- Active lane: preflight validation and schema enforcement only.
++
++## Required behavior
++
++- Add or extend a small schema, parser, or validator for cross-dataset floor comparison input rows.
++- Required fields must include dataset/config identifier, chemistry or explicit unknown status, split/run condition, metric and units, MAD or PCRLB value with uncertainty when available, sample count, aggregation rule, and comparability caveat.
++- The validator must reject non-finite values, mixed units without conversion metadata, missing split/run condition, missing sample counts, and aggregation rules that would hide dataset imbalance.
++- Keep the task preparatory: no real scientific verdict, no thesis prose, no claim registry update, and no SOTA or novelty comparison.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 8/11 floor contract.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If the contract accepts non-finite values, incompatible units, missing split metadata, missing sample counts, or an aggregation rule that masks dataset imbalance, the validator must fail and report the offending row.
++
++## Validation
++
++Run and record:
++
++- focused tests for valid rows, non-finite values, mixed units, missing split, missing sample count, and imbalance-hiding aggregation;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+98,573
+Implemented and pushed `phase-7-10-z-autonomy-backlog-replenishment-20260507T192007Z` at commit `7bd2e84`.
+
+Added six new queueable reserve BRIEFs under `cto/AUTONOMY_BACKLOG/`:
+
+- `phase-7-10-aa` runner Hinf replay provenance negative controls
+- `phase-7-10-ab` stats Hinf bootstrap fragility audit
+- `phase-7-10-ac` datasets Phase 8 source-ledger readiness
+- `phase-7-10-ad` async claim-gate CI fixtures
+- `phase-7-10-ae` runner Phase 11 residual manifest dry-run
+- `phase-7-10-af` stats Phase 8 cross-dataset floor contract
+
+No thesis, claim registry, `claim_55`, or roadmap files were edited.
+
+Validation passed:
+
+- `check-research-brief-gates`: `22 checked, 0 skipped`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`
+- `bash -n scripts/check-research-brief-gates.sh`
+- `git diff --check`
+- reserve proof: `reserve_count=6`
