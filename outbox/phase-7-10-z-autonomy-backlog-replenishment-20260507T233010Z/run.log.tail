@@ -1,0 +1,200 @@
+new file mode 100755
+index 0000000000000000000000000000000000000000..c97fd95e19c5d1697ec2bfd7ea7afa878e6e65eb
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-v-stats-pcrlb-mad-input-contract/BRIEF.md
+@@ -0,0 +1,56 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-stats
++target_branch: phase-7-10-v-stats-pcrlb-mad-input-contract
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.v - stats PCRLB/MAD input contract
++
++You are a rigorous BSEBench stats validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Define and validate the input contract for Phase 8 PCRLB/MAD ceiling checks and Phase 11 residual-decomposition inputs before those analyses are interpreted.
++
++## Roadmap mapping
++
++- Phase 8: PCRLB/MAD ratio checks need finite metrics, units, dataset identity, and split/profile metadata.
++- Phase 11: residual-decomposition analysis must distinguish sensor floor, model mismatch, and numerical gaps with explicit metadata.
++- Validation infrastructure: malformed metric payloads must fail before any claim-supporting result is produced.
++
++## Active lane
++
++Evidence generation, validation infrastructure only. The handoff artifact is a schema, validator, or contract report for stats input payloads; it must not assert a ceiling, SOTA, novelty, or claim verdict.
++
++## Required behavior
++
++- Add a lightweight schema, validator, or parser contract for PCRLB/MAD and residual-decomposition input payloads.
++- Require finite numeric arrays or scalars, explicit units, dataset/config identifiers, split or profile metadata, and provenance/replay references when applicable.
++- Missing metadata must be represented as a gap or failure, not inferred from filenames.
++- Include synthetic positive and negative fixtures so future workers know the minimum payload shape.
++- No thesis or claim registry edits are permitted.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this stats input-contract task.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++The task must fail if non-finite values, missing units, missing dataset/config identity, missing split/profile metadata, or absent provenance/replay references can pass as claim-ready input.
++
++## Validation
++
++Run and record:
++
++- focused tests for valid payloads, non-finite values, missing units, missing dataset/config identity, missing split/profile metadata, and missing provenance/replay references;
++- a dry-run contract check over any existing committed PCRLB/MAD or residual-decomposition fixture, if present;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-w-async-evidence-bundle-index-audit/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-w-async-evidence-bundle-index-audit/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..e07393f877b6a2c14fd51ae0f2e17cc7086c2750
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-w-async-evidence-bundle-index-audit/BRIEF.md
+@@ -0,0 +1,54 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-w-async-evidence-bundle-index-audit
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.w - async evidence bundle index audit
++
++You are a rigorous async evidence-audit engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add an async-side audit for evidence bundle indexes or readiness packs so mechanical evidence cannot be marked ready without commit SHAs, artifact hashes, replay commands, and guardrail fields.
++
++## Roadmap mapping
++
++- Phase 7: Hinf candidate evidence must keep a replayable mechanical-evidence trail.
++- Phase 8 and Phase 11 preparation: future evidence cards need the same index requirements before claim work.
++- Research-gate lane: claim registration remains blocked until evidence and comparison handoffs are complete.
++
++## Active lane
++
++Evidence generation, validation infrastructure only. The handoff artifact is an audit report over async evidence bundle metadata; it must not register claims or interpret scientific conclusions.
++
++## Required behavior
++
++- Add or extend a checker for async evidence cards, readiness packs, or bundle indexes under `outbox/` or a test fixture path.
++- Require target repo, branch, commit SHA, artifact path, artifact hash when practical, replay command, validation command, scientific-verdict guardrail, claim-target guardrail, and thesis/registry edit guardrail.
++- Include negative fixtures for missing commit SHA, missing replay command, missing artifact hash when practical, missing `scientific_verdict=none`, and missing `claim_55` protection.
++- Do not modify historical evidence cards unless the task explicitly creates test fixtures or a backward-compatible checker.
++- No thesis or claim registry edits are permitted.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this evidence bundle audit.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++The task must fail if an evidence bundle can be marked ready while omitting commit SHAs, replay commands, required artifact hashes, `scientific_verdict=none`, claim-target guardrails, or explicit `claim_55` protection.
++
++## Validation
++
++Run and record:
++
++- positive and negative fixture checks for complete bundles, missing commit SHA, missing replay command, missing artifact hash, missing verdict guardrail, and missing `claim_55` protection;
++- `bash -n` for changed shell scripts;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-x-datasets-phase11-residual-provenance-fixtures/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-x-datasets-phase11-residual-provenance-fixtures/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..bc8b2710581f3c47c08f55a4e18f51998fccf181
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-x-datasets-phase11-residual-provenance-fixtures/BRIEF.md
+@@ -0,0 +1,56 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-datasets
++target_branch: phase-7-10-x-datasets-phase11-residual-provenance-fixtures
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.x - datasets Phase 11 residual provenance fixtures
++
++You are a rigorous BSEBench dataset validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add fixture-level provenance checks for Phase 11 residual-decomposition readiness, especially voltage/current/SOC identity, sample-rate metadata, and sensor-noise metadata gaps.
++
++## Roadmap mapping
++
++- Phase 11: sensor-noise vs model-mismatch decomposition requires explicit measurement and provenance metadata.
++- Phase 8 preparation: the same provenance fixtures help cross-dataset comparability before PCRLB/MAD interpretation.
++- Validation infrastructure: missing metadata is a gap, not permission to infer readiness.
++
++## Active lane
++
++Evidence generation, validation infrastructure only. The handoff artifact is a dataset provenance fixture/checker report that distinguishes ready, gap, unsupported, and unknown states.
++
++## Required behavior
++
++- Add fixtures, metadata checks, or a lightweight provenance validator for residual-decomposition readiness.
++- Required checks should cover voltage channel identity, current channel identity, SOC or target-state identity, sample-rate or timebase metadata, dataset/config identifier, and sensor-noise metadata when available.
++- If sensor-noise metadata is unavailable, the output must mark it as a gap rather than inventing a value.
++- The task must not run filters, alter raw datasets, or create claim-supporting empirical results.
++- No thesis or claim registry edits are permitted.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or the roadmap.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 11 provenance task.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++The task must fail if a dataset/config fixture can be marked Phase 11-ready while missing voltage/current/SOC identity, sample-rate or timebase metadata, dataset/config identity, or an explicit sensor-noise metadata value or gap marker.
++
++## Validation
++
++Run and record:
++
++- focused tests for ready fixtures, missing voltage identity, missing current identity, missing SOC/target identity, missing timebase, missing dataset/config identity, and missing sensor-noise value-or-gap marker;
++- a read-only fixture/provenance command over representative dataset metadata if available;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+88,439
+Done. Added 8 new queueable BRIEFs under `cto/AUTONOMY_BACKLOG/phase-7-10-{q..x}-*/BRIEF.md`, covering Hinf fragility, manifest replay, dataset provenance, source-ledger enforcement, Phase 8/11 preflight, PCRLB/MAD contracts, and evidence bundle audits.
+
+Committed locally on the target branch:
+
+`034d0be3eca817d3714dccb70285c5c70d80fda5 chore(async): replenish autonomy backlog`
+
+Validation passed:
+
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md` -> `24 checked, 0 skipped`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh` -> passed
+- `git diff --check` -> passed
+- reserve count command -> `8` queueable unqueued BRIEFs remain
+
+Scope stayed limited to new backlog BRIEFs. No thesis, claim registry, roadmap, or `claim_55` files were edited. Worktree is clean; branch is ahead of `origin/main` by 1 commit.
