@@ -1,7 +1,7 @@
 # GLASSBOX Integration Conflict Map - Wave 1
 
-Generated: 2026-05-07T21:43:09+02:00  
-Worker: I-MAP  
+Generated: 2026-05-07T21:43:09+02:00
+Worker: I-MAP
 Scope: Wave 1 `phase-8-0-a` through `phase-8-0-x` plus prior `phase-7-10-q` through `phase-7-10-v` branches across runner, stats, datasets, and async coordination repos.
 
 ## Evidence Commands
