@@ -179,10 +179,11 @@ lower_text() {
 is_validation_only_path() {
   local path="$1"
 
-  [[ "$path" =~ ^scripts/(check|probe)-.*(research|sota|claim|brief|phase|diff).*\.sh$ ]] && return 0
+  [[ "$path" =~ ^scripts/(check|probe|test)-.*(research|sota|claim|brief|phase|diff|source|ledger|comparability|freshness).*\.sh$ ]] && return 0
   [[ "$path" =~ ^scripts/check-research-brief-gates\.sh$ ]] && return 0
   [[ "$path" =~ ^scripts/check-research-diff-scope\.sh$ ]] && return 0
   [[ "$path" =~ ^tests?/fixtures/research[-_].* ]] && return 0
+  [[ "$path" =~ ^tests?/fixtures/(source[-_]?ledger|claim[-_]?language).* ]] && return 0
   return 1
 }
 
@@ -276,8 +277,10 @@ ledger_text_is_complete() {
   has_field "$text" 'metric' || return 1
   has_field "$text" 'dataset' || return 1
   has_field "$text" 'split' || return 1
+  has_field "$text" 'method' || return 1
+  has_field "$text" '(preprocessing|run[[:space:]_-]*condition)' || return 1
   has_field "$text" '(reported[_ -]?value|external[_ -]?value|exact[[:space:]_-]*value)' || return 1
-  has_field "$text" 'bsebench[_ -]?value' || return 1
+  has_field "$text" '(bsebench[_ -]?frozen[_ -]?value|bsebench[_ -]?value)' || return 1
   has_field "$text" 'comparability' || return 1
   has_field "$text" 'caveat' || return 1
   {

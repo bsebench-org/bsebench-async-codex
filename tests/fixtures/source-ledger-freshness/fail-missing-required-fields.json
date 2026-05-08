@@ -1,0 +1,76 @@
+{
+  "source_ledger": {
+    "schema_version": "source-ledger-freshness/v1",
+    "ledger_status": "synthetic_negative_fixture",
+    "entries": [
+      {
+        "source_id": "synthetic-missing-stable-id-001",
+        "title": "Synthetic Missing Stable Identifier Row",
+        "retrieval_date": "2026-05-07",
+        "metric": "synthetic RMSE percent",
+        "dataset": "SyntheticCellSet v0 fixed profile",
+        "split": "synthetic fixed test split A",
+        "preprocessing_or_run_condition": "synthetic normalization v1 with fixed horizon A",
+        "method": "SyntheticComparableMethod",
+        "reported_value": "1.230 synthetic units (fixture only, not literature evidence)",
+        "bsebench_frozen_value": "1.230 synthetic units from frozen fixture artifact",
+        "comparability": "comparable",
+        "comparability_caveat": "none; fixture intentionally omits stable URL or DOI"
+      },
+      {
+        "source_id": "synthetic-missing-retrieval-001",
+        "title": "Synthetic Missing Retrieval Date Row",
+        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/missing-retrieval-001",
+        "metric": "synthetic RMSE percent",
+        "dataset": "SyntheticCellSet v0 fixed profile",
+        "split": "synthetic fixed test split A",
+        "preprocessing_or_run_condition": "synthetic normalization v1 with fixed horizon A",
+        "method": "SyntheticComparableMethod",
+        "reported_value": "1.230 synthetic units (fixture only, not literature evidence)",
+        "bsebench_frozen_value": "1.230 synthetic units from frozen fixture artifact",
+        "comparability": "comparable",
+        "comparability_caveat": "none; fixture intentionally omits retrieval date"
+      },
+      {
+        "source_id": "synthetic-missing-dimensions-001",
+        "title": "Synthetic Missing Metric Dataset Split Row",
+        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/missing-dimensions-001",
+        "retrieval_date": "2026-05-07",
+        "preprocessing_or_run_condition": "synthetic normalization v1 with fixed horizon A",
+        "method": "SyntheticComparableMethod",
+        "reported_value": "1.230 synthetic units (fixture only, not literature evidence)",
+        "bsebench_frozen_value": "1.230 synthetic units from frozen fixture artifact",
+        "comparability": "comparable",
+        "comparability_caveat": "none; fixture intentionally omits metric, dataset, and split"
+      },
+      {
+        "source_id": "synthetic-missing-bsebench-value-001",
+        "title": "Synthetic Missing BSEBench Frozen Value Row",
+        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/missing-bsebench-value-001",
+        "retrieval_date": "2026-05-07",
+        "metric": "synthetic RMSE percent",
+        "dataset": "SyntheticCellSet v0 fixed profile",
+        "split": "synthetic fixed test split A",
+        "preprocessing_or_run_condition": "synthetic normalization v1 with fixed horizon A",
+        "method": "SyntheticComparableMethod",
+        "reported_value": "1.230 synthetic units (fixture only, not literature evidence)",
+        "comparability": "comparable",
+        "comparability_caveat": "none; fixture intentionally omits frozen BSEBench value"
+      },
+      {
+        "source_id": "synthetic-missing-caveat-001",
+        "title": "Synthetic Missing Caveat Row",
+        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/missing-caveat-001",
+        "retrieval_date": "2026-05-07",
+        "metric": "synthetic RMSE percent",
+        "dataset": "SyntheticCellSet v0 fixed profile",
+        "split": "synthetic fixed test split A",
+        "preprocessing_or_run_condition": "synthetic normalization v1 with fixed horizon A",
+        "method": "SyntheticComparableMethod",
+        "reported_value": "1.230 synthetic units (fixture only, not literature evidence)",
+        "bsebench_frozen_value": "1.230 synthetic units from frozen fixture artifact",
+        "comparability": "partial"
+      }
+    ]
+  }
+}

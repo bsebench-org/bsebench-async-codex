@@ -134,9 +134,9 @@ source_ledger_present_comparison() {
 SOTA comparison draft: the row below is only comparable under the source ledger.
 COMPARISON
   cat > "$repo/reports/source-ledger.md" <<'LEDGER'
-| source_id | doi_or_url | retrieved_at | metric | dataset | split | reported_value | bsebench_value | comparability | caveat |
-|---|---|---|---|---|---|---|---|---|---|
-| fixture-paper | https://doi.org/10.1234/example | 2026-05-08 | MAE SOC percent | CALCE A123 | fixed test profile | 1.20 | 1.30 | partial | synthetic fixture, not a real claim |
+| source_id | stable_url_or_doi | retrieval_date | metric | dataset | split | preprocessing_or_run_condition | method | reported_value | bsebench_frozen_value | comparability | comparability_caveat |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| fixture-paper | https://doi.org/10.1234/example | 2026-05-08 | MAE SOC percent | CALCE A123 | fixed test profile | synthetic preprocessing fixture | FixtureMethod | 1.20 | 1.30 | partial | synthetic fixture, not a real claim |
 LEDGER
   git -C "$repo" add reports/comparison.md reports/source-ledger.md
   git -C "$repo" commit -q -m "comparison with ledger"

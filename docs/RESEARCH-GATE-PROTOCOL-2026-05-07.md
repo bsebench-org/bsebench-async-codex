@@ -138,18 +138,26 @@ Minimum ledger fields:
 |---|---|
 | `source_id` | Stable local identifier. |
 | `title` | Paper, benchmark, repository, or report title. |
-| `doi_or_url` | DOI, arXiv URL, official repo URL, or other stable URL. |
-| `retrieved_at` | Retrieval date in ISO format. |
+| `stable_url_or_doi` | DOI, arXiv URL, official repo URL, or other stable URL. |
+| `retrieval_date` | Retrieval date in `YYYY-MM-DD` format. |
 | `metric` | Exact metric name and units. |
 | `dataset` | Dataset and variant/profile. |
 | `split` | Train/test split, validation protocol, horizon, or run condition. |
-| `reported_value` | Exact value, table/figure/page if available. |
-| `bsebench_value` | Frozen BSEBench value being compared. |
+| `preprocessing_or_run_condition` | Preprocessing, leakage-relevant transformation, profile, horizon, or explicit `not_reported` limitation. |
+| `method` | Method/model/baseline name exactly as the source reports it. |
+| `reported_value` | Exact external value, table/figure/page if available. |
+| `bsebench_frozen_value` | Frozen BSEBench value being compared. |
 | `comparability` | `comparable`, `partial`, or `not_comparable`. |
-| `caveat` | Reason for any limitation or missing field. |
+| `comparability_caveat` | Reason for any limitation or missing field. |
 
 If any required field is unknown, the ledger row must mark the comparison
 `partial` or `not_comparable`. It must not silently fill gaps from memory.
+Rows with future retrieval dates, stale retrieval dates, malformed dates,
+missing stable URL/DOI, missing frozen BSEBench values, or `comparable` labels
+over unknown required conditions are invalid for downstream comparison wording.
+The executable row-level guard is `scripts/check-source-ledger-freshness.sh`;
+it classifies rows as `comparable`, `partial`, `not_comparable`, `stale`, or
+`invalid`.
 
 ### G5 - No Claim Until Validated
 

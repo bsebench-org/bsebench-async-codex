@@ -1,0 +1,23 @@
+{
+  "source_ledger": {
+    "schema_version": "source-ledger-freshness/v1",
+    "ledger_status": "synthetic_negative_fixture",
+    "entries": [
+      {
+        "source_id": "synthetic-future-001",
+        "title": "Synthetic Future-Dated Source Row",
+        "stable_url_or_doi": "https://example.org/bsebench/synthetic-source-ledger/future-001",
+        "retrieval_date": "2026-05-09",
+        "metric": "synthetic RMSE percent",
+        "dataset": "SyntheticCellSet v0 fixed profile",
+        "split": "synthetic fixed test split A",
+        "preprocessing_or_run_condition": "synthetic normalization v1 with fixed horizon A",
+        "method": "SyntheticComparableMethod",
+        "reported_value": "1.230 synthetic units (fixture only, not literature evidence)",
+        "bsebench_frozen_value": "1.230 synthetic units from frozen fixture artifact",
+        "comparability": "comparable",
+        "comparability_caveat": "none; synthetic fixture would otherwise match but retrieval date is in the future"
+      }
+    ]
+  }
+}
