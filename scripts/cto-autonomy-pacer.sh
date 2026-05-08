@@ -29,6 +29,7 @@ MAX_QUEUE_PER_TICK="${MAX_QUEUE_PER_TICK:-3}"
 STALE_RUNNING_MIN="${STALE_RUNNING_MIN:-180}"
 REPLENISHMENT_COOLDOWN_HOURS="${REPLENISHMENT_COOLDOWN_HOURS:-12}"
 BLOCK_REMEDIATION_COOLDOWN_MIN="${BLOCK_REMEDIATION_COOLDOWN_MIN:-30}"
+FORCE_BLOCK_REMEDIATION_ON_IDLE="${FORCE_BLOCK_REMEDIATION_ON_IDLE:-1}"
 DRY_RUN=0
 
 mkdir -p "$STATE_DIR"
@@ -344,6 +345,11 @@ replenishment_recent_or_open() {
 }
 
 block_remediation_recent_or_open() {
+  local force="${1:-0}"
+  if [[ "$force" -eq 1 ]] ; then
+    return 1
+  fi
+
   local cooldown_sec=$((BLOCK_REMEDIATION_COOLDOWN_MIN * 60))
   find inbox -mindepth 1 -maxdepth 1 -type d -name 'phase-7-10-y-block-remediation-*' 2>/dev/null |
     while IFS= read -r dir ; do
@@ -361,9 +367,10 @@ block_remediation_recent_or_open() {
 }
 
 queue_block_remediation_task() {
+  local force="${1:-0}"
   local now compact phase_id phase_dir branch block_list
 
-  if block_remediation_recent_or_open ; then
+  if block_remediation_recent_or_open "$force" ; then
     log "BLOCKED block remediation task is open or inside ${BLOCK_REMEDIATION_COOLDOWN_MIN}min cooldown"
     return 0
   fi
@@ -376,7 +383,11 @@ queue_block_remediation_task() {
   block_list="$(find outbox/_blocks -maxdepth 1 -type f -name '*.block' -printf '%f\n' 2>/dev/null | sort | paste -sd ',')"
   block_list="${block_list:-unknown}"
 
-  log "QUEUE block remediation task: phase=$phase_id blocks=$block_list"
+  if [[ "$force" -eq 1 ]] ; then
+    log "QUEUE block remediation task: phase=$phase_id blocks=$block_list force=idle_no_real_capacity"
+  else
+    log "QUEUE block remediation task: phase=$phase_id blocks=$block_list"
+  fi
   if [[ "$DRY_RUN" -eq 1 ]] ; then
     QUEUED_PHASES+=("$phase_id")
     return 0
@@ -573,6 +584,10 @@ append_history_and_commit() {
   blocks="$5"
 
   if [[ ${#QUEUED_PHASES[@]} -eq 0 ]] ; then
+    if [[ "$execs" -eq 0 && "$queued" -eq 0 ]] ; then
+      log "FATAL_IDLE_NO_CAPACITY codex_exec=0 status_running=$running queued=0 reserve=$reserve blocks=$blocks action=supervisor_emergency_capacity_required"
+      return 0
+    fi
     log "NOOP capacity ok: codex_exec=$execs status_running=$running queued=$queued reserve=$reserve blocks=$blocks"
     return 0
   fi
@@ -653,7 +668,12 @@ main() {
   if [[ "$blocks" -gt 0 ]] ; then
     QUEUED_PHASES=()
     if [[ "$effective_capacity" -lt "$target_open" ]] ; then
-      queue_block_remediation_task
+      local force_block_remediation
+      force_block_remediation=0
+      if [[ "$FORCE_BLOCK_REMEDIATION_ON_IDLE" -eq 1 && "$execs" -eq 0 && "$queued" -eq 0 ]] ; then
+        force_block_remediation=1
+      fi
+      queue_block_remediation_task "$force_block_remediation"
     else
       log "BLOCKED capacity already non-idle; normal backlog queueing paused"
     fi

@@ -223,6 +223,19 @@ assert_contains "$block_output" "DRY-RUN would commit queued=phase-7-10-y-block-
 assert_not_contains "$block_output" "QUEUE reserve task" "normal backlog queue while blocked"
 assert_clean_repo
 
+section "blocked idle forces remediation despite cooldown"
+make_fixture "block-idle-cooldown"
+touch "$FIX_ASYNC/outbox/_blocks/probe.block"
+write_running_status "phase-7-10-y-block-remediation-19700101T000000Z" "running"
+commit_fixture "block idle cooldown scenario"
+block_cooldown_output="$(run_pacer)"
+printf '%s\n' "$block_cooldown_output"
+assert_contains "$block_cooldown_output" "blocks=1" "block cooldown snapshot"
+assert_contains "$block_cooldown_output" "force=idle_no_real_capacity" "forced block remediation"
+assert_contains "$block_cooldown_output" "DRY-RUN would commit queued=phase-7-10-y-block-remediation-" "forced block remediation dry run"
+assert_not_contains "$block_cooldown_output" "NOOP capacity ok: codex_exec=0" "blocked idle noop"
+assert_clean_repo
+
 section "idle empty reserve bypasses replenishment cooldown"
 make_fixture "idle-empty-reserve"
 write_running_status "phase-7-10-z-autonomy-backlog-replenishment-19700101T000000Z" "running"

@@ -20,6 +20,7 @@ END_FILE="$STATE_DIR/supervisor-10h.ends"
 INTERVAL_SECONDS="${INTERVAL_SECONDS:-600}"
 DURATION_SECONDS="${DURATION_SECONDS:-36000}"
 MIN_UNIQUE_CODEX_EXEC="${MIN_UNIQUE_CODEX_EXEC:-2}"
+MIN_PRODUCT_CODEX_EXEC="${MIN_PRODUCT_CODEX_EXEC:-4}"
 SILENT_LOG_WARN_SECONDS="${SILENT_LOG_WARN_SECONDS:-1200}"
 
 mkdir -p "$STATE_DIR"
@@ -33,6 +34,7 @@ Environment:
   DURATION_SECONDS=36000        total runtime when not --once
   INTERVAL_SECONDS=600          tick period
   MIN_UNIQUE_CODEX_EXEC=2       warn below this unique -C workdir count
+  MIN_PRODUCT_CODEX_EXEC=4      launch product-repo fallback below this count
   SILENT_LOG_WARN_SECONDS=1200  warn when watched logs are silent this long
 USAGE
 }
@@ -139,6 +141,30 @@ run_watchdog_and_pacer() {
   fi
 }
 
+run_agent_report() {
+  local script="$ASYNC_CTO/scripts/cto-agent-report-15min.sh"
+  if [[ ! -x "$script" ]] ; then
+    log "WARN agent_report_missing path=$script"
+    return 0
+  fi
+  log "RUN agent_report"
+  STATE_DIR="$STATE_DIR" BSEBENCH_ROOT="$ROOT" bash "$script" >> "$LOG_FILE" 2>&1 || log "WARN agent_report_failed status=$?"
+}
+
+run_emergency_capacity() {
+  local script="$ASYNC_CTO/scripts/cto-emergency-capacity.sh"
+  if [[ ! -x "$script" ]] ; then
+    log "WARN emergency_capacity_missing path=$script"
+    return 0
+  fi
+
+  log "RUN emergency_capacity min_product_codex=$MIN_PRODUCT_CODEX_EXEC"
+  MIN_PRODUCT_CODEX_EXEC="$MIN_PRODUCT_CODEX_EXEC" \
+    STATE_DIR="$STATE_DIR" \
+    BSEBENCH_ROOT="$ROOT" \
+    bash "$script" >> "$LOG_FILE" 2>&1 || log "WARN emergency_capacity_failed status=$?"
+}
+
 tick() {
   local workdirs count
   log "TICK_BEGIN"
@@ -160,6 +186,7 @@ tick() {
 
   log_inbox_state
   log_watched_log_mtimes
+  run_agent_report
   run_watchdog_and_pacer
 
   if [[ "$count" -lt "$MIN_UNIQUE_CODEX_EXEC" ]] ; then
@@ -172,6 +199,18 @@ tick() {
     count="${#workdirs[@]}"
     log "RECHECK_UNIQUE_CODEX_EXEC count=$count min=$MIN_UNIQUE_CODEX_EXEC"
     printf '%s\n' "${workdirs[@]}" | sed 's/^/[codex-workdir] /' | tee -a "$LOG_FILE" || true
+    if [[ "$count" -lt "$MIN_UNIQUE_CODEX_EXEC" ]] ; then
+      run_emergency_capacity
+      sleep 20
+      workdirs=()
+      if ! mapfile -t workdirs < <(unique_codex_workdirs 2>>"$LOG_FILE") ; then
+        log "WARN_UNIQUE_CODEX_POST_EMERGENCY_SCAN_FAILED action=continue_with_zero"
+        workdirs=()
+      fi
+      count="${#workdirs[@]}"
+      log "POST_EMERGENCY_UNIQUE_CODEX_EXEC count=$count min=$MIN_UNIQUE_CODEX_EXEC"
+      printf '%s\n' "${workdirs[@]}" | sed 's/^/[codex-workdir] /' | tee -a "$LOG_FILE" || true
+    fi
   fi
 
   log "PACER_TAIL"
