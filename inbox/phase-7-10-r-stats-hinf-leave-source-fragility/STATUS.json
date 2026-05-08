@@ -1,10 +1,10 @@
 {
   "phase_id": "phase-7-10-r-stats-hinf-leave-source-fragility",
-  "status": "running",
+  "status": "done",
   "ts_queued": "2026-05-08T13:30:13Z",
   "ts_started": "2026-05-08T13:40:07Z",
-  "ts_done": null,
-  "exit_code": null,
+  "ts_done": "2026-05-08T14:00:58Z",
+  "exit_code": 0,
   "worker_id": "france-personal",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
   "target_branch": "phase-7-10-r-stats-hinf-leave-source-fragility",

@@ -1,0 +1,200 @@
++        },
++    }
++
++
++def _trace_payload(rows: Sequence[tuple[str, str | None, str | None, Mapping[str, float]]]):
++    return {
++        "schema_version": "1.0",
++        "script": "scripts/residual_trace_5x5.py",
++        "config_labels": [row[0] for row in rows],
++        "filter_labels": list(FILTER_LABELS),
++        "summary": {
++            "ok_configs": len(rows),
++            "error_configs": 0,
++            "ok_filter_runs": len(rows) * len(FILTER_LABELS),
++            "error_filter_runs": 0,
++        },
++        "configs": {
++            label: _config(
++                label=label,
++                wrapper=wrapper,
++                profile=profile,
++                sample_count=8,
++                variances_by_filter=variances,
++            )
++            for label, wrapper, profile, variances in rows
++        },
++    }
++
++
++def _evidence_payload(trace: dict[str, object]) -> dict[str, object]:
++    return {
++        "schema_version": "1.0",
++        "script": "scripts/hinf_residual_evidence_5x5.py",
++        "scientific_verdict": "none",
++        "claim_target": "new_hinf_candidate_not_claim_55",
++        "mechanical_evidence_only": True,
++        "claim_55_targeted": False,
++        "requirements": {
++            "stats_require_ok_configs": len(trace["config_labels"]),
++            "stats_min_ok_filters": len(FILTER_LABELS),
++        },
++        "trace": trace,
++        "residual_covariance_panel": build_residual_covariance_panel(
++            trace,
++            require_ok_configs=len(trace["config_labels"]),
++            min_ok_filters=len(FILTER_LABELS),
++        ),
++        "residual_variance_decomposition": build_residual_variance_decomposition(
++            trace,
++            require_ok_configs=len(trace["config_labels"]),
++            min_ok_filters=len(FILTER_LABELS),
++        ),
++    }
++
++
++def _stable_evidence_payload() -> dict[str, object]:
++    variances = {"EKF": 1.0, "Hinf": 2.0, "UKFDef": 3.0}
++    return _evidence_payload(
++        _trace_payload(
++            [
++                ("cfg_a", "dataset_a", "profile_a", variances),
++                ("cfg_b", "dataset_a", "profile_b", variances),
++                ("cfg_c", "dataset_b", "profile_a", variances),
++                ("cfg_d", "dataset_b", "profile_b", variances),
++            ]
++        )
++    )
++
++
++def _fragile_evidence_payload() -> dict[str, object]:
++    return _evidence_payload(
++        _trace_payload(
++            [
++                ("cfg_a", "dataset_a", "profile_a", {"EKF": 1.0, "Hinf": 2.0, "UKFDef": 3.0}),
++                ("cfg_b", "dataset_b", "profile_b", {"EKF": 1.0, "Hinf": 900.0, "UKFDef": 3.0}),
++                ("cfg_c", "dataset_c", "profile_c", {"EKF": 1.2, "Hinf": 2.4, "UKFDef": 3.6}),
++            ]
++        )
++    )
++
++
++@pytest.mark.fast
++def test_hinf_leave_source_fragility_stable_synthetic_case() -> None:
++    report = build_hinf_leave_source_fragility(
++        _stable_evidence_payload(),
++        share_delta_threshold=1.0,
++        effect_delta_threshold=1.0,
++        correlation_delta_threshold=1.0,
++        variance_relative_delta_threshold=1.0,
++    )
++
++    assert report["schema_version"] == "hinf_leave_source_fragility_v1"
++    assert report["fragility_status"] == "stable"
++    assert report["falsification_gate"]["status"] == "pass"
++    assert report["falsification_gate"]["block_downstream_claim_registration"] is False
++    assert report["stats_replay_check"]["status"] == "ok"
++    for axis in ("leave_one_dataset", "leave_one_profile", "leave_one_config"):
++        assert report["perturbations"][axis]["summary"]["fragility_status"] == "stable"
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_hinf_leave_source_fragility_marks_category_change_fragile() -> None:
++    report = build_hinf_leave_source_fragility(
++        _fragile_evidence_payload(),
++        share_delta_threshold=0.01,
++        effect_delta_threshold=0.10,
++        correlation_delta_threshold=1.0,
++        variance_relative_delta_threshold=1.0,
++    )
++
++    assert report["fragility_status"] == "fragile"
++    assert report["falsification_gate"]["status"] == "block_downstream_claim_registration"
++    leave_config = report["perturbations"]["leave_one_config"]
++    cfg_b_run = next(run for run in leave_config["runs"] if run["omitted_source_id"] == "cfg_b")
++    assert cfg_b_run["fragility_status"] == "fragile"
++    assert cfg_b_run["mismatch_count"] > 0
++    risk_ids = {risk["id"] for risk in cfg_b_run["risks"]}
++    assert "decomposition_dominant_share_changed" in risk_ids
++    assert any(risk_id.endswith("_delta_exceeds_tolerance") for risk_id in risk_ids)
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_hinf_leave_source_fragility_missing_source_identity_is_evidence_gap() -> None:
++    trace = _trace_payload(
++        [
++            ("cfg_a", "dataset_a", "profile_a", {"EKF": 1.0, "Hinf": 2.0, "UKFDef": 3.0}),
++            ("cfg_b", None, "profile_b", {"EKF": 1.0, "Hinf": 2.0, "UKFDef": 3.0}),
++            ("cfg_c", "dataset_b", "profile_a", {"EKF": 1.0, "Hinf": 2.0, "UKFDef": 3.0}),
++        ]
++    )
++    report = build_hinf_leave_source_fragility(
++        _evidence_payload(trace),
++        share_delta_threshold=1.0,
++        effect_delta_threshold=1.0,
++        correlation_delta_threshold=1.0,
++        variance_relative_delta_threshold=1.0,
++    )
++
++    assert report["fragility_status"] == "fragile"
++    dataset_runs = report["perturbations"]["leave_one_dataset"]["runs"]
++    gap_run = next(
++        run for run in dataset_runs if run["fragility_status"] == "insufficient_evidence"
++    )
++    assert gap_run["evidence_gaps"][0]["id"] == "missing_dataset_source_identity"
++    assert report["falsification_gate"]["evidence_gap_count"] >= 1
++    assert report["falsification_gate"]["block_downstream_claim_registration"] is True
++
++
++@pytest.mark.fast
++def test_hinf_leave_source_fragility_runner_writes_json_and_markdown(tmp_path: Path) -> None:
++    evidence_path = tmp_path / "hinf_residual_evidence_5x5.json"
++    output_path = tmp_path / "hinf_leave_source_fragility.json"
++    markdown_path = tmp_path / "hinf_leave_source_fragility.md"
++    evidence_path.write_text(
++        json.dumps(_stable_evidence_payload(), allow_nan=False),
++        encoding="utf-8",
++    )
++
++    report = run_hinf_leave_source_fragility(
++        evidence_path,
++        output_path,
++        markdown_output_path=markdown_path,
++        share_delta_threshold=1.0,
++        effect_delta_threshold=1.0,
++        correlation_delta_threshold=1.0,
++        variance_relative_delta_threshold=1.0,
++    )
++
++    loaded = json.loads(output_path.read_text(encoding="utf-8"))
++    assert loaded == report
++    assert loaded["input_artifacts"]["evidence"]["file_sha256"]
++    assert markdown_path.read_text(encoding="utf-8").startswith(
++        "# Hinf leave-source fragility report"
++    )
++    text = json.dumps(loaded, sort_keys=True).lower()
++    for forbidden in ("verified", "novel", "sota", "thesis"):
++        assert forbidden not in text
+
+tokens used
+258,623
+Implemented and committed `22de97b` on `phase-7-10-r-stats-hinf-leave-source-fragility`.
+
+Added:
+- [Hinf leave-source fragility runner](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-10-r-stats-hinf-leave-source-fragility/src/bsebench_stats/runners/hinf_leave_source_fragility.py:1)
+- [CLI command](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-10-r-stats-hinf-leave-source-fragility/scripts/hinf_leave_source_fragility.py:1)
+- [Focused tests](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-10-r-stats-hinf-leave-source-fragility/tests/test_hinf_leave_source_fragility.py:1)
+
+The real frozen run against `../bsebench-runner/outputs/hinf_residual_evidence_5x5.json` completed read-only and marked the evidence `fragile`: embedded replay `ok`, no source identity gaps, all leave-one dataset/profile/config axes fragile, downstream claim registration blocked. Outputs were written to `/tmp/hinf_leave_source_fragility_5x5.json` and `/tmp/hinf_leave_source_fragility_5x5.md`.
+
+Validation run:
+- `pytest tests/test_hinf_leave_source_fragility.py -q`: 4 passed
+- real fragility CLI run: passed, `fragility_status=fragile`
+- `pytest tests/ -q`: 272 passed
+- `ruff check .`: passed
+- `ruff format --check .`: passed
+- `git diff --check`: passed
+
+No thesis, registry, `claim_55`, or protected roadmap files were edited. Branch is clean and ahead of `origin/main` by 1 commit.
