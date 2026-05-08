@@ -1,0 +1,23 @@
+To: akir.oussama@gmail.com
+Subject: [BLOCKED] phase-7-10-al-datasets-phase11-unit-cadence-contract (panel 81/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-08T15:30:10+02:00
+
+Phase    : phase-7-10-al-datasets-phase11-unit-cadence-contract
+Etat     : blocked (needs_fix)
+Panel    : 81/100 (seuil 89)
+Quoi     : Phase 7.10.al - datasets Phase 11 unit-cadence contract
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-al-datasets-phase11-unit-cadence-contract/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-al-datasets-phase11-unit-cadence-contract/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-al-datasets-phase11-unit-cadence-contract/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
+
+ATTENTION : chef-daemon est PAUSE.
+Action :
+  (a) supprime outbox/_blocks/phase-7-10-al-datasets-phase11-unit-cadence-contract.block pour reprendre, OU
+  (b) queue une fix-BRIEF dans inbox/ qui repond aux preoccupations.
+
+ADVISOR_CHECK : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-al-datasets-phase11-unit-cadence-contract/ADVISOR_CHECK.md
