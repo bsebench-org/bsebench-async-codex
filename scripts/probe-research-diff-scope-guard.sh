@@ -143,6 +143,54 @@ LEDGER
   run_git_guard "$repo"
 }
 
+unsupported_phase911_closure_claim() {
+  local repo="$tmp_root/unsupported-phase911-closure"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase9-11-closeout.md" \
+    'Phase 9/10/11 closure is complete; no performance claim is made here.'
+  run_git_guard "$repo"
+}
+
+phase911_negative_status_allowed() {
+  local repo="$tmp_root/phase911-negative-status"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase9-11-closeout.md" \
+    'Phase 9/10/11 is not complete because cache and empirical evidence are missing.'
+  run_git_guard "$repo"
+}
+
+phase911_evidence_backed_closure_claim() {
+  local repo="$tmp_root/phase911-evidence-backed"
+  init_repo "$repo"
+
+  mkdir -p "$repo/reports"
+  cat > "$repo/reports/phase9-11-closeout.md" <<'REPORT'
+Phase 9/10/11 closure is complete for this synthetic guard fixture.
+Performance status is constrained to the evidence bundle in this diff.
+REPORT
+  cat > "$repo/reports/evidence-bundle.md" <<'EVIDENCE'
+cache evidence: fixture cache manifest present
+provenance evidence: fixture provenance manifest present
+Tier2 evidence: fixture Tier2 inventory present
+source-ledger evidence: reports/source-ledger.md
+empirical-run evidence: fixture empirical run manifest present
+EVIDENCE
+  cat > "$repo/reports/source-ledger.md" <<'LEDGER'
+| source_id | doi_or_url | retrieved_at | metric | dataset | split | reported_value | bsebench_value | comparability | caveat |
+|---|---|---|---|---|---|---|---|---|---|
+| fixture-paper | https://doi.org/10.1234/example | 2026-05-08 | MAE SOC percent | CALCE A123 | fixed test profile | 1.20 | 1.30 | partial | synthetic fixture, not a real claim |
+LEDGER
+  git -C "$repo" add reports/phase9-11-closeout.md reports/evidence-bundle.md reports/source-ledger.md
+  git -C "$repo" commit -q -m "phase911 closure with evidence"
+  run_git_guard "$repo"
+}
+
+changed_file_list_phase911_claim() {
+  local paths="$tmp_root/phase911-paths.txt"
+  printf '%s\n' "reports/phase9-11-closeout.md" > "$paths"
+  bash "$GUARD" --dry-run --paths "$paths" 2>&1
+}
+
 changed_file_list_comparison() {
   local paths="$tmp_root/paths.txt"
   printf '%s\n' "reports/sota-comparison.md" > "$paths"
@@ -183,6 +231,26 @@ require_success_contains \
   "source-ledger-present comparison" \
   "[ALLOWED] reports/comparison.md -- comparison language with completed source ledger in diff" \
   source_ledger_present_comparison
+
+require_failure_contains \
+  "unsupported Phase 9/10/11 closure claim" \
+  "[BLOCKED] reports/phase9-11-closeout.md -- Phase 9/10/11 closure/performance claim lacks cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  unsupported_phase911_closure_claim
+
+require_success_contains \
+  "negative Phase 9/10/11 status allowed" \
+  "[ALLOWED] reports/phase9-11-closeout.md -- ordinary non-protected change" \
+  phase911_negative_status_allowed
+
+require_success_contains \
+  "evidence-backed Phase 9/10/11 closure claim" \
+  "[ALLOWED] reports/phase9-11-closeout.md -- Phase 9/10/11 closure/performance claim with required evidence bundle in diff" \
+  phase911_evidence_backed_closure_claim
+
+require_failure_contains \
+  "changed-file list Phase 9/10/11 closeout without diff" \
+  "[REVIEW_REQUIRED] reports/phase9-11-closeout.md -- Phase 9/10/11 closure/performance-like path supplied without diff or required evidence" \
+  changed_file_list_phase911_claim
 
 require_failure_contains \
   "changed-file list comparison without diff" \

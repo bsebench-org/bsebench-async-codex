@@ -18,6 +18,7 @@ Usage:
 Checks changed paths and, when a git diff is available, added text for:
   - protected thesis, claim registry, claims/registry.yaml, roadmap, claim_55 edits
   - unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim wording
+  - unsupported Phase 9/10/11 closure or performance wording
   - comparison wording backed by a complete source ledger and comparability table
 
 Default git mode compares origin/main...HEAD in the current repository.
@@ -236,11 +237,68 @@ has_comparison_language() {
   [[ "$lower" =~ state-of-the-art ]] && return 0
   [[ "$lower" =~ (^|[^a-z0-9])novel(ty)?([^a-z0-9]|$) ]] && return 0
   [[ "$lower" =~ leaderboard ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])winner([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ public[[:space:]_-]*benchmark ]] && return 0
   [[ "$lower" =~ breakthrough ]] && return 0
   [[ "$lower" =~ verified[[:space:]_-]*claim ]] && return 0
   [[ "$lower" =~ better[[:space:]]+than[[:space:]]+(prior|previous)[[:space:]]+work ]] && return 0
   [[ "$lower" =~ outperform(s|ed|ing)?[[:space:]]+(prior|previous|baseline|sota|state-of-the-art) ]] && return 0
   return 1
+}
+
+has_phase911_reference() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | lower_text)
+
+  [[ "$lower" =~ phase[[:space:]_/-]*(9|10|11)([^0-9]|$) ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])p(9|10|11)([^0-9]|$) ]] && return 0
+  return 1
+}
+
+has_closure_or_performance_language() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | lower_text)
+
+  [[ "$lower" =~ (^|[^a-z0-9])(scientific[[:space:]_-]*)?(closure|complete|completed|done|closed)([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ final[[:space:]_-]*verdict ]] && return 0
+  [[ "$lower" =~ claim[[:space:]_-]*ready ]] && return 0
+  [[ "$lower" =~ publication[[:space:]_-]*ready ]] && return 0
+  [[ "$lower" =~ ready[[:space:]_-]*for[[:space:]_-]*(claim|publication|public) ]] && return 0
+  [[ "$lower" =~ (validated|verified)[[:space:]_-]*(result|evidence|phase|performance|claim) ]] && return 0
+  [[ "$lower" =~ performance ]] && return 0
+  [[ "$lower" =~ benchmark[[:space:]_-]*(ready|quality|claim|status) ]] && return 0
+  [[ "$lower" =~ public[[:space:]_-]*benchmark ]] && return 0
+  [[ "$lower" =~ leaderboard ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])winner([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ outperform(s|ed|ing)? ]] && return 0
+  [[ "$lower" =~ beats[[:space:]]+(prior|previous|baseline|sota|state-of-the-art) ]] && return 0
+  [[ "$lower" =~ better[[:space:]]+than[[:space:]]+(prior|previous|baseline|sota|state-of-the-art) ]] && return 0
+  [[ "$lower" =~ best[[:space:]_-]*(performing|result|score) ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])sota([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ state-of-the-art ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])novel(ty)?([^a-z0-9]|$) ]] && return 0
+  return 1
+}
+
+has_phase911_negative_or_guardrail_context() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | lower_text)
+
+  [[ "$lower" =~ (not|no|cannot|must[[:space:]_-]*not|do[[:space:]_-]*not|forbid|forbidden).{0,80}(closure|complete|completed|done|closed|claim[[:space:]_-]*ready) ]] && return 0
+  [[ "$lower" =~ (no-go|blocked|lacks|missing|incomplete|fail[[:space:]_-]*closed).{0,120}(cache|provenance|tier[[:space:]_-]*2|tier2|source[[:space:]_-]*ledger|empirical|evidence|closure|complete|performance|claim) ]] && return 0
+  return 1
+}
+
+has_phase911_closure_or_performance_claim() {
+  local text="$1"
+
+  has_phase911_reference "$text" || return 1
+  has_phase911_negative_or_guardrail_context "$text" && return 1
+  has_closure_or_performance_language "$text" || return 1
+  return 0
 }
 
 is_source_ledger_path() {
@@ -259,6 +317,15 @@ looks_like_comparison_path() {
   lower=$(printf '%s' "$path" | lower_text)
 
   [[ "$lower" =~ (sota|state-of-the-art|novelty|leaderboard|comparison|comparability|benchmark) ]]
+}
+
+looks_like_phase911_claim_path() {
+  local path="$1"
+  local lower
+  lower=$(printf '%s' "$path" | lower_text)
+
+  [[ "$lower" =~ (phase[-_]?9|phase[-_]?10|phase[-_]?11|phase9|phase10|phase11|p9|p10|p11) ]] || return 1
+  [[ "$lower" =~ (closure|closeout|complete|performance|benchmark|verdict|claim[-_]?ready) ]]
 }
 
 has_field() {
@@ -284,6 +351,17 @@ ledger_text_is_complete() {
     has_field "$text" '\|[[:space:]]*comparability[[:space:]]*\|' ||
       has_field "$text" 'comparability[_ -]?table'
   } || return 1
+  return 0
+}
+
+phase911_claim_evidence_is_complete() {
+  local text="$1"
+
+  has_field "$text" 'cache' || return 1
+  has_field "$text" 'provenance' || return 1
+  has_field "$text" '(tier[[:space:]_-]*2|tier2)' || return 1
+  has_field "$text" 'source[[:space:]_-]*ledger' || return 1
+  has_field "$text" 'empirical[[:space:]_-]*(run|runs|evidence|artifact|artifacts|result|results)' || return 1
   return 0
 }
 
@@ -342,6 +420,17 @@ for path in "${changed_paths[@]}" ; do
     continue
   fi
 
+  if [[ -n "$added_text" ]] && has_phase911_closure_or_performance_claim "$added_text" ; then
+    if [[ "$ledger_present" -eq 1 ]] && phase911_claim_evidence_is_complete "$added_all" ; then
+      emit_result "ALLOWED" "$path" "Phase 9/10/11 closure/performance claim with required evidence bundle in diff"
+      allowed=$((allowed + 1))
+    else
+      emit_result "BLOCKED" "$path" "Phase 9/10/11 closure/performance claim lacks cache/provenance/Tier2/source-ledger/empirical-run evidence"
+      blocked=$((blocked + 1))
+    fi
+    continue
+  fi
+
   if [[ -n "$added_text" ]] && has_comparison_language "$added_text" ; then
     if [[ "$ledger_present" -eq 1 ]] ; then
       emit_result "ALLOWED" "$path" "comparison language with completed source ledger in diff"
@@ -361,6 +450,12 @@ for path in "${changed_paths[@]}" ; do
       emit_result "REVIEW_REQUIRED" "$path" "source ledger path changed but required fields are incomplete"
       review=$((review + 1))
     fi
+    continue
+  fi
+
+  if [[ -z "$diff_file" && -n "$paths_file" ]] && looks_like_phase911_claim_path "$path" ; then
+    emit_result "REVIEW_REQUIRED" "$path" "Phase 9/10/11 closure/performance-like path supplied without diff or required evidence"
+    review=$((review + 1))
     continue
   fi
 
