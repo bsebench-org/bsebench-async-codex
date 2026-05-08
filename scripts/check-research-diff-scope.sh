@@ -19,6 +19,7 @@ Checks changed paths and, when a git diff is available, added text for:
   - protected thesis, claim registry, claims/registry.yaml, roadmap, claim_55 edits
   - unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim wording
   - comparison wording backed by a complete source ledger and comparability table
+  - Phase 9/10/11 closure or performance wording backed by complete evidence
 
 Default git mode compares origin/main...HEAD in the current repository.
 USAGE
@@ -138,14 +139,6 @@ collect_paths() {
   fi | sed '/^[[:space:]]*$/d' | sort -u
 }
 
-all_added_text() {
-  if [[ -n "$diff_file" ]] ; then
-    sed -n '/^+++ /!s/^+//p' "$diff_file"
-  elif [[ -z "$paths_file" ]] ; then
-    git -C "$repo" "${git_diff_args[@]}" --unified=0 | sed -n '/^+++ /!s/^+//p'
-  fi
-}
-
 added_text_for_path() {
   local path="$1"
 
@@ -229,17 +222,89 @@ has_claim55_targeting() {
 
 has_comparison_language() {
   local text="$1"
+  local line
+  local lower_line
+
+  while IFS= read -r line ; do
+    lower_line=$(printf '%s' "$line" | lower_text)
+    if line_is_negated_claim_context "$lower_line" ; then
+      continue
+    fi
+    [[ "$lower_line" =~ (^|[^a-z0-9])sota([^a-z0-9]|$) ]] && return 0
+    [[ "$lower_line" =~ state-of-the-art ]] && return 0
+    [[ "$lower_line" =~ (^|[^a-z0-9])novel(ty)?([^a-z0-9]|$) ]] && return 0
+    [[ "$lower_line" =~ leaderboard ]] && return 0
+    [[ "$lower_line" =~ (^|[^a-z0-9])winner([^a-z0-9]|$) ]] && return 0
+    [[ "$lower_line" =~ public[[:space:]_-]*benchmark ]] && return 0
+    [[ "$lower_line" =~ breakthrough ]] && return 0
+    [[ "$lower_line" =~ verified[[:space:]_-]*claim ]] && return 0
+    [[ "$lower_line" =~ better[[:space:]]+than[[:space:]]+(prior|previous)[[:space:]]+work ]] && return 0
+    [[ "$lower_line" =~ outperform(s|ed|ing)?[[:space:]]+(prior|previous|baseline|sota|state-of-the-art) ]] && return 0
+  done <<< "$text"
+
+  return 1
+}
+
+line_is_negated_claim_context() {
+  local line="$1"
+
+  [[ "$line" =~ (do[[:space:]]+not|must[[:space:]]+not|should[[:space:]]+not|no[[:space:]]+|not[[:space:]]+) ]] && return 0
+  [[ "$line" =~ (without|unsupported|forbid|forbidden|avoid|ban|blocked|example|quoted) ]] && return 0
+  return 1
+}
+
+line_is_guardrail_context() {
+  local line="$1"
+
+  line_is_negated_claim_context "$line" && return 0
+  [[ "$line" =~ (source[[:space:]_-]*ledger|comparability|caveat|review[[:space:]_-]*required) ]] && return 0
+  return 1
+}
+
+has_forbidden_public_claim_language() {
+  local text="$1"
+  local line
+  local lower_line
+
+  while IFS= read -r line ; do
+    lower_line=$(printf '%s' "$line" | lower_text)
+    if ! [[ "$lower_line" =~ (^|[^a-z0-9])(sota|state-of-the-art|novelty|novel|leaderboard|winner|breakthrough)([^a-z0-9]|$)|public[[:space:]_-]*benchmark ]] ; then
+      continue
+    fi
+    if line_is_guardrail_context "$lower_line" ; then
+      continue
+    fi
+    return 0
+  done <<< "$text"
+
+  return 1
+}
+
+has_phase9_11_scope_language() {
+  local text="$1"
   local lower
   lower=$(printf '%s' "$text" | lower_text)
 
-  [[ "$lower" =~ (^|[^a-z0-9])sota([^a-z0-9]|$) ]] && return 0
-  [[ "$lower" =~ state-of-the-art ]] && return 0
-  [[ "$lower" =~ (^|[^a-z0-9])novel(ty)?([^a-z0-9]|$) ]] && return 0
-  [[ "$lower" =~ leaderboard ]] && return 0
-  [[ "$lower" =~ breakthrough ]] && return 0
-  [[ "$lower" =~ verified[[:space:]_-]*claim ]] && return 0
-  [[ "$lower" =~ better[[:space:]]+than[[:space:]]+(prior|previous)[[:space:]]+work ]] && return 0
-  [[ "$lower" =~ outperform(s|ed|ing)?[[:space:]]+(prior|previous|baseline|sota|state-of-the-art) ]] && return 0
+  [[ "$lower" =~ phase[[:space:]_-]*(9|10|11)([^0-9]|$) ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])p(9|10|11)([^0-9]|$) ]] && return 0
+  [[ "$lower" =~ phase[[:space:]_-]*9/10/11 ]] && return 0
+  [[ "$lower" =~ (^|[^0-9])9/10/11([^0-9]|$) ]] && return 0
+  return 1
+}
+
+has_phase9_11_closure_or_performance_claim() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | lower_text)
+
+  has_phase9_11_scope_language "$text" || return 1
+
+  [[ "$lower" =~ (complete|completed|completion|closed|closure|done|finished) ]] && return 0
+  [[ "$lower" =~ (validated|verified|proven|claim[[:space:]_-]*ready|claim[[:space:]_-]*support[[:space:]_-]*ready) ]] && return 0
+  [[ "$lower" =~ scientific[[:space:]_-]*(go|closure|claim|verdict[[:space:]_-]*(accepted|passed|green|ready)) ]] && return 0
+  [[ "$lower" =~ performance[[:space:]_-]*(claim|result|metric|score|improv|gain|validated|verified|confirmed|ready) ]] && return 0
+  [[ "$lower" =~ (metric|score|result|mae|rmse|mape|accuracy)[[:space:]_-]*(improv|gain|beats?|outperform|verified|validated|confirmed) ]] && return 0
+  [[ "$lower" =~ (improv(ed|es|ement)?[[:space:]]+by|better[[:space:]]+than|beats?|outperform) ]] && return 0
   return 1
 }
 
@@ -287,20 +352,43 @@ ledger_text_is_complete() {
   return 0
 }
 
+phase9_11_evidence_text_is_complete() {
+  local text="$1"
+
+  has_field "$text" '(phase[[:space:]_-]*(9|10|11)|p(9|10|11)|9/10/11)' || return 1
+  has_field "$text" 'cache' || return 1
+  has_field "$text" 'provenance' || return 1
+  has_field "$text" 'tier[[:space:]_-]*2|tier2' || return 1
+  has_field "$text" 'source[[:space:]_-]*ledger|source_ledger' || return 1
+  has_field "$text" 'empirical[[:space:]_-]*(run|artifact|trace|output|evidence)|empirical_run' || return 1
+  has_field "$text" 'replay|validation|validated|mismatch[[:space:]_-]*count|command' || return 1
+  return 0
+}
+
 mapfile -t changed_paths < <(collect_paths)
-added_all="$(all_added_text || true)"
+ledger_added_text=""
+phase9_11_claim_support_text=""
 
 ledger_candidate=0
 for path in "${changed_paths[@]}" ; do
+  path_added_text="$(added_text_for_path "$path" || true)"
   if is_source_ledger_path "$path" ; then
     ledger_candidate=1
-    break
+    ledger_added_text+=$'\n'"$path_added_text"
+  fi
+  if ! is_validation_only_path "$path" ; then
+    phase9_11_claim_support_text+=$'\n'"$path_added_text"
   fi
 done
 
 ledger_present=0
-if [[ "$ledger_candidate" -eq 1 ]] && ledger_text_is_complete "$added_all" ; then
+if [[ "$ledger_candidate" -eq 1 ]] && ledger_text_is_complete "$ledger_added_text" ; then
   ledger_present=1
+fi
+
+phase9_11_evidence_present=0
+if phase9_11_evidence_text_is_complete "$phase9_11_claim_support_text" ; then
+  phase9_11_evidence_present=1
 fi
 
 if [[ "$dry_run" -eq 1 ]] ; then
@@ -339,6 +427,23 @@ for path in "${changed_paths[@]}" ; do
   if [[ -n "$added_text" ]] && has_claim55_targeting "$added_text" ; then
     emit_result "BLOCKED" "$path" "added direct claim_55 targeting"
     blocked=$((blocked + 1))
+    continue
+  fi
+
+  if [[ -n "$added_text" ]] && has_forbidden_public_claim_language "$added_text" ; then
+    emit_result "BLOCKED" "$path" "forbidden public claim wording"
+    blocked=$((blocked + 1))
+    continue
+  fi
+
+  if [[ -n "$added_text" ]] && has_phase9_11_closure_or_performance_claim "$added_text" ; then
+    if [[ "$phase9_11_evidence_present" -eq 1 ]] ; then
+      emit_result "ALLOWED" "$path" "Phase 9/10/11 claim language with complete evidence bundle in diff"
+      allowed=$((allowed + 1))
+    else
+      emit_result "REVIEW_REQUIRED" "$path" "Phase 9/10/11 closure/performance claim lacks cache/provenance/Tier2/source-ledger/empirical-run evidence"
+      review=$((review + 1))
+    fi
     continue
   fi
 
@@ -383,8 +488,8 @@ if [[ "${#changed_paths[@]}" -eq 0 ]] ; then
   echo "No changed files found."
 fi
 
-printf 'Research diff-scope summary: allowed=%d blocked=%d review_required=%d ledger_present=%d\n' \
-  "$allowed" "$blocked" "$review" "$ledger_present"
+printf 'Research diff-scope summary: allowed=%d blocked=%d review_required=%d ledger_present=%d phase9_11_evidence_present=%d\n' \
+  "$allowed" "$blocked" "$review" "$ledger_present" "$phase9_11_evidence_present"
 
 if [[ "$blocked" -gt 0 || "$review" -gt 0 ]] ; then
   echo "Research diff-scope guard failed: blocked or review-required edits are present." >&2
