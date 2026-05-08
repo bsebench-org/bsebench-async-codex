@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [OK] phase-7-10-u-runner-phase11-residual-input-contract (panel 91/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-08T16:42:56+02:00
+
+Phase    : phase-7-10-u-runner-phase11-residual-input-contract
+Etat     : approved (approved)
+Panel    : 91/100 (seuil 89)
+Quoi     : Phase 7.10.u - runner Phase 11 residual input contract
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-u-runner-phase11-residual-input-contract/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-u-runner-phase11-residual-input-contract/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-u-runner-phase11-residual-input-contract/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
