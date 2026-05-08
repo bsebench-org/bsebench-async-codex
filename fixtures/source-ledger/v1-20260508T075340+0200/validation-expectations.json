@@ -1,0 +1,61 @@
+{
+  "fixture_set": "source-ledger/v1-20260508T075340+0200",
+  "required_fields": [
+    "source_id",
+    "title",
+    "stable_url_or_doi",
+    "retrieval_date",
+    "metric",
+    "dataset",
+    "split",
+    "method",
+    "reported_value",
+    "bsebench_frozen_value",
+    "comparability",
+    "comparability_caveat"
+  ],
+  "allowed_comparability": [
+    "comparable",
+    "partial",
+    "not_comparable"
+  ],
+  "field_expectations": {
+    "stable_url_or_doi": "must be non-empty and contain a DOI or stable URL string",
+    "retrieval_date": "must be non-empty ISO date text",
+    "metric": "must name the exact metric and units",
+    "dataset": "must name the dataset, variant, or profile",
+    "split": "must name the train/test split, validation protocol, horizon, or run condition",
+    "method": "must name the external method or observer being compared",
+    "reported_value": "must be non-empty and traceable to the source row",
+    "bsebench_frozen_value": "must be non-empty and refer to the frozen BSEBench value being compared",
+    "comparability_caveat": "must be non-empty for every row, including comparable rows"
+  },
+  "case_expectations": [
+    {
+      "case_id": "pass-comparable-synthetic",
+      "expected_validator_result": "pass",
+      "expected_reason": "all required fields are present and comparability is comparable"
+    },
+    {
+      "case_id": "pass-partial-synthetic",
+      "expected_validator_result": "pass",
+      "expected_reason": "all required fields are present and caveat explains partial comparability"
+    },
+    {
+      "case_id": "pass-not-comparable-synthetic",
+      "expected_validator_result": "pass",
+      "expected_reason": "all required fields are present and caveat explains not-comparable status"
+    },
+    {
+      "case_id": "fail-missing-required-fields",
+      "expected_validator_result": "fail",
+      "expected_reason": "stable URL or DOI, retrieval date, dataset, split, reported value, BSEBench frozen value, and caveat are blank"
+    },
+    {
+      "case_id": "fail-comparable-blank-caveat",
+      "expected_validator_result": "fail",
+      "expected_reason": "comparable rows still require a non-empty caveat documenting why the comparison is allowed"
+    }
+  ],
+  "downstream_gate_expectation": "A downstream comparison task is incomplete if any row expected to support comparison lacks a required field, uses an unsupported comparability value, or leaves the caveat blank."
+}

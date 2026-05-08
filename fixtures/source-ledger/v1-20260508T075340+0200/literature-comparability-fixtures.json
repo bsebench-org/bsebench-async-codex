@@ -1,0 +1,91 @@
+{
+  "fixture_set": "source-ledger/v1-20260508T075340+0200",
+  "purpose": "Synthetic source-ledger rows for comparability validation only.",
+  "notes": [
+    "All reported values are synthetic fixtures, not literature evidence.",
+    "Rows are intended to exercise validator behavior, not benchmark quality.",
+    "No SOTA, novelty, leaderboard, breakthrough, or verified-claim conclusion is encoded."
+  ],
+  "rows": [
+    {
+      "case_id": "pass-comparable-synthetic",
+      "expected_validator_result": "pass",
+      "source_id": "synthetic-lit-comparable-001",
+      "title": "Synthetic Comparable Literature Row",
+      "stable_url_or_doi": "https://example.org/bsebench/source-ledger-fixtures/comparable-001",
+      "retrieval_date": "2026-05-08",
+      "metric": "synthetic RMSE percent",
+      "dataset": "SyntheticCellSet v0 fixed profile",
+      "split": "synthetic fixed test split A",
+      "method": "SyntheticObserverA",
+      "reported_value": "1.230 synthetic units",
+      "bsebench_frozen_value": "1.230 synthetic units",
+      "comparability": "comparable",
+      "comparability_caveat": "synthetic fixture uses the same metric, dataset, split, and method basis"
+    },
+    {
+      "case_id": "pass-partial-synthetic",
+      "expected_validator_result": "pass",
+      "source_id": "synthetic-lit-partial-001",
+      "title": "Synthetic Partial Literature Row",
+      "stable_url_or_doi": "https://example.org/bsebench/source-ledger-fixtures/partial-001",
+      "retrieval_date": "2026-05-08",
+      "metric": "synthetic RMSE percent",
+      "dataset": "SyntheticCellSet v0 fixed profile",
+      "split": "synthetic alternate validation horizon B",
+      "method": "SyntheticObserverA",
+      "reported_value": "2.340 synthetic units",
+      "bsebench_frozen_value": "2.100 synthetic units",
+      "comparability": "partial",
+      "comparability_caveat": "synthetic fixture shares metric and dataset but uses a different validation horizon"
+    },
+    {
+      "case_id": "pass-not-comparable-synthetic",
+      "expected_validator_result": "pass",
+      "source_id": "synthetic-lit-not-comparable-001",
+      "title": "Synthetic Not Comparable Literature Row",
+      "stable_url_or_doi": "https://example.org/bsebench/source-ledger-fixtures/not-comparable-001",
+      "retrieval_date": "2026-05-08",
+      "metric": "synthetic MAE percent",
+      "dataset": "SyntheticOtherCellSet v0 fixed profile",
+      "split": "synthetic source-only test split C",
+      "method": "SyntheticObserverB",
+      "reported_value": "3.210 synthetic units",
+      "bsebench_frozen_value": "1.230 synthetic units",
+      "comparability": "not_comparable",
+      "comparability_caveat": "synthetic fixture uses a different metric, dataset, split, and method basis"
+    },
+    {
+      "case_id": "fail-missing-required-fields",
+      "expected_validator_result": "fail",
+      "source_id": "synthetic-lit-missing-required-001",
+      "title": "Synthetic Missing Required Fields Row",
+      "stable_url_or_doi": "",
+      "retrieval_date": "",
+      "metric": "synthetic RMSE percent",
+      "dataset": "",
+      "split": "",
+      "method": "SyntheticObserverC",
+      "reported_value": "",
+      "bsebench_frozen_value": "",
+      "comparability": "partial",
+      "comparability_caveat": ""
+    },
+    {
+      "case_id": "fail-comparable-blank-caveat",
+      "expected_validator_result": "fail",
+      "source_id": "synthetic-lit-blank-caveat-001",
+      "title": "Synthetic Comparable Row With Blank Caveat",
+      "stable_url_or_doi": "https://example.org/bsebench/source-ledger-fixtures/blank-caveat-001",
+      "retrieval_date": "2026-05-08",
+      "metric": "synthetic RMSE percent",
+      "dataset": "SyntheticCellSet v0 fixed profile",
+      "split": "synthetic fixed test split A",
+      "method": "SyntheticObserverA",
+      "reported_value": "1.230 synthetic units",
+      "bsebench_frozen_value": "1.230 synthetic units",
+      "comparability": "comparable",
+      "comparability_caveat": ""
+    }
+  ]
+}
