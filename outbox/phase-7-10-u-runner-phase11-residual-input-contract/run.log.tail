@@ -1,0 +1,200 @@
+@@ -567,9 +799,7 @@
+         "ready": status == READY,
+         "summary": summary,
+         "matrix_reasons": matrix_reasons,
+-        "stats_dependency_identity": dict(stats_dependency_identity)
+-        if stats_dependency_identity is not None
+-        else None,
++        "stats_dependency_identity": _stats_dependency_description(stats_dependency_identity),
+         "required_units": dict(EXPECTED_UNITS),
+         "required_residual_components": list(DEFAULT_REQUIRED_RESIDUAL_COMPONENTS),
+         "configs": configs,
+diff --git a/tests/test_phase11_residual_input_contract.py b/tests/test_phase11_residual_input_contract.py
+index 7d41ed0602e3ccecb64831d48d7fa640fe03c27c..61aadd59e41385d40865c375910a0dfeff89ecc0
+--- a/tests/test_phase11_residual_input_contract.py
++++ b/tests/test_phase11_residual_input_contract.py
+@@ -113,63 +113,63 @@
+     assert "predicted_voltage" not in serialized
+ 
+ 
+-def test_missing_units_are_insufficient_metadata() -> None:
++def test_missing_units_are_not_ready() -> None:
+     config = _complete_config()
+     config.pop("units")
+ 
+     payload = _single_config_payload(config)
+     config_payload = _only_config(payload)
+ 
+-    assert payload["status"] == INSUFFICIENT_METADATA
+-    assert config_payload["status"] == INSUFFICIENT_METADATA
++    assert payload["status"] == NOT_READY
++    assert config_payload["status"] == NOT_READY
+     assert "missing_units" in _reason_codes(config_payload)
+ 
+ 
+-def test_missing_timebase_is_insufficient_metadata() -> None:
++def test_missing_timebase_is_not_ready() -> None:
+     config = _complete_config()
+     config.pop("cadence_s")
+ 
+     payload = _single_config_payload(config)
+     config_payload = _only_config(payload)
+ 
+-    assert config_payload["status"] == INSUFFICIENT_METADATA
++    assert config_payload["status"] == NOT_READY
+     assert "missing_timebase" in _reason_codes(config_payload)
+ 
+ 
+-def test_missing_residual_component_fields_are_insufficient_metadata() -> None:
++def test_missing_residual_component_fields_are_not_ready() -> None:
+     config = _complete_config()
+     config.pop("residual_components")
+ 
+     payload = _single_config_payload(config)
+     config_payload = _only_config(payload)
+ 
+-    assert config_payload["status"] == INSUFFICIENT_METADATA
++    assert config_payload["status"] == NOT_READY
+     assert "missing_residual_components" in _reason_codes(config_payload)
+ 
+ 
+-def test_missing_sample_count_is_insufficient_metadata() -> None:
++def test_missing_sample_count_is_not_ready() -> None:
+     config = _complete_config()
+     config.pop("sample_count")
+ 
+     payload = _single_config_payload(config)
+     config_payload = _only_config(payload)
+ 
+-    assert config_payload["status"] == INSUFFICIENT_METADATA
++    assert config_payload["status"] == NOT_READY
+     assert "missing_sample_count" in _reason_codes(config_payload)
+ 
+ 
+-def test_missing_stats_identity_is_insufficient_metadata() -> None:
++def test_missing_stats_identity_is_not_ready() -> None:
+     payload = build_residual_input_contract(
+         [_complete_config()],
+         stats_dependency_identity=None,
+     )
+     config_payload = _only_config(payload)
+ 
+-    assert config_payload["status"] == INSUFFICIENT_METADATA
++    assert config_payload["status"] == NOT_READY
+     assert "missing_stats_dependency_identity" in _reason_codes(config_payload)
+ 
+ 
+-def test_missing_provenance_and_cache_are_insufficient_metadata() -> None:
++def test_missing_provenance_and_cache_are_not_ready() -> None:
+     config = _complete_config()
+     config.pop("source_cache")
+     config.pop("provenance")
+@@ -177,10 +177,27 @@
+     payload = _single_config_payload(config)
+     config_payload = _only_config(payload)
+ 
+-    assert config_payload["status"] == INSUFFICIENT_METADATA
++    assert config_payload["status"] == NOT_READY
+     assert "missing_source_cache_readiness" in _reason_codes(config_payload)
++    assert "missing_provenance" in _reason_codes(config_payload)
+ 
+ 
++def test_unresolved_cache_requirements_are_insufficient_metadata() -> None:
++    config = _complete_config()
++    config["source_cache"] = {
++        "status": INSUFFICIENT_METADATA,
++        "cache_root": "/tmp/not-emitted",
++        "unresolved_requirements": ["metadata row for temperature bucket"],
++    }
++
++    payload = _single_config_payload(config)
++    config_payload = _only_config(payload)
++
++    assert config_payload["status"] == INSUFFICIENT_METADATA
++    assert payload["status"] == NOT_READY
++    assert "source_cache_unverified" in _reason_codes(config_payload)
++
++
+ def test_missing_discoverable_cache_files_are_not_ready() -> None:
+     config = _complete_config()
+     config["source_cache"] = {
+@@ -203,7 +220,7 @@
+     payload = _single_config_payload(config)
+     config_payload = _only_config(payload)
+ 
+-    assert config_payload["status"] == INSUFFICIENT_METADATA
++    assert config_payload["status"] == NOT_READY
+     assert "missing_pcrlb_mad_floor" in _reason_codes(config_payload)
+ 
+ 
+@@ -234,13 +251,13 @@
+     assert payload["matrix_reasons"][0]["code"] == "empty_config_matrix"
+ 
+ 
+-def test_all_insufficient_matrix_is_non_ready_at_matrix_level() -> None:
++def test_all_blocked_matrix_is_not_ready_at_matrix_level() -> None:
+     config = _complete_config()
+     config.pop("sample_count")
+ 
+     payload = _single_config_payload(config)
+ 
+-    assert payload["status"] == INSUFFICIENT_METADATA
++    assert payload["status"] == NOT_READY
+     assert payload["ready"] is False
+     assert payload["matrix_reasons"][0]["code"] == "all_configs_non_ready"
+ 
+@@ -272,6 +289,34 @@
+     assert payload["config_labels"] == ["Config A"]
+ 
+ 
++def test_output_metadata_describes_inputs_without_local_paths() -> None:
++    config = _complete_config()
++    config["provenance"]["source"] = "/mnt/private/source-manifest.yaml"
++    payload = _single_config_payload(
++        config,
++        stats_identity={
++            "package": "bsebench-stats",
++            "version": "0.1.test",
++            "path": "/tmp/local-stats-src",
++        },
++    )
++    config_payload = _only_config(payload)
++
++    assert config_payload["metadata"]["identifiers"]["dataset"] == "yao"
++    assert config_payload["metadata"]["units"] == {
++        "voltage": "V",
++        "current": "A",
++        "time": "s",
++    }
++    assert config_payload["metadata"]["source_cache"]["cache_root_present"] is True
++    assert config_payload["metadata"]["provenance"]["source_present"] is True
++    assert payload["stats_dependency_identity"]["path_present"] is True
++    serialized = json.dumps(payload, allow_nan=False)
++    assert "/tmp/local-stats-src" not in serialized
++    assert "/tmp/sanitized-cache" not in serialized
++    assert "/mnt/private/source-manifest.yaml" not in serialized
++
++
+ def test_monotonic_time_vector_satisfies_timebase() -> None:
+     config = _complete_config()
+     config.pop("cadence_s")
+
+tokens used
+193,393
+Implemented and committed `cf65627` (`GLASSBOX [role: worker-codex-FR] harden P11`).
+
+Changed:
+- Hardened Phase 11 residual input contract to fail closed as `not_ready` for missing required units, timebase, sample counts, residual components, PCRLB/MAD inputs, stats identity, provenance, or cache readiness.
+- Added sanitized per-config metadata summaries for identifiers, units, timebase, residual components, PCRLB/MAD floor inputs, source/cache readiness, provenance, and stats dependency identity.
+- Removed local path emission from the script output; dry-run JSON uses presence/readiness fields and stats commit identity instead.
+- Expanded focused tests for fail-closed behavior, `insufficient_metadata`, and local-path redaction.
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_phase11_residual_input_contract.py -q` → 18 passed
+- Real dry-run over current Phase 11 candidates → `status=not_ready`, `ready=0/5`, `not_ready=5`, no local paths in JSON
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q` → 368 passed, 5 deselected
+- `uv run --locked --all-extras ruff check .`
+- `uv run --locked --all-extras ruff format --check .`
+- `git diff --check`
+
+Only touched the three Phase 11 runner contract files; no protected files were edited.
