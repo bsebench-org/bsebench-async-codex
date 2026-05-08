@@ -1,0 +1,23 @@
+To: akir.oussama@gmail.com
+Subject: [BLOCKED] phase-7-10-l-stats-hinf-fragility-threshold-calibration (panel 60/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-08T09:54:49+02:00
+
+Phase    : phase-7-10-l-stats-hinf-fragility-threshold-calibration
+Etat     : blocked (escalated)
+Panel    : 60/100 (seuil 89)
+Quoi     : Phase 7.10.l - stats Hinf fragility threshold calibration
+Prochaine: phase-7-10-ai-datasets-manifest-source-identity-gap-report
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-l-stats-hinf-fragility-threshold-calibration/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-l-stats-hinf-fragility-threshold-calibration/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-l-stats-hinf-fragility-threshold-calibration/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
+
+ATTENTION : chef-daemon est PAUSE.
+Action :
+  (a) supprime outbox/_blocks/phase-7-10-l-stats-hinf-fragility-threshold-calibration.block pour reprendre, OU
+  (b) queue une fix-BRIEF dans inbox/ qui repond aux preoccupations.
+
+ADVISOR_CHECK : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-l-stats-hinf-fragility-threshold-calibration/ADVISOR_CHECK.md
