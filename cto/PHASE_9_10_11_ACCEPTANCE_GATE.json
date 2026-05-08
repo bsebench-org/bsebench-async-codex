@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-09T01:31:34+02:00",
+  "scope": {
+    "included_phases": [9, 10, 11],
+    "excluded_later_phases": true,
+    "status": "gate_definition_only"
+  },
+  "global_guardrails": {
+    "fail_closed": true,
+    "separate_tooling_from_scientific_closure": true,
+    "uploads_allowed": false,
+    "dataset_downloads_allowed": false,
+    "thesis_edits_allowed": false,
+    "roadmap_edits_allowed": false,
+    "claim_registry_edits_allowed": false,
+    "protected_claim_target_edits_allowed": false,
+    "public_comparison_claims_allowed": false,
+    "public_benchmark_claims_allowed": false
+  },
+  "scientific_required_evidence": [
+    "local_cache_readiness",
+    "provenance_identity",
+    "tier2_source_files",
+    "source_ledger",
+    "empirical_run_artifacts",
+    "finite_metric_outputs",
+    "independent_replay_or_validation"
+  ],
+  "tooling_acceptance": {
+    "status": "criteria_defined",
+    "requires": [
+      "phase_scope_is_limited_to_9_10_11",
+      "tooling_status_is_separate_from_scientific_status",
+      "every_scientific_evidence_item_is_required",
+      "missing_scientific_evidence_forces_no_go",
+      "guardrails_block_protected_edits_and_external_data_side_effects"
+    ]
+  },
+  "phases": [
+    {
+      "phase": 9,
+      "name": "profile-axis stress",
+      "tooling_gate": {
+        "status": "criteria_defined",
+        "required_tooling": [
+          "profile_axis_tier2_cache_audit",
+          "profile_empirical_scheduler",
+          "profile_verdict_input_validator",
+          "source_ledger_linkage"
+        ]
+      },
+      "scientific_closure": {
+        "status": "NO_GO",
+        "reason": "required scientific evidence is not complete in this checklist"
+      },
+      "evidence": {
+        "local_cache_readiness": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "local read-only cache evidence for all accepted profile-axis jobs"
+        },
+        "provenance_identity": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "loader-facing provenance identity for every accepted source"
+        },
+        "tier2_source_files": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "Tier2 source files mapped to each accepted profile job"
+        },
+        "source_ledger": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "source-ledger rows for profile-axis comparability"
+        },
+        "empirical_run_artifacts": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "real empirical profile-run artifacts"
+        },
+        "finite_metric_outputs": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "finite metric outputs for accepted empirical runs"
+        },
+        "independent_replay_or_validation": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "independent replay or validation of accepted artifacts"
+        }
+      }
+    },
+    {
+      "phase": 10,
+      "name": "aging and SOH generalization",
+      "tooling_gate": {
+        "status": "criteria_defined",
+        "required_tooling": [
+          "aging_soh_tier2_cache_audit",
+          "aging_empirical_scheduler",
+          "aging_verdict_input_validator",
+          "source_ledger_linkage"
+        ]
+      },
+      "scientific_closure": {
+        "status": "NO_GO",
+        "reason": "required scientific evidence is not complete in this checklist"
+      },
+      "evidence": {
+        "local_cache_readiness": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "local read-only cache evidence for all accepted aging jobs"
+        },
+        "provenance_identity": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "loader-facing provenance identity for every accepted aging source"
+        },
+        "tier2_source_files": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "Tier2 source files mapped to accepted SOH and aging bins"
+        },
+        "source_ledger": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "source-ledger rows for aging and SOH comparability"
+        },
+        "empirical_run_artifacts": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "real empirical aging and SOH artifacts"
+        },
+        "finite_metric_outputs": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "finite metric outputs for accepted empirical runs"
+        },
+        "independent_replay_or_validation": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "independent replay or validation of accepted artifacts"
+        }
+      }
+    },
+    {
+      "phase": 11,
+      "name": "residual decomposition",
+      "tooling_gate": {
+        "status": "criteria_defined",
+        "required_tooling": [
+          "residual_tier2_cache_audit",
+          "residual_trace_scheduler",
+          "residual_verdict_input_validator",
+          "source_ledger_linkage"
+        ]
+      },
+      "scientific_closure": {
+        "status": "NO_GO",
+        "reason": "required scientific evidence is not complete in this checklist"
+      },
+      "evidence": {
+        "local_cache_readiness": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "local read-only cache evidence for all accepted residual jobs"
+        },
+        "provenance_identity": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "loader-facing provenance identity for every accepted residual source"
+        },
+        "tier2_source_files": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "Tier2 source files mapped to accepted residual inputs"
+        },
+        "source_ledger": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "source-ledger rows for residual decomposition inputs"
+        },
+        "empirical_run_artifacts": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "real empirical residual trace artifacts"
+        },
+        "finite_metric_outputs": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "finite metric outputs for accepted residual traces"
+        },
+        "independent_replay_or_validation": {
+          "status": "missing",
+          "required_for": "scientific_closure",
+          "blocker_if_missing": true,
+          "description": "independent replay or validation of accepted artifacts"
+        }
+      }
+    }
+  ]
+}
