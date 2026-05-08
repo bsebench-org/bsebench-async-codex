@@ -1,0 +1,200 @@
++    sample_counts = {len(values) for values in residuals_by_filter.values()}
++    assert len(sample_counts) == 1
++    return {
++        "status": "ok",
++        "config": {"label": label},
++        "retained_samples": sample_counts.pop(),
++        "filters": {
++            filter_label: _ok_filter(residuals_by_filter[filter_label])
++            for filter_label in FILTER_LABELS
++        },
++    }
++
++
++def _evidence_payload(strong_peers: Sequence[str]) -> dict[str, object]:
++    config_labels = [
++        "cfg_a",
++        "cfg_b",
++        "NASA B0005 T24",
++        "cfg_c",
++        "cfg_d",
++        "cfg_e",
++    ][: len(strong_peers)]
++    trace = {
++        "schema_version": "1.0",
++        "script": "scripts/residual_trace_5x5.py",
++        "config_labels": config_labels,
++        "filter_labels": list(FILTER_LABELS),
++        "summary": {
++            "ok_configs": len(config_labels),
++            "error_configs": 0,
++            "ok_filter_runs": len(config_labels) * len(FILTER_LABELS),
++            "error_filter_runs": 0,
++        },
++        "configs": {
++            config_label: _config_from_residuals(
++                config_label,
++                _residuals_for_strong_peer(strong_peer),
++            )
++            for config_label, strong_peer in zip(config_labels, strong_peers, strict=True)
++        },
++    }
++    return {
++        "schema_version": "1.0",
++        "script": "scripts/hinf_residual_evidence_5x5.py",
++        "scientific_verdict": "none",
++        "claim_target": "new_hinf_candidate_not_claim_55",
++        "mechanical_evidence_only": True,
++        "claim_55_targeted": False,
++        "requirements": {
++            "stats_require_ok_configs": len(config_labels),
++            "stats_min_ok_filters": len(FILTER_LABELS),
++        },
++        "trace": trace,
++        "residual_covariance_panel": build_residual_covariance_panel(
++            trace,
++            require_ok_configs=len(config_labels),
++            min_ok_filters=len(FILTER_LABELS),
++        ),
++        "residual_variance_decomposition": build_residual_variance_decomposition(
++            trace,
++            require_ok_configs=len(config_labels),
++            min_ok_filters=len(FILTER_LABELS),
++        ),
++    }
++
++
++def _write_evidence(tmp_path: Path, payload: Mapping[str, object]) -> Path:
++    evidence_path = tmp_path / "hinf_residual_evidence_5x5.json"
++    evidence_path.write_text(json.dumps(payload, allow_nan=False), encoding="utf-8")
++    return evidence_path
++
++
++@pytest.mark.fast
++def test_hinf_null_control_stable_seed_replay_writes_identical_json(tmp_path: Path) -> None:
++    evidence_path = _write_evidence(tmp_path, _evidence_payload(["EKF"] * 5))
++    first_path = tmp_path / "first.json"
++    second_path = tmp_path / "second.json"
++
++    first = run_hinf_null_control_audit(
++        evidence_path,
++        first_path,
++        seed=20260508,
++        bootstrap_resamples=64,
++    )
++    second = run_hinf_null_control_audit(
++        evidence_path,
++        second_path,
++        seed=20260508,
++        bootstrap_resamples=64,
++    )
++
++    assert first == second
++    assert json.loads(first_path.read_text(encoding="utf-8")) == first
++    assert json.loads(second_path.read_text(encoding="utf-8")) == first
++    source = first["source_inputs"]["evidence"]
++    assert source["status"] == "read"
++    assert source["path"] == str(evidence_path)
++    assert source["sha256"]
++    policy = first["null_control_policy"]
++    assert policy["seed"] == 20260508
++    assert policy["statistic_name"] == "target_top_margin_abs_correlation"
++    assert policy["margin_tolerance"] == pytest.approx(0.05)
++    json.dumps(first, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_hinf_null_control_strengthens_clearly_separated_synthetic_case() -> None:
++    report = build_hinf_null_control_audit(
++        _evidence_payload(["EKF"] * 5),
++        seed=1234,
++        bootstrap_resamples=64,
++        margin_tolerance=0.05,
++    )
++
++    observed = report["mechanical_evidence"]["observed_statistic"]
++    control = report["mechanical_evidence"]["null_control"]
++    assert observed["value"] == pytest.approx(1.0)
++    assert observed["strongest_peer"]["peer_filter"] == "EKF"
++    assert control["null_control_statistic"] == pytest.approx(1.0)
++    assert report["mechanical_evidence"]["mechanical_effect"] == "strengthens"
++    assert report["falsification_gate"] == {
++        "blocking_fragility": False,
++        "candidate_status": "not_flagged_fragile",
++        "mechanical_evidence_effect": "strengthens",
++        "null_control_overlap": False,
++        "observed_margin_overlaps_tolerance": False,
++        "pass": True,
++        "policy": (
++            "blocking fragility prevents downstream claim registration support; "
++            "this audit provides no scientific verdict"
++        ),
++        "risk_count": 0,
++        "risk_ids": [],
++        "status": "null_control_separated",
++    }
++    encoded = json.dumps(report, sort_keys=True).lower()
++    for forbidden in ("verified", "novel", "sota", "thesis"):
++        assert forbidden not in encoded
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_hinf_null_control_blocks_overlapping_fragile_synthetic_case() -> None:
++    report = build_hinf_null_control_audit(
++        _evidence_payload(["EKF", "EKF", "EKF", "EKF", "UKFDef", "UKFDef"]),
++        seed=99,
++        bootstrap_resamples=256,
++        margin_tolerance=0.05,
++    )
++
++    values = report["mechanical_evidence"]["values_compared"]
++    assert values["observed_statistic"] > 0.05
++    assert values["null_control_statistic"] <= 0.05
++    assert report["mechanical_evidence"]["mechanical_effect"] == "weakens"
++    gate = report["falsification_gate"]
++    assert gate["status"] == "blocking_fragility"
++    assert gate["pass"] is False
++    assert gate["blocking_fragility"] is True
++    assert gate["null_control_overlap"] is True
++    assert gate["candidate_status"] == "fragile"
++    assert gate["risk_ids"] == ["config_bootstrap_null_control_overlap"]
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_hinf_null_control_missing_artifact_failure(tmp_path: Path) -> None:
++    with pytest.raises(HinfNullControlAuditError, match="failed to read"):
++        run_hinf_null_control_audit(tmp_path / "missing_hinf_residual_evidence.json")
+
+tokens used
+167,275
+Implemented and committed the Hinf null-control audit.
+
+Commit: `6918416`  
+`GLASSBOX [role: codex-stats-engineer] Add Hinf null-control audit`
+
+Changed:
+- Added config-bootstrap null-control runner: [hinf_null_control.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-10-ah-stats-hinf-null-control-audit/src/bsebench_stats/runners/hinf_null_control.py)
+- Added CLI: [hinf_null_control_audit.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-10-ah-stats-hinf-null-control-audit/scripts/hinf_null_control_audit.py)
+- Exported runner APIs in [__init__.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-10-ah-stats-hinf-null-control-audit/src/bsebench_stats/runners/__init__.py)
+- Added focused tests: [test_hinf_null_control.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-phase-7-10-ah-stats-hinf-null-control-audit/tests/test_hinf_null_control.py)
+
+Real audit run against frozen runner artifact wrote `/tmp/hinf_null_control_audit_5x5.json`:
+- Evidence: `/mnt/c/doctorat/bsebench-org/bsebench-runner/outputs/hinf_residual_evidence_5x5.json`
+- Seed: `710010`
+- Statistic: `target_top_margin_abs_correlation`
+- Observed: `0.6217968840408938`
+- Null-control lower-tail statistic: `0.4537286599598518`
+- Tolerance: `0.05`
+- Gate: `null_control_separated`
+- Mechanical effect: `strengthens`, with no scientific claim verdict.
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_hinf_null_control.py -q` → `4 passed`
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q` → `174 passed`
+- `uv run --locked --all-extras ruff check .` → passed
+- `uv run --locked --all-extras ruff format --check .` → passed
+- `git diff --check` → passed
+
+Stats worktree has no uncommitted changes; branch is ahead 1 and behind 1 relative to `origin/main`.
