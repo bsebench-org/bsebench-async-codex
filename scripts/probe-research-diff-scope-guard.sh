@@ -149,6 +149,62 @@ changed_file_list_comparison() {
   bash "$GUARD" --dry-run --paths "$paths" 2>&1
 }
 
+phase9_closure_without_evidence() {
+  local repo="$tmp_root/phase9-closure-without-evidence"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase9-verdict.md" \
+    'Phase 9 is complete, validated, and ready for performance claims.'
+  run_git_guard "$repo"
+}
+
+phase10_performance_without_evidence() {
+  local repo="$tmp_root/phase10-performance-without-evidence"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase10-performance.md" \
+    'P10 performance improved by 12 percent on the benchmark.'
+  run_git_guard "$repo"
+}
+
+phase11_with_complete_evidence() {
+  local repo="$tmp_root/phase11-with-complete-evidence"
+  init_repo "$repo"
+
+  mkdir -p "$repo/reports"
+  cat > "$repo/reports/phase11-verdict.md" <<'REPORT'
+Phase 11 is complete for this synthetic fixture and reports performance.
+REPORT
+  cat > "$repo/reports/phase11-evidence.md" <<'EVIDENCE'
+# Phase 11 Evidence Bundle Fixture
+
+- cache: local cache hash fixture-cache-sha256
+- provenance: fixture manifest identity recorded
+- Tier2: fixture Tier2 dataset gate passed
+- source_ledger: reports/source-ledger.md
+- empirical_run: fixture-run-001
+- validation command: bash scripts/replay-fixture.sh
+- mismatch_count: 0
+EVIDENCE
+  git -C "$repo" add reports/phase11-verdict.md reports/phase11-evidence.md
+  git -C "$repo" commit -q -m "phase11 fixture with evidence"
+  run_git_guard "$repo"
+}
+
+phase12_closure_not_in_scope() {
+  local repo="$tmp_root/phase12-closure"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase12-verdict.md" \
+    'Phase 12 is complete in this unrelated fixture.'
+  run_git_guard "$repo"
+}
+
+public_benchmark_without_ledger() {
+  local repo="$tmp_root/public-benchmark-without-ledger"
+  init_repo "$repo"
+  commit_file "$repo" "reports/public-benchmark.md" \
+    'This public benchmark has a clear winner.'
+  run_git_guard "$repo"
+}
+
 require_success_contains \
   "allowed validation-only change" \
   "[ALLOWED] scripts/check-research-diff-scope.sh -- validation-only guardrail tooling or fixture" \
@@ -188,5 +244,30 @@ require_failure_contains \
   "changed-file list comparison without diff" \
   "[REVIEW_REQUIRED] reports/sota-comparison.md -- comparison-like path supplied without diff or source ledger evidence" \
   changed_file_list_comparison
+
+require_failure_contains \
+  "Phase 9 closure without evidence" \
+  "[REVIEW_REQUIRED] reports/phase9-verdict.md -- Phase 9/10/11 closure/performance claim lacks cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  phase9_closure_without_evidence
+
+require_failure_contains \
+  "Phase 10 performance without evidence" \
+  "[REVIEW_REQUIRED] reports/phase10-performance.md -- Phase 9/10/11 closure/performance claim lacks cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  phase10_performance_without_evidence
+
+require_success_contains \
+  "Phase 11 with complete evidence" \
+  "[ALLOWED] reports/phase11-verdict.md -- Phase 9/10/11 claim language with complete evidence bundle in diff" \
+  phase11_with_complete_evidence
+
+require_success_contains \
+  "Phase 12 closure outside guard scope" \
+  "[ALLOWED] reports/phase12-verdict.md -- ordinary non-protected change" \
+  phase12_closure_not_in_scope
+
+require_failure_contains \
+  "public benchmark winner without ledger" \
+  "[REVIEW_REQUIRED] reports/public-benchmark.md -- comparison language lacks completed source ledger and comparability table" \
+  public_benchmark_without_ledger
 
 echo "PASS: research diff-scope guard fixtures passed ($passes checks)."
