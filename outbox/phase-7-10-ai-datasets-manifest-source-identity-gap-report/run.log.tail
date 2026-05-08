@@ -1,0 +1,200 @@
++        "files": [
++            {
++                "path": "data.csv",
++                "sha256": "a" * 64,
++                "size_bytes": 10,
++            }
++        ],
++        "citation_bibtex": citation_bibtex
++        if citation_bibtex is not None
++        else (
++            "@dataset{example2024,\n"
++            "  title = {Example source identity dataset},\n"
++            "  year = {2024}\n"
++            "}"
++        ),
++    }
++    if tier1 is not None:
++        payload["huggingface_tier1_repo"] = tier1
++    if tier2 is not None:
++        payload["huggingface_tier2_repo"] = tier2
++    if profiles is not None:
++        payload["profiles"] = profiles
++    if protocols is not None:
++        payload["protocols"] = protocols
++    return payload
++
++
++def _write_manifest(manifests_dir: Path, name: str, payload: dict[str, Any]) -> Path:
++    path = manifests_dir / f"{name}.yaml"
++    path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
++    return path
++
++
++def _records_by_id(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
++    return {str(record["manifest_id"]): record for record in report["manifests"]}
++
++
++def test_manifest_source_identity_ready_candidate_manifest(tmp_path: Path) -> None:
++    manifests_dir = tmp_path / "manifests"
++    manifests_dir.mkdir()
++    _write_manifest(
++        manifests_dir,
++        "ready_dataset",
++        _manifest(
++            "ready_dataset",
++            tier1="bsebench-org/ready-raw",
++            tier2="bsebench-org/ready",
++            profiles=["DST"],
++            protocols=["audit_j_v1"],
++        ),
++    )
++
++    report = build_manifest_source_identity_report(
++        manifests_dir,
++        repo_root=tmp_path,
++        candidate_phases=("phase8", "phase11"),
++    )
++
++    record = _records_by_id(report)["ready_dataset"]
++    assert record["source_identity_status"] == STATUS_READY
++    assert record["ready"] is True
++    assert record["missing_fields"] == []
++    assert report["evidence_ready"] is True
++    json.dumps(report, allow_nan=False)
++
++
++def test_manifest_source_identity_partial_candidate_gaps_are_not_ready(tmp_path: Path) -> None:
++    manifests_dir = tmp_path / "manifests"
++    manifests_dir.mkdir()
++    _write_manifest(
++        manifests_dir,
++        "partial_dataset",
++        _manifest(
++            "partial_dataset",
++            tier1="bsebench-org/partial-raw",
++        ),
++    )
++
++    report = build_manifest_source_identity_report(manifests_dir, repo_root=tmp_path)
++
++    record = _records_by_id(report)["partial_dataset"]
++    assert record["source_identity_status"] == STATUS_PARTIAL
++    assert record["ready"] is False
++    assert set(record["missing_fields"]) == {
++        "variant_or_profile",
++        "split_or_protocol",
++        "provenance_status",
++    }
++    assert record["fields"]["variant_or_profile"]["status"] == STATUS_MISSING_SOURCE_IDENTITY
++    assert "filenames" in record["fields"]["variant_or_profile"]["reason"]
++    assert report["evidence_ready"] is False
++
++
++def test_manifest_source_identity_missing_core_source_identity(tmp_path: Path) -> None:
++    manifests_dir = tmp_path / "manifests"
++    manifests_dir.mkdir()
++    _write_manifest(
++        manifests_dir,
++        "missing_source",
++        _manifest(
++            "missing_source",
++            source={
++                "canonical_url": None,
++                "canonical_doi": None,
++                "access_friction": "open",
++                "publication_title": "Missing locator dataset",
++                "publication_authors": ["Doe, J."],
++                "publication_venue": "Example Archive",
++                "publication_year": 2024,
++            },
++            tier1="bsebench-org/missing-raw",
++            tier2="bsebench-org/missing",
++            profiles=["DST"],
++            protocols=["audit_j_v1"],
++        ),
++    )
++
++    report = build_manifest_source_identity_report(manifests_dir, repo_root=tmp_path)
++
++    record = _records_by_id(report)["missing_source"]
++    assert record["source_identity_status"] == STATUS_MISSING_SOURCE_IDENTITY
++    assert record["fields"]["source_locator"]["status"] == STATUS_MISSING_SOURCE_IDENTITY
++    assert record["missing_fields"] == ["source_locator"]
++
++
++def test_manifest_source_identity_unknown_metadata_for_unreadable_yaml(tmp_path: Path) -> None:
++    manifests_dir = tmp_path / "manifests"
++    manifests_dir.mkdir()
++    (manifests_dir / "broken.yaml").write_text("name: [unterminated\n", encoding="utf-8")
++
++    report = build_manifest_source_identity_report(manifests_dir, repo_root=tmp_path)
++
++    record = report["manifests"][0]
++    assert record["manifest_id"] == "broken"
++    assert record["source_identity_status"] == STATUS_UNKNOWN_METADATA
++    assert record["unknown_fields"] == ["manifest_yaml"]
++    assert report["summary"]["status_counts"][STATUS_UNKNOWN_METADATA] == 1
++
++
++def test_manifest_source_identity_not_applicable_without_candidate_scope(tmp_path: Path) -> None:
++    manifests_dir = tmp_path / "manifests"
++    manifests_dir.mkdir()
++    _write_manifest(
++        manifests_dir,
++        "metadata_only",
++        _manifest(
++            "metadata_only",
++            source={
++                "canonical_url": "https://example.org/metadata-only",
++                "canonical_doi": None,
++                "access_friction": "open",
++                "publication_title": "Metadata only source identity dataset",
++                "publication_authors": ["Doe, J."],
++                "publication_venue": "Example Archive",
++                "publication_year": 2024,
++            },
++            tier1="bsebench-org/metadata-only-raw",
++            tier2="bsebench-org/metadata-only",
++        ),
++    )
++
++    report = build_manifest_source_identity_report(
++        manifests_dir,
++        repo_root=tmp_path,
++        candidate_phases=(),
++    )
++
++    record = _records_by_id(report)["metadata_only"]
++    assert record["source_identity_status"] == STATUS_READY
++    assert record["fields"]["canonical_doi"]["status"] == STATUS_NOT_APPLICABLE
++    assert record["fields"]["variant_or_profile"]["status"] == STATUS_NOT_APPLICABLE
++    assert record["fields"]["split_or_protocol"]["status"] == STATUS_NOT_APPLICABLE
++    assert set(record["not_applicable_fields"]) == {
++        "variant_or_profile",
++        "split_or_protocol",
++        "canonical_doi",
++    }
+
+tokens used
+343,523
+Implemented and committed.
+
+Commit: `0c4fbe6b45b4b8f58aed165bd9bffcab2359a139`  
+`GLASSBOX [role: datasets-provenance] add manifest source identity gap report`
+
+Changes:
+- Added read-only source identity report builder: [manifest_source_identity.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-ai-datasets-manifest-source-identity-gap-report/src/bsebench_datasets/manifest_source_identity.py)
+- Added CLI command: [audit_manifest_source_identity.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-ai-datasets-manifest-source-identity-gap-report/scripts/audit_manifest_source_identity.py)
+- Added focused coverage for `ready`, `partial`, `missing_source_identity`, `unknown_metadata`, and `not_applicable`: [test_manifest_source_identity.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-ai-datasets-manifest-source-identity-gap-report/tests/test_manifest_source_identity.py)
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_manifest_source_identity.py -q`
+- `uv run --locked --all-extras python scripts/audit_manifest_source_identity.py --allow-gaps --output /tmp/bsebench_manifest_source_identity_gap_report.json`
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q` → `315 passed, 29 deselected`
+- `uv run --locked --all-extras ruff check .`
+- `uv run --locked --all-extras ruff format --check .`
+- `git diff --check`
+- `git diff --cached --check`
+
+The repo manifest run reported `13` manifests, all `partial`, with no `ready` records while Phase 8/11 candidate profile/split fields remain absent. No protected claim, roadmap, thesis, or `claim_55` files were touched.
