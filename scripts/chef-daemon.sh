@@ -201,6 +201,19 @@ verify_and_merge() {
   local changed_files
   changed_files=$(git diff --name-status "origin/$base_branch"...HEAD 2>/dev/null || git diff-tree --no-commit-id --name-status -r HEAD 2>/dev/null || true)
 
+  local diff_scope_log
+  diff_scope_log=$(mktemp)
+  if ! bash "$ASYNC_REPO/scripts/check-research-diff-scope.sh" --dry-run --repo "$repo_dir" --base "origin/$base_branch" --head HEAD > "$diff_scope_log" 2>&1 ; then
+    write_verdict "$phase_id" "needs_fix" "research diff-scope guard failed" "$(tail -80 "$diff_scope_log")" "$changed_files"
+    rm -f "$diff_scope_log"
+    cd "$repo_dir" || return
+    git checkout main --quiet
+    return
+  fi
+  local diff_scope_tail
+  diff_scope_tail=$(tail -80 "$diff_scope_log")
+  rm -f "$diff_scope_log"
+
   # Verify commit metadata
   local author email body
   author=$(git log -1 --format=%an)
@@ -255,7 +268,7 @@ verify_and_merge() {
   fi
 
   local gate_tail
-  gate_tail=$(tail -50 "$gate_log")
+  gate_tail="$(printf '%s\n\n%s\n' "$diff_scope_tail" "$(tail -50 "$gate_log")")"
   rm -f "$gate_log"
 
   if [[ "$gates_ok" -eq 0 ]] ; then
