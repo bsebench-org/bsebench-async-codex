@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check-research-brief-gates.sh - lightweight guardrail check for research BRIEFs.
 #
-# Default mode checks staged and untracked Phase 7/8/11 BRIEF.md files. Pass
+# Default mode checks staged and untracked Phase 7/8/9/10/11 BRIEF.md files. Pass
 # explicit files for local review, or --all to audit every matching BRIEF.
 # This also accepts curated autonomy backlog BRIEFs under
 # cto/AUTONOMY_BACKLOG/<phase-id>/BRIEF.md before they are copied to inbox.
@@ -13,12 +13,13 @@ usage() {
 Usage:
   scripts/check-research-brief-gates.sh [--dry-run] [--staged|--all] [BRIEF.md ...]
 
-Checks Phase 7/8/11 inbox or autonomy-backlog BRIEFs for minimum research-gate wording:
+Checks Phase 7/8/9/10/11 inbox or autonomy-backlog BRIEFs for minimum research-gate wording:
   - falsification condition
   - validation/replay wording
   - no thesis/claim registry edits
   - no claim_55 targeting
   - no unsupported SOTA claims
+  - for Phase 9/10/11 BRIEFs, no unsupported closure/performance claims
 
 With no files, the default is --staged, which includes untracked BRIEFs.
 USAGE
@@ -69,7 +70,12 @@ fi
 
 is_research_brief() {
   local path="$1"
-  [[ "$path" =~ (^|/)(inbox|cto/AUTONOMY_BACKLOG)/phase-(7|8|11)[^/]*/BRIEF\.md$ ]]
+  [[ "$path" =~ (^|/)(inbox|cto/AUTONOMY_BACKLOG)/phase-(7|8|9|10|11)[^/]*/BRIEF\.md$ ]]
+}
+
+is_phase9_11_brief() {
+  local path="$1"
+  [[ "$path" =~ (^|/)(inbox|cto/AUTONOMY_BACKLOG)/phase-(9|10|11)[^/]*/BRIEF\.md$ ]]
 }
 
 collect_files() {
@@ -88,16 +94,24 @@ collect_files() {
         git diff --name-only --cached --diff-filter=AM -- \
           'inbox/phase-7*/BRIEF.md' \
           'inbox/phase-8*/BRIEF.md' \
+          'inbox/phase-9*/BRIEF.md' \
+          'inbox/phase-10*/BRIEF.md' \
           'inbox/phase-11*/BRIEF.md' \
           'cto/AUTONOMY_BACKLOG/phase-7*/BRIEF.md' \
           'cto/AUTONOMY_BACKLOG/phase-8*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-9*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-10*/BRIEF.md' \
           'cto/AUTONOMY_BACKLOG/phase-11*/BRIEF.md'
         git ls-files --others --exclude-standard -- \
           'inbox/phase-7*/BRIEF.md' \
           'inbox/phase-8*/BRIEF.md' \
+          'inbox/phase-9*/BRIEF.md' \
+          'inbox/phase-10*/BRIEF.md' \
           'inbox/phase-11*/BRIEF.md' \
           'cto/AUTONOMY_BACKLOG/phase-7*/BRIEF.md' \
           'cto/AUTONOMY_BACKLOG/phase-8*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-9*/BRIEF.md' \
+          'cto/AUTONOMY_BACKLOG/phase-10*/BRIEF.md' \
           'cto/AUTONOMY_BACKLOG/phase-11*/BRIEF.md'
       } | sort -u
       ;;
@@ -138,7 +152,7 @@ check_brief() {
   fi
 
   if ! is_research_brief "$path" ; then
-    echo "[SKIP] $path (not inbox/phase-7, phase-8, or phase-11 BRIEF.md)"
+    echo "[SKIP] $path (not inbox/phase-7, phase-8, phase-9, phase-10, or phase-11 BRIEF.md)"
     skipped=$((skipped + 1))
     return
   fi
@@ -170,6 +184,18 @@ check_brief() {
     "$path" \
     "no unsupported SOTA claims" \
     '((do not|must not|no|not|without|unsupported)[[:alnum:]_ ./,-]{0,140}sota|sota[[:alnum:]_ ./,-]{0,140}(unsupported|source ledger|doi|stable url|comparability|claim|status|novelty))'
+
+  if is_phase9_11_brief "$path" ; then
+    require_pattern \
+      "$path" \
+      "no unsupported Phase 9/10/11 closure or performance claims" \
+      '((do not|must not|no|not|without|unsupported).{0,180}(closure|complete|completion|performance|benchmark|winner|leaderboard|scientific verdict)|(closure|complete|completion|performance).{0,180}(unsupported|evidence|cache|provenance|tier[[:space:]_-]*2|source[[:space:]_-]*ledger|empirical))'
+
+    require_pattern \
+      "$path" \
+      "Phase 9/10/11 fail-closed evidence terms" \
+      '(cache|local[_ -]?cache).{0,240}(provenance|tier[[:space:]_-]*2|tier2|source[[:space:]_-]*ledger|empirical)|((provenance|tier[[:space:]_-]*2|tier2|source[[:space:]_-]*ledger|empirical).{0,240}(cache|local[_ -]?cache))'
+  fi
 }
 
 if [[ "$dry_run" -eq 1 ]] ; then
@@ -188,7 +214,7 @@ for path in "${files[@]}" ; do
 done
 
 if [[ "$checked" -eq 0 ]] ; then
-  echo "No matching Phase 7/8/11 BRIEF.md files found."
+  echo "No matching Phase 7/8/9/10/11 BRIEF.md files found."
 fi
 
 if [[ "$failures" -gt 0 ]] ; then

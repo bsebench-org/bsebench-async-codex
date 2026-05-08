@@ -125,6 +125,14 @@ unsupported_comparison_language() {
   run_git_guard "$repo"
 }
 
+negated_comparison_guardrail_language() {
+  local repo="$tmp_root/negated-comparison-guardrail"
+  init_repo "$repo"
+  commit_file "$repo" "reports/guardrail.md" \
+    'Do not make SOTA, novelty, winner, leaderboard, or public benchmark claims.'
+  run_git_guard "$repo"
+}
+
 source_ledger_present_comparison() {
   local repo="$tmp_root/source-ledger-present"
   init_repo "$repo"
@@ -146,6 +154,60 @@ LEDGER
 changed_file_list_comparison() {
   local paths="$tmp_root/paths.txt"
   printf '%s\n' "reports/sota-comparison.md" > "$paths"
+  bash "$GUARD" --dry-run --paths "$paths" 2>&1
+}
+
+unsupported_phase9_closure() {
+  local repo="$tmp_root/unsupported-phase9-closure"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase9-closure.md" \
+    'Phase 9 is complete and ready for closure.'
+  run_git_guard "$repo"
+}
+
+unsupported_phase10_performance() {
+  local repo="$tmp_root/unsupported-phase10-performance"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase10-performance.md" \
+    'Phase 10 performance improved across the target matrix.'
+  run_git_guard "$repo"
+}
+
+forbidden_phase11_public_claim() {
+  local repo="$tmp_root/forbidden-phase11-public-claim"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase11-benchmark.md" \
+    'Phase 11 is a public benchmark winner and leaderboard result.'
+  run_git_guard "$repo"
+}
+
+phase9_closure_with_required_evidence() {
+  local repo="$tmp_root/phase9-closure-evidence"
+  init_repo "$repo"
+
+  mkdir -p "$repo/reports"
+  cat > "$repo/reports/phase9-closure.md" <<'REPORT'
+Phase 9 complete for this fixture only.
+
+- cache_root: /redacted/tier2
+- provenance_record: reports/provenance.json
+- tier2_status: ready
+- source-ledger: reports/source-ledger.md
+- empirical_run_id: fixture-run-001
+REPORT
+  cat > "$repo/reports/source-ledger.md" <<'LEDGER'
+| source_id | doi_or_url | retrieved_at | metric | dataset | split | reported_value | bsebench_value | comparability | caveat |
+|---|---|---|---|---|---|---|---|---|---|
+| fixture-paper | https://doi.org/10.1234/example | 2026-05-08 | MAE SOC percent | CALCE A123 | fixed test profile | 1.20 | 1.30 | partial | synthetic fixture, not a real claim |
+LEDGER
+  git -C "$repo" add reports/phase9-closure.md reports/source-ledger.md
+  git -C "$repo" commit -q -m "phase9 closure fixture with evidence"
+  run_git_guard "$repo"
+}
+
+changed_file_list_phase_claim() {
+  local paths="$tmp_root/phase-paths.txt"
+  printf '%s\n' "reports/phase9-performance-claim.md" > "$paths"
   bash "$GUARD" --dry-run --paths "$paths" 2>&1
 }
 
@@ -180,6 +242,11 @@ require_failure_contains \
   unsupported_comparison_language
 
 require_success_contains \
+  "negated comparison guardrail language" \
+  "[ALLOWED] reports/guardrail.md -- ordinary non-protected change" \
+  negated_comparison_guardrail_language
+
+require_success_contains \
   "source-ledger-present comparison" \
   "[ALLOWED] reports/comparison.md -- comparison language with completed source ledger in diff" \
   source_ledger_present_comparison
@@ -188,5 +255,30 @@ require_failure_contains \
   "changed-file list comparison without diff" \
   "[REVIEW_REQUIRED] reports/sota-comparison.md -- comparison-like path supplied without diff or source ledger evidence" \
   changed_file_list_comparison
+
+require_failure_contains \
+  "unsupported Phase 9 closure language" \
+  "[REVIEW_REQUIRED] reports/phase9-closure.md -- Phase 9/10/11 closure/performance language lacks cache, provenance, Tier2, source-ledger, or empirical-run evidence" \
+  unsupported_phase9_closure
+
+require_failure_contains \
+  "unsupported Phase 10 performance language" \
+  "[REVIEW_REQUIRED] reports/phase10-performance.md -- Phase 9/10/11 closure/performance language lacks cache, provenance, Tier2, source-ledger, or empirical-run evidence" \
+  unsupported_phase10_performance
+
+require_failure_contains \
+  "forbidden Phase 11 public benchmark claim" \
+  "[BLOCKED] reports/phase11-benchmark.md -- Phase 9/10/11 public benchmark, SOTA, novelty, winner, or leaderboard claim" \
+  forbidden_phase11_public_claim
+
+require_success_contains \
+  "Phase 9 closure with required evidence markers" \
+  "[ALLOWED] reports/phase9-closure.md -- Phase 9/10/11 closure/performance language with cache, provenance, Tier2, source-ledger, and empirical-run evidence in diff" \
+  phase9_closure_with_required_evidence
+
+require_failure_contains \
+  "changed-file list Phase 9 claim without diff" \
+  "[REVIEW_REQUIRED] reports/phase9-performance-claim.md -- Phase 9/10/11 claim-like path supplied without diff or required evidence" \
+  changed_file_list_phase_claim
 
 echo "PASS: research diff-scope guard fixtures passed ($passes checks)."

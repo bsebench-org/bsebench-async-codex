@@ -18,6 +18,7 @@ Usage:
 Checks changed paths and, when a git diff is available, added text for:
   - protected thesis, claim registry, claims/registry.yaml, roadmap, claim_55 edits
   - unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim wording
+  - unsupported Phase 9/10/11 closure or performance wording
   - comparison wording backed by a complete source ledger and comparability table
 
 Default git mode compares origin/main...HEAD in the current repository.
@@ -229,17 +230,68 @@ has_claim55_targeting() {
 
 has_comparison_language() {
   local text="$1"
+  local candidate
   local lower
-  lower=$(printf '%s' "$text" | lower_text)
+  candidate="$(claim_assertion_text "$text")"
+  lower=$(printf '%s' "$candidate" | lower_text)
 
   [[ "$lower" =~ (^|[^a-z0-9])sota([^a-z0-9]|$) ]] && return 0
   [[ "$lower" =~ state-of-the-art ]] && return 0
   [[ "$lower" =~ (^|[^a-z0-9])novel(ty)?([^a-z0-9]|$) ]] && return 0
   [[ "$lower" =~ leaderboard ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])winner([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ public[[:space:]_-]*benchmark ]] && return 0
   [[ "$lower" =~ breakthrough ]] && return 0
   [[ "$lower" =~ verified[[:space:]_-]*claim ]] && return 0
   [[ "$lower" =~ better[[:space:]]+than[[:space:]]+(prior|previous)[[:space:]]+work ]] && return 0
   [[ "$lower" =~ outperform(s|ed|ing)?[[:space:]]+(prior|previous|baseline|sota|state-of-the-art) ]] && return 0
+  return 1
+}
+
+has_phase9_11_reference() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | lower_text)
+
+  [[ "$lower" =~ phase[[:space:]_.-]*(9|10|11)([^0-9]|$) ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])p(9|10|11)([^0-9]|$) ]] && return 0
+  return 1
+}
+
+claim_assertion_text() {
+  printf '%s\n' "$1" |
+    grep -Eiv '(^|[[:space:]>#*-])(do not|must not|no[[:space:]]|not[[:space:]]|without|unsupported|forbid|forbidden|avoid|refuse|fail closed|fail-closed|blocked by|missing|required behavior)' ||
+    true
+}
+
+has_forbidden_phase9_11_public_claim() {
+  local text="$1"
+  local candidate
+  local lower
+  candidate="$(claim_assertion_text "$text")"
+  lower=$(printf '%s' "$candidate" | lower_text)
+
+  has_phase9_11_reference "$candidate" || return 1
+  [[ "$lower" =~ (^|[^a-z0-9])sota([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ state-of-the-art ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])novel(ty)?([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])winner([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ leaderboard ]] && return 0
+  [[ "$lower" =~ public[[:space:]_-]*benchmark ]] && return 0
+  return 1
+}
+
+has_phase9_11_closure_or_performance_claim() {
+  local text="$1"
+  local candidate
+  local lower
+  candidate="$(claim_assertion_text "$text")"
+  lower=$(printf '%s' "$candidate" | lower_text)
+
+  has_phase9_11_reference "$candidate" || return 1
+  [[ "$lower" =~ (complete|completed|completion|closure|done|go[[:space:]/-]*no-go|go[[:space:]]+status|green|accepted|verified|ready[[:space:]_-]*for[[:space:]_-]*claim) ]] && return 0
+  [[ "$lower" =~ closed([[:space:]]+(phase|task|work|out|status|as)|[.,;:]|$) ]] && return 0
+  [[ "$lower" =~ (performance|perf|accuracy|rmse|mae|mape|improv(ed|ement)?|regression[[:space:]_-]*passed|benchmark[[:space:]_-]*result) ]] && return 0
   return 1
 }
 
@@ -259,6 +311,14 @@ looks_like_comparison_path() {
   lower=$(printf '%s' "$path" | lower_text)
 
   [[ "$lower" =~ (sota|state-of-the-art|novelty|leaderboard|comparison|comparability|benchmark) ]]
+}
+
+looks_like_phase9_11_claim_path() {
+  local path="$1"
+  local lower
+  lower=$(printf '%s' "$path" | lower_text)
+
+  [[ "$lower" =~ (phase[_.-]?(9|10|11)|p(9|10|11)).*(closure|complete|performance|benchmark|verdict|claim) ]]
 }
 
 has_field() {
@@ -287,6 +347,18 @@ ledger_text_is_complete() {
   return 0
 }
 
+phase9_11_evidence_is_complete() {
+  local text="$1"
+
+  has_field "$text" '(cache|cached|local[_ -]?cache|cache[_ -]?root)' || return 1
+  has_field "$text" 'provenance' || return 1
+  has_field "$text" 'tier[[:space:]_-]*2|tier2' || return 1
+  has_field "$text" 'source[[:space:]_-]*ledger|source_ledger|source-ledger' || return 1
+  has_field "$text" 'empirical[[:space:]_-]*(run|evidence|artifact)|run[_ -]?id|run[[:space:]_-]*command' || return 1
+  ledger_text_is_complete "$text" || return 1
+  return 0
+}
+
 mapfile -t changed_paths < <(collect_paths)
 added_all="$(all_added_text || true)"
 
@@ -301,6 +373,11 @@ done
 ledger_present=0
 if [[ "$ledger_candidate" -eq 1 ]] && ledger_text_is_complete "$added_all" ; then
   ledger_present=1
+fi
+
+phase9_11_evidence_present=0
+if phase9_11_evidence_is_complete "$added_all" ; then
+  phase9_11_evidence_present=1
 fi
 
 if [[ "$dry_run" -eq 1 ]] ; then
@@ -342,6 +419,23 @@ for path in "${changed_paths[@]}" ; do
     continue
   fi
 
+  if [[ -n "$added_text" ]] && has_forbidden_phase9_11_public_claim "$added_text" ; then
+    emit_result "BLOCKED" "$path" "Phase 9/10/11 public benchmark, SOTA, novelty, winner, or leaderboard claim"
+    blocked=$((blocked + 1))
+    continue
+  fi
+
+  if [[ -n "$added_text" ]] && has_phase9_11_closure_or_performance_claim "$added_text" ; then
+    if [[ "$phase9_11_evidence_present" -eq 1 ]] ; then
+      emit_result "ALLOWED" "$path" "Phase 9/10/11 closure/performance language with cache, provenance, Tier2, source-ledger, and empirical-run evidence in diff"
+      allowed=$((allowed + 1))
+    else
+      emit_result "REVIEW_REQUIRED" "$path" "Phase 9/10/11 closure/performance language lacks cache, provenance, Tier2, source-ledger, or empirical-run evidence"
+      review=$((review + 1))
+    fi
+    continue
+  fi
+
   if [[ -n "$added_text" ]] && has_comparison_language "$added_text" ; then
     if [[ "$ledger_present" -eq 1 ]] ; then
       emit_result "ALLOWED" "$path" "comparison language with completed source ledger in diff"
@@ -370,6 +464,17 @@ for path in "${changed_paths[@]}" ; do
       allowed=$((allowed + 1))
     else
       emit_result "REVIEW_REQUIRED" "$path" "comparison-like path supplied without diff or source ledger evidence"
+      review=$((review + 1))
+    fi
+    continue
+  fi
+
+  if [[ -z "$diff_file" && -n "$paths_file" ]] && looks_like_phase9_11_claim_path "$path" ; then
+    if [[ "$phase9_11_evidence_present" -eq 1 ]] ; then
+      emit_result "ALLOWED" "$path" "Phase 9/10/11 claim-like path with required evidence in diff"
+      allowed=$((allowed + 1))
+    else
+      emit_result "REVIEW_REQUIRED" "$path" "Phase 9/10/11 claim-like path supplied without diff or required evidence"
       review=$((review + 1))
     fi
     continue
