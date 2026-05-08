@@ -152,3 +152,15 @@ Skipped/deferred rows from part7:
   open CC-BY-4.0, but the worker observed a server-side 500 while resolving
   download access. Retry or blocked provenance is expected if the official
   download endpoint remains unavailable.
+
+2026-05-08T13:33:06+02:00 quick check:
+
+- Authenticated HF dataset count: 110.
+- Active dataset workers: 12.
+- `sintef-dlr-fzj-battery-pipeline-2025-raw`: uploaded, 18 HF files,
+  408,352,243 uploaded payload bytes.
+- `sakuu-stanford-limetal-continuous-cycling-2025-raw`: final status
+  `blocked`, 3 HF files, because the OSF source was public but license terms
+  were not explicit enough for payload redistribution.
+- `kit-naion-upscaling-formation-cycling-2023-raw` and
+  `e3power-pulsed-liion-chemistries-2022-raw`: still running/no final status.
