@@ -67,3 +67,19 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
   - bsebench-runner-phase9-11-refill-p10-aging-empirical-scheduler-20260508T223000+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
   - bsebench-runner-phase9-11-refill-p9-profile-empirical-scheduler-20260508T222955+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
   - bsebench-datasets-phase9-11-refill-p11-tier2-residual-cache-20260508T222951+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
+
+## CODEX STATUS 2026-05-08 22:45 CEST
+
+- Codex exec actifs: `0` workdirs uniques, `0` PIDs.
+- Refill: `OK`; target `17`; cron minute active.
+- Upload HF: `0`.
+- Scope: Phase 9/10/11 only; Phase 12/13+ locked.
+- Message USER en attente: `no`.
+- Phase 9: `70%` (+0% depuis dernier status).
+- Phase 10: `62%` (+0% depuis dernier status).
+- Phase 11: `54%` (+0% depuis dernier status).
+- Scientific closure: `NO-GO` until cache/provenance/Tier2 empirical evidence passes.
+- Recent signals:
+  - bsebench-async-codex-phase9-11-refill-p9-11-merge-matrix-20260508T224454+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
+  - bsebench-async-codex-phase9-11-refill-p9-11-checkpoint-report-20260508T224447+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
+  - bsebench-filters-phase9-11-refill-p9-11-contract-export-audit-20260508T224445+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
