@@ -10,6 +10,16 @@
 - Durable correction : `scripts/chef-daemon.sh` now recognizes this narrow
   class of superseded duplicate remediations before the block gate and before
   `advisor=BLOCK` can recreate the same pause.
+- Specific merge risk : the stale target branch has an add/add conflict on
+  `outbox/phase-7-10-ah-stats-hinf-null-control-audit/CTO_UNBLOCK.md`.
+  Current `origin/main` already contains the equivalent AH unblock/remediation
+  record and no longer contains the original AH block file.
+
+## Guardrail
+
+Do not merge `origin/phase-7-10-y-block-remediation-20260508T082012Z`.
+If future tooling needs this state, use the already-merged AH unblock evidence
+on `origin/main` instead.
 
 This record does not approve a scientific claim, does not modify the research
 roadmap, and does not merge the stale target branch.
