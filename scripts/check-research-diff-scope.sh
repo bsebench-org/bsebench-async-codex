@@ -19,6 +19,8 @@ Checks changed paths and, when a git diff is available, added text for:
   - protected thesis, claim registry, claims/registry.yaml, roadmap, claim_55 edits
   - unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim wording
   - comparison wording backed by a complete source ledger and comparability table
+  - Phase 9/10/11 closure or performance claims backed by cache,
+    provenance, Tier2, source-ledger, and empirical-run evidence
 
 Default git mode compares origin/main...HEAD in the current repository.
 USAGE
@@ -138,14 +140,6 @@ collect_paths() {
   fi | sed '/^[[:space:]]*$/d' | sort -u
 }
 
-all_added_text() {
-  if [[ -n "$diff_file" ]] ; then
-    sed -n '/^+++ /!s/^+//p' "$diff_file"
-  elif [[ -z "$paths_file" ]] ; then
-    git -C "$repo" "${git_diff_args[@]}" --unified=0 | sed -n '/^+++ /!s/^+//p'
-  fi
-}
-
 added_text_for_path() {
   local path="$1"
 
@@ -243,6 +237,68 @@ has_comparison_language() {
   return 1
 }
 
+has_phase911_reference() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | lower_text)
+
+  [[ "$lower" =~ phase[[:space:]_-]*9([[:space:]/,._-]*(10|11))* ]] && return 0
+  [[ "$lower" =~ phase[[:space:]_-]*10 ]] && return 0
+  [[ "$lower" =~ phase[[:space:]_-]*11 ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])p(9|10|11)([^a-z0-9]|$) ]] && return 0
+  return 1
+}
+
+has_phase911_closure_or_performance_claim() {
+  local text="$1"
+  local line
+  local lower
+
+  while IFS= read -r line ; do
+    has_phase911_reference "$line" || continue
+    lower=$(printf '%s' "$line" | lower_text)
+
+    if [[ "$lower" =~ (do[[:space:]]+not|must[[:space:]]+not|without|unsupported|forbid|unless|until|fail[[:space:]_-]*closed).{0,140}(phase[[:space:]_-]*(9|10|11)|p(9|10|11)|closure|performance|claim|complete) ]] ; then
+      continue
+    fi
+
+    [[ "$lower" =~ (phase[[:space:]_-]*(9|10|11)|p(9|10|11)).{0,140}(complete|completed|completion|closed|closure|done|ready|accepted|green|verified|validated|performance|benchmarks?|rmse|mae|accuracy|outperform|improv(e|ed|ement)|best|leaderboard|sota|state-of-the-art|public[[:space:]_-]*benchmark) ]] && return 0
+    [[ "$lower" =~ (complete|completed|closed|closure|done|ready|accepted|green|verified|validated|performance|benchmarks?|rmse|mae|accuracy|outperform|improv(e|ed|ement)|best).{0,140}(phase[[:space:]_-]*(9|10|11)|p(9|10|11)) ]] && return 0
+    [[ "$lower" =~ (phase[[:space:]_-]*(9|10|11)|p(9|10|11)).{0,80}(100[[:space:]]*%|100[[:space:]_-]*percent) ]] && return 0
+  done <<< "$text"
+
+  return 1
+}
+
+positive_evidence_line_present() {
+  local text="$1"
+  local field_pattern="$2"
+  local line
+
+  while IFS= read -r line ; do
+    line=$(printf '%s' "$line" | lower_text)
+    [[ "$line" =~ $field_pattern ]] || continue
+    if [[ "$line" =~ (missing|absent|fail|failed|blocked|no-go|not[[:space:]_-]*ready|incomplete|false|none) ]] ; then
+      continue
+    fi
+    [[ "$line" =~ (ok|pass|passed|present|verified|available|ready|true|complete) ]] && return 0
+  done <<< "$text"
+
+  return 1
+}
+
+phase911_evidence_text_is_complete() {
+  local text="$1"
+
+  positive_evidence_line_present "$text" 'cache' || return 1
+  positive_evidence_line_present "$text" 'provenance' || return 1
+  positive_evidence_line_present "$text" 'tier[[:space:]_-]*2|tier2' || return 1
+  positive_evidence_line_present "$text" 'source[[:space:]_-]*ledger' || return 1
+  positive_evidence_line_present "$text" 'empirical[[:space:]_-]*run|run[[:space:]_-]*evidence' || return 1
+  ledger_text_is_complete "$text" || return 1
+  return 0
+}
+
 is_source_ledger_path() {
   local path="$1"
   local lower
@@ -259,6 +315,15 @@ looks_like_comparison_path() {
   lower=$(printf '%s' "$path" | lower_text)
 
   [[ "$lower" =~ (sota|state-of-the-art|novelty|leaderboard|comparison|comparability|benchmark) ]]
+}
+
+looks_like_phase911_claim_path() {
+  local path="$1"
+  local lower
+  lower=$(printf '%s' "$path" | lower_text)
+
+  has_phase911_reference "$path" || return 1
+  [[ "$lower" =~ (closure|complete|completion|performance|result|acceptance|status|release|report) ]]
 }
 
 has_field() {
@@ -288,10 +353,20 @@ ledger_text_is_complete() {
 }
 
 mapfile -t changed_paths < <(collect_paths)
-added_all="$(all_added_text || true)"
+evidence_added_text=""
+for path in "${changed_paths[@]}" ; do
+  [[ -n "$path" ]] || continue
+  if is_validation_only_path "$path" ; then
+    continue
+  fi
+  evidence_added_text+=$'\n'"$(added_text_for_path "$path" || true)"
+done
 
 ledger_candidate=0
 for path in "${changed_paths[@]}" ; do
+  if is_validation_only_path "$path" ; then
+    continue
+  fi
   if is_source_ledger_path "$path" ; then
     ledger_candidate=1
     break
@@ -299,8 +374,13 @@ for path in "${changed_paths[@]}" ; do
 done
 
 ledger_present=0
-if [[ "$ledger_candidate" -eq 1 ]] && ledger_text_is_complete "$added_all" ; then
+if [[ "$ledger_candidate" -eq 1 ]] && ledger_text_is_complete "$evidence_added_text" ; then
   ledger_present=1
+fi
+
+phase911_evidence_present=0
+if phase911_evidence_text_is_complete "$evidence_added_text" ; then
+  phase911_evidence_present=1
 fi
 
 if [[ "$dry_run" -eq 1 ]] ; then
@@ -342,6 +422,17 @@ for path in "${changed_paths[@]}" ; do
     continue
   fi
 
+  if [[ -n "$added_text" ]] && has_phase911_closure_or_performance_claim "$added_text" ; then
+    if [[ "$phase911_evidence_present" -eq 1 ]] ; then
+      emit_result "ALLOWED" "$path" "Phase 9/10/11 closure/performance wording with complete cache/provenance/Tier2/source-ledger/empirical-run evidence in diff"
+      allowed=$((allowed + 1))
+    else
+      emit_result "REVIEW_REQUIRED" "$path" "Phase 9/10/11 closure/performance claim lacks complete cache/provenance/Tier2/source-ledger/empirical-run evidence"
+      review=$((review + 1))
+    fi
+    continue
+  fi
+
   if [[ -n "$added_text" ]] && has_comparison_language "$added_text" ; then
     if [[ "$ledger_present" -eq 1 ]] ; then
       emit_result "ALLOWED" "$path" "comparison language with completed source ledger in diff"
@@ -364,6 +455,12 @@ for path in "${changed_paths[@]}" ; do
     continue
   fi
 
+  if [[ -z "$diff_file" && -n "$paths_file" ]] && looks_like_phase911_claim_path "$path" ; then
+    emit_result "REVIEW_REQUIRED" "$path" "Phase 9/10/11 closure/performance-like path supplied without diff evidence"
+    review=$((review + 1))
+    continue
+  fi
+
   if [[ -z "$diff_file" && -n "$paths_file" ]] && looks_like_comparison_path "$path" ; then
     if [[ "$ledger_present" -eq 1 ]] ; then
       emit_result "ALLOWED" "$path" "comparison-like path with completed source ledger in diff"
@@ -383,8 +480,8 @@ if [[ "${#changed_paths[@]}" -eq 0 ]] ; then
   echo "No changed files found."
 fi
 
-printf 'Research diff-scope summary: allowed=%d blocked=%d review_required=%d ledger_present=%d\n' \
-  "$allowed" "$blocked" "$review" "$ledger_present"
+printf 'Research diff-scope summary: allowed=%d blocked=%d review_required=%d ledger_present=%d phase911_evidence_present=%d\n' \
+  "$allowed" "$blocked" "$review" "$ledger_present" "$phase911_evidence_present"
 
 if [[ "$blocked" -gt 0 || "$review" -gt 0 ]] ; then
   echo "Research diff-scope guard failed: blocked or review-required edits are present." >&2

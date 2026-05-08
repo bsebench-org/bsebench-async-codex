@@ -125,6 +125,52 @@ unsupported_comparison_language() {
   run_git_guard "$repo"
 }
 
+unsupported_phase911_closure_claim() {
+  local repo="$tmp_root/unsupported-phase911-closure"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase911-status.md" \
+    'Phase 9/10/11 are complete and ready for closure.'
+  run_git_guard "$repo"
+}
+
+phase911_guardrail_does_not_mask_claim() {
+  local repo="$tmp_root/phase911-guardrail-mask"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase9-status.md" \
+    $'Do not declare Phase 9 complete without evidence.\nPhase 9 is complete.'
+  run_git_guard "$repo"
+}
+
+validation_fixture_does_not_supply_phase911_evidence() {
+  local repo="$tmp_root/phase911-validation-evidence"
+  init_repo "$repo"
+
+  mkdir -p "$repo/scripts" "$repo/reports"
+  cat > "$repo/scripts/check-research-diff-scope.sh" <<'VALIDATION'
+- cache evidence: OK
+- provenance evidence: OK
+- Tier2 evidence: OK
+- source-ledger evidence: OK
+- empirical-run evidence: OK
+
+| source_id | doi_or_url | retrieved_at | metric | dataset | split | reported_value | bsebench_value | comparability | caveat |
+|---|---|---|---|---|---|---|---|---|---|
+| fixture-paper | https://doi.org/10.1234/example | 2026-05-08 | MAE SOC percent | CALCE A123 | fixed test profile | 1.20 | 1.30 | partial | synthetic fixture, not a real claim |
+VALIDATION
+  printf '%s\n' "Phase 9 is complete." > "$repo/reports/phase9-status.md"
+  git -C "$repo" add scripts/check-research-diff-scope.sh reports/phase9-status.md
+  git -C "$repo" commit -q -m "validation evidence fixture"
+  run_git_guard "$repo"
+}
+
+unsupported_phase911_performance_claim() {
+  local repo="$tmp_root/unsupported-phase911-performance"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase10-performance.md" \
+    'Phase 10 performance improved RMSE and is green.'
+  run_git_guard "$repo"
+}
+
 source_ledger_present_comparison() {
   local repo="$tmp_root/source-ledger-present"
   init_repo "$repo"
@@ -143,9 +189,38 @@ LEDGER
   run_git_guard "$repo"
 }
 
+phase911_claim_with_complete_evidence() {
+  local repo="$tmp_root/phase911-evidence-present"
+  init_repo "$repo"
+
+  mkdir -p "$repo/reports"
+  cat > "$repo/reports/phase911-status.md" <<'STATUS'
+Phase 9/10/11 closure status: ready for this fixture audit only.
+
+- cache evidence: OK
+- provenance evidence: OK
+- Tier2 evidence: OK
+- source-ledger evidence: OK
+- empirical-run evidence: OK
+
+| source_id | doi_or_url | retrieved_at | metric | dataset | split | reported_value | bsebench_value | comparability | caveat |
+|---|---|---|---|---|---|---|---|---|---|
+| fixture-paper | https://doi.org/10.1234/example | 2026-05-08 | MAE SOC percent | CALCE A123 | fixed test profile | 1.20 | 1.30 | partial | synthetic fixture, not a real claim |
+STATUS
+  git -C "$repo" add reports/phase911-status.md
+  git -C "$repo" commit -q -m "phase evidence fixture"
+  run_git_guard "$repo"
+}
+
 changed_file_list_comparison() {
   local paths="$tmp_root/paths.txt"
   printf '%s\n' "reports/sota-comparison.md" > "$paths"
+  bash "$GUARD" --dry-run --paths "$paths" 2>&1
+}
+
+changed_file_list_phase911_claim() {
+  local paths="$tmp_root/paths-phase911.txt"
+  printf '%s\n' "reports/phase9-closure-status.md" > "$paths"
   bash "$GUARD" --dry-run --paths "$paths" 2>&1
 }
 
@@ -179,14 +254,44 @@ require_failure_contains \
   "[REVIEW_REQUIRED] reports/comparison.md -- comparison language lacks completed source ledger and comparability table" \
   unsupported_comparison_language
 
+require_failure_contains \
+  "unsupported Phase 9/10/11 closure claim" \
+  "[REVIEW_REQUIRED] reports/phase911-status.md -- Phase 9/10/11 closure/performance claim lacks complete cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  unsupported_phase911_closure_claim
+
+require_failure_contains \
+  "Phase 9 guardrail does not mask later closure claim" \
+  "[REVIEW_REQUIRED] reports/phase9-status.md -- Phase 9/10/11 closure/performance claim lacks complete cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  phase911_guardrail_does_not_mask_claim
+
+require_failure_contains \
+  "validation fixture evidence does not support Phase 9 closure claim" \
+  "[REVIEW_REQUIRED] reports/phase9-status.md -- Phase 9/10/11 closure/performance claim lacks complete cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  validation_fixture_does_not_supply_phase911_evidence
+
+require_failure_contains \
+  "unsupported Phase 9/10/11 performance claim" \
+  "[REVIEW_REQUIRED] reports/phase10-performance.md -- Phase 9/10/11 closure/performance claim lacks complete cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  unsupported_phase911_performance_claim
+
 require_success_contains \
   "source-ledger-present comparison" \
   "[ALLOWED] reports/comparison.md -- comparison language with completed source ledger in diff" \
   source_ledger_present_comparison
 
+require_success_contains \
+  "Phase 9/10/11 complete evidence present" \
+  "[ALLOWED] reports/phase911-status.md -- Phase 9/10/11 closure/performance wording with complete cache/provenance/Tier2/source-ledger/empirical-run evidence in diff" \
+  phase911_claim_with_complete_evidence
+
 require_failure_contains \
   "changed-file list comparison without diff" \
   "[REVIEW_REQUIRED] reports/sota-comparison.md -- comparison-like path supplied without diff or source ledger evidence" \
   changed_file_list_comparison
+
+require_failure_contains \
+  "changed-file list Phase 9/10/11 closure without diff" \
+  "[REVIEW_REQUIRED] reports/phase9-closure-status.md -- Phase 9/10/11 closure/performance-like path supplied without diff evidence" \
+  changed_file_list_phase911_claim
 
 echo "PASS: research diff-scope guard fixtures passed ($passes checks)."
