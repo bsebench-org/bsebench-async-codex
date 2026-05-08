@@ -1,0 +1,217 @@
+{
+  "schema_version": "phase9-11-acceptance-gate/v1",
+  "generated_at": "2026-05-08T21:38:12+02:00",
+  "gate_id": "phase9-11-acceptance-gate-2026-05-08",
+  "decision": "NO_GO",
+  "scope": {
+    "allowed_phases": [
+      "phase_9",
+      "phase_10",
+      "phase_11"
+    ],
+    "locked_after_phase_11": true,
+    "hf_uploads_allowed": false,
+    "dataset_downloads_allowed": false,
+    "protected_edits": [
+      "thesis",
+      "roadmap",
+      "claim_registry",
+      "protected_claim_target"
+    ],
+    "unsupported_public_comparison_claims": "blocked"
+  },
+  "gate_policy": {
+    "tooling_complete_means": "Required validators, schedulers, schemas, and dry-run checks exist and fail closed on missing inputs.",
+    "scientific_closure_means": "Local cache/provenance, Tier2 readiness, source-ledger, empirical run outputs, and replay or stats validation all exist for the phase.",
+    "missing_evidence_behavior": "NO_GO",
+    "required_scientific_evidence_types": [
+      "local_cache_provenance",
+      "tier2_readiness",
+      "source_ledger",
+      "empirical_run",
+      "replay_or_stats_validation"
+    ]
+  },
+  "phases": {
+    "phase_9": {
+      "title": "Cross-profile comparability",
+      "tooling_gate": {
+        "status": "partial",
+        "evidence": [
+          {
+            "id": "p9-dag",
+            "status": "present",
+            "path": "docs/PHASE-9-10-11-DAG-2026-05-08.md",
+            "note": "DAG lists profile-axis inventory, comparability contract, empirical wait state, and verdict dependencies."
+          }
+        ],
+        "open_tooling_blockers": [
+          "profile-axis readiness and dispatch outputs are not recorded as merged gate artifacts in this async repo",
+          "profile empirical run artifacts are still dependency-gated"
+        ]
+      },
+      "scientific_closure_gate": {
+        "status": "NO_GO",
+        "required_evidence": [
+          {
+            "type": "local_cache_provenance",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted local profile cache/provenance bundle is recorded here."
+          },
+          {
+            "type": "tier2_readiness",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted profile Tier2 readiness artifact is recorded here."
+          },
+          {
+            "type": "source_ledger",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted profile source-ledger artifact is recorded here."
+          },
+          {
+            "type": "empirical_run",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted Phase 9 empirical run output is recorded here."
+          },
+          {
+            "type": "replay_or_stats_validation",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted replay or stats validation artifact is recorded here."
+          }
+        ],
+        "missing_required_evidence": [
+          "local_cache_provenance",
+          "tier2_readiness",
+          "source_ledger",
+          "empirical_run",
+          "replay_or_stats_validation"
+        ]
+      }
+    },
+    "phase_10": {
+      "title": "Aging and SOH generalization",
+      "tooling_gate": {
+        "status": "partial",
+        "evidence": [
+          {
+            "id": "p10-dag",
+            "status": "present",
+            "path": "docs/PHASE-9-10-11-DAG-2026-05-08.md",
+            "note": "DAG lists aging/SOH readiness, pre-dispatch budget, empirical wait state, and verdict dependencies."
+          }
+        ],
+        "open_tooling_blockers": [
+          "aging/SOH readiness output is not recorded as a merged gate artifact in this async repo",
+          "aging empirical run artifacts are still dependency-gated"
+        ]
+      },
+      "scientific_closure_gate": {
+        "status": "NO_GO",
+        "required_evidence": [
+          {
+            "type": "local_cache_provenance",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted local aging/SOH cache/provenance bundle is recorded here."
+          },
+          {
+            "type": "tier2_readiness",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted aging/SOH Tier2 readiness artifact is recorded here."
+          },
+          {
+            "type": "source_ledger",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted aging/SOH source-ledger artifact is recorded here."
+          },
+          {
+            "type": "empirical_run",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted Phase 10 empirical run output is recorded here."
+          },
+          {
+            "type": "replay_or_stats_validation",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted replay or stats validation artifact is recorded here."
+          }
+        ],
+        "missing_required_evidence": [
+          "local_cache_provenance",
+          "tier2_readiness",
+          "source_ledger",
+          "empirical_run",
+          "replay_or_stats_validation"
+        ]
+      }
+    },
+    "phase_11": {
+      "title": "Residual decomposition",
+      "tooling_gate": {
+        "status": "partial",
+        "evidence": [
+          {
+            "id": "p11-dag",
+            "status": "present",
+            "path": "docs/PHASE-9-10-11-DAG-2026-05-08.md",
+            "note": "DAG lists residual input contract, decomposition stats contract, residual trace wait state, and verdict dependencies."
+          }
+        ],
+        "open_tooling_blockers": [
+          "residual dry-run manifest is not recorded as a merged gate artifact in this async repo",
+          "residual trace generation artifacts are still dependency-gated"
+        ]
+      },
+      "scientific_closure_gate": {
+        "status": "NO_GO",
+        "required_evidence": [
+          {
+            "type": "local_cache_provenance",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted local residual cache/provenance bundle is recorded here."
+          },
+          {
+            "type": "tier2_readiness",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted residual Tier2 readiness artifact is recorded here."
+          },
+          {
+            "type": "source_ledger",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted residual source-ledger artifact is recorded here."
+          },
+          {
+            "type": "empirical_run",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted Phase 11 residual trace output is recorded here."
+          },
+          {
+            "type": "replay_or_stats_validation",
+            "status": "missing",
+            "path": "",
+            "note": "No accepted replay or stats validation artifact is recorded here."
+          }
+        ],
+        "missing_required_evidence": [
+          "local_cache_provenance",
+          "tier2_readiness",
+          "source_ledger",
+          "empirical_run",
+          "replay_or_stats_validation"
+        ]
+      }
+    }
+  }
+}
