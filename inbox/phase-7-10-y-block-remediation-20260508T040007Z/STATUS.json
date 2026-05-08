@@ -1,0 +1,15 @@
+{
+  "phase_id": "phase-7-10-y-block-remediation-20260508T040007Z",
+  "status": "queued",
+  "ts_queued": "2026-05-08T04:00:07Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex-cto-report",
+  "target_branch": "phase-7-10-y-block-remediation-20260508T040007Z",
+  "base_branch": "main",
+  "queued_by": "cto-autonomy-pacer",
+  "source_backlog": "dynamic-block-remediation",
+  "block_files": "phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z.block"
+}
