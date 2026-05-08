@@ -26,6 +26,7 @@ Template to append at the bottom:
 ## USER 2026-05-08 21:30 CEST
 
 message here
+status
 ```
 stauts stp
 ---
