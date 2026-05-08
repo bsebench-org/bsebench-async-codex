@@ -1,0 +1,14 @@
+{
+  "phase_id": "phase-7-10-u-runner-phase11-residual-input-contract",
+  "status": "queued",
+  "ts_queued": "2026-05-08T14:20:12Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-runner",
+  "target_branch": "phase-7-10-u-runner-phase11-residual-input-contract",
+  "base_branch": "main",
+  "queued_by": "cto-autonomy-pacer",
+  "source_backlog": "cto/AUTONOMY_BACKLOG/phase-7-10-u-runner-phase11-residual-input-contract/BRIEF.md"
+}
