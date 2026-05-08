@@ -19,6 +19,7 @@ Checks Phase 7/8/11 inbox or autonomy-backlog BRIEFs for minimum research-gate w
   - no thesis/claim registry edits
   - no claim_55 targeting
   - no unsupported SOTA claims
+  - no hard-banned task directives that contradict those guardrails
 
 With no files, the default is --staged, which includes untracked BRIEFs.
 USAGE
@@ -127,6 +128,123 @@ require_pattern() {
   fi
 }
 
+lower_text() {
+  tr '[:upper:]' '[:lower:]'
+}
+
+line_is_guardrail_context() {
+  local lower="$1"
+
+  [[ "$lower" =~ ^[[:space:]]*(target_repo|target_branch|base_branch|add_dir|hard_wallclock_min): ]] && return 0
+  [[ "$lower" =~ (do[[:space:]]+not|must[[:space:]]+not|should[[:space:]]+not|cannot|can[[:space:]]+not|without|unsupported|prohibit|forbid|avoid|unrelated|protected|block|blocked|reject|rejects|rejected|fail|fails|failure|falsification|wording|gate|lint|linter|checker|non-executable|dry-run|read-only|readonly|targeted[[:space:]_=-]*false) ]] && return 0
+  [[ "$lower" =~ (^|[^a-z])no[[:space:]_-]+ ]] && return 0
+  [[ "$lower" =~ (^|[^a-z])not[[:space:]_-]+ ]] && return 0
+  return 1
+}
+
+line_has_claim55_marker() {
+  local lower="$1"
+  [[ "$lower" =~ claim[_-]?55 ]]
+}
+
+line_has_claim55_work_verb() {
+  local lower="$1"
+  [[ "$lower" =~ (target|targeting|targeted|verify|verification|verdict|register|registration|promote|promotion|update|edit|modify|change|write|touch|queue|execute|work[[:space:]]+on|advance|decide|accept|retract|claim[[:space:]_-]*status) ]]
+}
+
+line_has_protected_registry_marker() {
+  local lower="$1"
+  [[ "$lower" =~ (claims/registry\.ya?ml|claim[[:space:]_-]*registr(y|ies)|thesis|these_lfp_2026|manuscript|dissertation) ]]
+}
+
+line_has_protected_write_verb() {
+  local lower="$1"
+  [[ "$lower" =~ (edit|update|modify|change|write|append|create|touch|register|registration|promote|transition|set[[:space:]]+) ]]
+}
+
+line_has_comparison_marker() {
+  local lower="$1"
+
+  [[ "$lower" =~ (^|[^a-z0-9])(sota|state-of-the-art|novel|novelty|leaderboard|breakthrough)([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ verified[[:space:]_-]*claim ]] && return 0
+  [[ "$lower" =~ better[[:space:]]+than[[:space:]]+(prior|previous)[[:space:]]+work ]] && return 0
+  [[ "$lower" =~ outperform(s|ed|ing)?[[:space:]]+(prior|previous|baseline|sota|state-of-the-art) ]] && return 0
+  return 1
+}
+
+line_has_source_ledger_context() {
+  local lower="$1"
+  [[ "$lower" =~ (source[[:space:]_-]*ledger|comparability[[:space:]_-]*table) ]]
+}
+
+line_has_comparison_assertion() {
+  local lower="$1"
+
+  [[ "$lower" =~ (^|[^a-z])(is|are|was|were|be|make|makes|made|claim|claims|claimed|declare|declares|assert|asserts|state|states|report|reports|write|writes|promote|promotes|prove|proves|proven|verify|verified|add|deliver|create|implement|introduce|propose|present)([^a-z]|$) ]] && return 0
+  [[ "$lower" =~ (better[[:space:]]+than[[:space:]]+(prior|previous)[[:space:]]+work|outperform(s|ed|ing)?|leaderboard[[:space:]]*(top|win|best)|breakthrough) ]] && return 0
+  return 1
+}
+
+hard_ban_fail() {
+  local label="$1"
+  local line_no="$2"
+  local line="$3"
+  local fix="$4"
+
+  echo "  [FAIL] hard-ban: $label at line $line_no"
+  echo "         $line"
+  echo "         Fix: $fix"
+  failures=$((failures + 1))
+  hard_ban_failures=$((hard_ban_failures + 1))
+}
+
+check_hard_bans() {
+  local path="$1"
+  local line lower line_no
+
+  hard_ban_failures=0
+  line_no=0
+  while IFS= read -r line || [[ -n "$line" ]] ; do
+    line_no=$((line_no + 1))
+    lower="$(printf '%s' "$line" | lower_text)"
+
+    if line_has_claim55_marker "$lower" &&
+      ! line_is_guardrail_context "$lower" &&
+      line_has_claim55_work_verb "$lower" ; then
+      hard_ban_fail \
+        "protected claim_55 work directive" \
+        "$line_no" \
+        "$line" \
+        "remove claim_55 work from this BRIEF; only guardrail or synthetic fixture text may mention blocked targeting attempts."
+    fi
+
+    if line_has_protected_registry_marker "$lower" &&
+      ! line_is_guardrail_context "$lower" &&
+      line_has_protected_write_verb "$lower" ; then
+      hard_ban_fail \
+        "unauthorized thesis or claim-registry write directive" \
+        "$line_no" \
+        "$line" \
+        "split any claim-registration work into an explicitly authorized task with validated evidence and a source ledger; backlog and evidence BRIEFs must prohibit these writes."
+    fi
+
+    if line_has_comparison_marker "$lower" &&
+      ! line_is_guardrail_context "$lower" &&
+      ! line_has_source_ledger_context "$lower" &&
+      line_has_comparison_assertion "$lower" ; then
+      hard_ban_fail \
+        "unsupported SOTA or novelty assertion" \
+        "$line_no" \
+        "$line" \
+        "remove the assertion or convert the task into a SOTA-comparison BRIEF with a source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table."
+    fi
+  done < "$path"
+
+  if [[ "$hard_ban_failures" -eq 0 ]] ; then
+    echo "  [OK]   hard-ban directives absent"
+  fi
+}
+
 check_brief() {
   local path="$1"
 
@@ -170,6 +288,8 @@ check_brief() {
     "$path" \
     "no unsupported SOTA claims" \
     '((do not|must not|no|not|without|unsupported)[[:alnum:]_ ./,-]{0,140}sota|sota[[:alnum:]_ ./,-]{0,140}(unsupported|source ledger|doi|stable url|comparability|claim|status|novelty))'
+
+  check_hard_bans "$path"
 }
 
 if [[ "$dry_run" -eq 1 ]] ; then
