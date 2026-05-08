@@ -11,5 +11,6 @@
   "base_branch": "main",
   "queued_by": "cto-autonomy-pacer",
   "source_backlog": "dynamic-block-remediation",
-  "block_files": "phase-7-10-z-autonomy-backlog-replenishment-20260508T072012Z.block"
+  "block_files": "phase-7-10-z-autonomy-backlog-replenishment-20260508T072012Z.block",
+  "cto_closeout": "superseded by CTO phase7/8 closeout c3a9761; original z block was removed and reserve BRIEFs were integrated"
 }

@@ -13,5 +13,6 @@
   "source_backlog": "cto/AUTONOMY_BACKLOG/phase-7-10-l-stats-hinf-fragility-threshold-calibration/BRIEF.md",
   "cto_closeout": "resolved stale running status by cherry-picking validated GLASSBOX branch onto bsebench-stats origin/main",
   "resolved_product_sha": "82c7347",
-  "resolved_branch_sha": "0194635849ada9a95c13b433db737b0e3d63f3ef"
+  "resolved_branch_sha": "0194635849ada9a95c13b433db737b0e3d63f3ef",
+  "chef_block_resolution": "chef ff-merge block is stale: product main contains equivalent tree via cherry-pick 82c7347 and full non-slow tests passed"
 }
