@@ -1,0 +1,1 @@
+Phase phase-7-10-y-block-remediation-20260508T074011Z BLOCKED at 2026-05-08T09:59:42+02:00. Panel avg=82, advisor=BLOCK. Email queued at outbox/_emails_pending/. Delete this file to unblock the chef-daemon.
