@@ -499,6 +499,107 @@ Chef-daemon now clears stale duplicate block-remediation pauses when both supers
   fi
 }
 
+is_async_rebase_only_issue() {
+  local phase_id="$1"
+  local status_file="$2"
+  local target_repo
+  local repo_dir
+  local repo_base
+
+  [[ -f "$status_file" ]] || return 1
+  target_repo=$(jq -r '.target_repo // ""' "$status_file" 2>/dev/null || echo "")
+  repo_dir=$(eval echo "$target_repo")
+  repo_base=$(basename "$repo_dir")
+
+  [[ "$repo_dir" == "$ASYNC_REPO" || "$repo_base" == "bsebench-async-codex" || "$repo_base" == "bsebench-async-codex-worker-2" ]] || return 1
+  [[ -f "$ASYNC_REPO/outbox/$phase_id/CHEF_VERDICT.md" ]] || return 1
+
+  # This only covers branches that already reached the ff-merge step. Earlier
+  # failures from the research diff-scope guard, metadata checks, tests, or
+  # protected claim/thesis/roadmap paths remain normal review/block candidates.
+  phase_artifacts_have "$phase_id" 'ff-merge .* failed \(non-linear \?\)|not an ancestor|non-fast-forward|stale-base|current ancestry confirms' || return 1
+  phase_artifacts_have "$phase_id" 'Research diff-scope guard passed|research diff-scope summary: allowed=|allowed=[0-9]+[[:space:]]+blocked=0[[:space:]]+review_required=0' || return 1
+
+  return 0
+}
+
+write_async_rebase_required_note() {
+  local phase_id="$1"
+
+  cd "$ASYNC_REPO" || return
+  mkdir -p "outbox/$phase_id"
+  local note="outbox/$phase_id/CTO_REBASE_REQUIRED_NONBLOCKING.md"
+  cat > "$note" <<REBASE_NOTE
+# CTO nonblocking rebase required
+
+- Phase : $phase_id
+- Recorded at : $(date -Iseconds)
+- Decision : keep the phase as rebase-required, but do not pause unrelated
+  workers or chef processing.
+
+## Why This Is Nonblocking
+
+The phase targets \`$ASYNC_REPO\` itself and reached the fast-forward merge
+step after research diff-scope validation. Its failure mode is that \`main\`
+moved before chef could merge the branch. That requires a replay/rebase, not a
+global stop-the-world block.
+
+Protected scientific paths, thesis prose, roadmap edits, claim registry edits,
+\`claim_55\` targeting, unsupported SOTA/comparison wording, metadata failures,
+and test failures still follow the normal review/block path.
+REBASE_NOTE
+
+  git add "$note"
+  git commit -m "docs(async): mark $phase_id rebase-required nonblocking
+
+[role: chef-FR]
+
+Chef recorded a nonblocking rebase-required state for an async orchestration branch that passed research diff-scope validation but became non-fast-forward before merge. This avoids stopping unrelated workers while preserving review evidence." --quiet 2>/dev/null || true
+  git push origin main --quiet 2>/dev/null || log "$phase_id nonblocking rebase note push failed"
+}
+
+clear_async_rebase_only_blocks() {
+  cd "$ASYNC_REPO" || return
+  [[ -d "outbox/_blocks" ]] || return 0
+
+  local block phase status_path note changed
+  changed=0
+  for block in outbox/_blocks/*.block ; do
+    [[ -f "$block" ]] || continue
+    phase=$(basename "$block" .block)
+    status_path="$ASYNC_REPO/inbox/$phase/STATUS.json"
+    if is_async_rebase_only_issue "$phase" "$status_path" ; then
+      mkdir -p "outbox/$phase"
+      note="outbox/$phase/CTO_AUTO_UNBLOCK_REBASE_REQUIRED.md"
+      cat > "$note" <<AUTO_REBASE
+# CTO auto-unblock: async rebase required
+
+- Phase : $phase
+- Cleared at : $(date -Iseconds)
+- Cleared by : chef-daemon (automated, France PC) [role: chef-FR]
+- Removed block file : \`$block\`
+
+Reason: this is an async-orchestration branch that passed research diff-scope
+validation and failed only because \`main\` moved before a fast-forward merge.
+The correct action is replay/rebase, not a global pause.
+AUTO_REBASE
+      rm -f "$block"
+      git add -A -- "$block" "$note"
+      changed=1
+      log "$phase auto-cleared async rebase-only block"
+    fi
+  done
+
+  if [[ "$changed" -eq 1 ]] ; then
+    git commit -m "fix(async): auto-unblock async rebase-only blocks
+
+[role: chef-FR]
+
+Chef-daemon now clears async-orchestration blocks whose only failure is a non-fast-forward merge after research diff-scope validation. Product/test/claim/thesis/roadmap failures remain blocking." --quiet 2>/dev/null || true
+    git push origin main --quiet 2>/dev/null || log "async rebase-only block auto-unblock push failed"
+  fi
+}
+
 # Kaizen retro : after a verdict is written, dispatch codex with a tight
 # kaizen-BRIEF that produces KEEP/FIX/SHIP-ONE markdown. The codex run reads
 # inbox/<phase>/BRIEF.md + outbox/<phase>/SUMMARY.md + outbox/<phase>/CHEF_VERDICT.md
@@ -765,6 +866,19 @@ Advisor returned BLOCK, but chef superseded-remediation guard detected this as a
     return
   fi
 
+  if [[ "$verdict" == "BLOCK" ]] && is_async_rebase_only_issue "$phase_id" "$ASYNC_REPO/inbox/$phase_id/STATUS.json" ; then
+    git add "outbox/$phase_id/ADVISOR_CHECK.md" 2>/dev/null || true
+    git commit -m "docs(advisor): $phase_id BLOCK downgraded to rebase-required
+
+[role: advisor-FR]
+
+Advisor returned BLOCK because the async branch was non-fast-forward. Chef confirmed the branch had already passed research diff-scope validation and failed only at the ff-merge step, so this is recorded as nonblocking rebase-required rather than pausing unrelated work." --quiet 2>/dev/null || true
+    git push origin main --quiet 2>/dev/null || true
+    write_async_rebase_required_note "$phase_id"
+    log "$phase_id advisor BLOCK downgraded to nonblocking async rebase-required"
+    return
+  fi
+
   if [[ "$verdict" == "BLOCK" ]] ; then
     mkdir -p "$ASYNC_REPO/outbox/_blocks" "$ASYNC_REPO/outbox/_emails_pending"
     echo "Phase $phase_id BLOCKED at $(date -Iseconds). Panel avg=$panel_avg, advisor=BLOCK. Email queued at outbox/_emails_pending/. Delete this file to unblock the chef-daemon." > "$ASYNC_REPO/outbox/_blocks/$phase_id.block"
@@ -932,6 +1046,7 @@ while true ; do
 
   # Refuse to process new phases while a block file is present.
   clear_superseded_blocks
+  clear_async_rebase_only_blocks
   if chef_is_blocked ; then
     log "chef-daemon paused : outbox/_blocks/ contains $(ls "$ASYNC_REPO/outbox/_blocks" 2>/dev/null | wc -l) block file(s). Waiting for user to unblock."
     sleep "$INTERVAL_SEC"
