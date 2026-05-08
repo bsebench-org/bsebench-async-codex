@@ -1,0 +1,200 @@
++
++- focused tests for explicit chemistry provenance, missing chemistry, missing source identity, missing hash status, loader failure, and filename-derived guess rejection;
++- one real read-only chemistry-provenance crosswalk command against available manifests or local cache roots;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-ap-async-brief-validation-command-gate/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-ap-async-brief-validation-command-gate/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..855203f5368a1f2b8e7211546d09f316c09f7cee
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-ap-async-brief-validation-command-gate/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-ap-async-brief-validation-command-gate
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.ap - async BRIEF validation command gate
++
++You are a rigorous BSEBench async validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Harden async BRIEF checks so future research tasks cannot satisfy the gate with vague validation prose instead of concrete commands.
++
++## Roadmap mapping
++
++- Roadmap scope: validation infrastructure that blocks false scientific claims across Phase 7, Phase 8, and Phase 11.
++- Active lane: Evidence generation, limited to orchestration guardrail tooling and synthetic fixtures.
++- Handoff artifact: checker output that classifies BRIEF validation sections as concrete, missing, placeholder-only, or unsupported.
++
++## Required behavior
++
++- Review `scripts/check-research-brief-gates.sh`, current inbox BRIEFs, and autonomy-backlog BRIEFs.
++- Add or extend a checker that requires Phase 7/8/11 BRIEFs to include at least one concrete validation or replay command in the validation section, not only generic words like "validate" or "run tests".
++- The checker must reject placeholder commands, prose-only validation, omitted falsification gates, and BRIEFs that authorize claim work without a source ledger or evidence handoff.
++- Use synthetic fixture BRIEFs for positive and negative cases; do not rewrite historical inbox tasks unless required for the checker to run.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or roadmap files.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this async BRIEF validation-command gate.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a Phase 7/8/11 BRIEF with no concrete validation command, a placeholder-only command, a missing falsification gate, or unsupported claim/SOTA authorization can pass the checker, this task must fail.
++
++## Validation
++
++Run and record:
++
++- positive and negative fixture checks for concrete commands, prose-only validation, placeholder commands, missing falsification gates, and unsupported claim/SOTA wording;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `bash -n scripts/check-research-brief-gates.sh scripts/cto-autonomy-pacer.sh`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-aq-runner-phase8-11-handoff-bundle-preflight/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-aq-runner-phase8-11-handoff-bundle-preflight/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..e8792939113bf56655323a04faa7c68ab331c381
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-aq-runner-phase8-11-handoff-bundle-preflight/BRIEF.md
+@@ -0,0 +1,51 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-runner
++target_branch: phase-7-10-aq-runner-phase8-11-handoff-bundle-preflight
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.aq - runner Phase 8/11 handoff bundle preflight
++
++You are a rigorous BSEBench runner preflight engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Define a dry-run handoff-bundle preflight so Phase 8 cross-chemistry and Phase 11 residual-decomposition runs expose missing metadata before expensive filters are launched.
++
++## Roadmap mapping
++
++- Roadmap scope: Phase 8 cross-chemistry extension, Phase 11 residual decomposition, and validation infrastructure.
++- Active lane: Evidence generation, limited to pre-dispatch validation without running filters.
++- Handoff artifact: deterministic readiness JSON with intended inputs, output paths, stats schema version, dataset provenance pointer, source-ledger placeholder status, and blocking reasons.
++
++## Required behavior
++
++- Add or extend a dry-run command that assembles the intended Phase 8/11 handoff bundle metadata without executing filters or writing empirical outputs.
++- The preflight must report dataset/config identifiers, chemistry labels, units/timebase availability, provenance manifest pointers, local-cache readiness, stats dependency identity, expected output schema version, and sanitized intended output paths.
++- Output JSON must distinguish `ready`, `not_ready`, and `insufficient_metadata` per config with concrete blocking reasons.
++- Do not generate residual traces, recompute Hinf evidence, download data, or commit local-machine absolute paths as scientific evidence.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or roadmap files.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 8/11 handoff-bundle preflight.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If any Phase 8 or Phase 11 config lacks units, timebase, chemistry/provenance identity, local-cache readiness, stats dependency identity, or schema version but is marked `ready`, the preflight must fail and block downstream scheduling.
++
++## Validation
++
++Run and record:
++
++- focused tests for ready bundles, missing provenance, missing units/timebase, missing chemistry, missing stats schema, cache not ready, and unsanitized output paths;
++- a real dry-run handoff-bundle preflight over the current candidate config set without running filters;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-ar-async-source-ledger-comparison-table-gate/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-ar-async-source-ledger-comparison-table-gate/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..ba8c40ec6a04ab443f0895706461f581673a08bd
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-ar-async-source-ledger-comparison-table-gate/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-ar-async-source-ledger-comparison-table-gate
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.ar - async source-ledger comparison table gate
++
++You are a rigorous BSEBench anti-hallucination validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Require any future SOTA or novelty comparison to produce a machine-readable comparability table from source-ledger rows before claim-registration work can be queued.
++
++## Roadmap mapping
++
++- Roadmap scope: validation infrastructure that blocks unsupported SOTA claims before Phase 7, Phase 8, or Phase 11 claim work.
++- Active lane: SOTA comparison guardrail tooling only, using synthetic fixtures unless a real ledger already exists.
++- Handoff artifact: checker/renderer output that classifies each source-ledger row as `comparable`, `partial`, `not_comparable`, `stale`, or `invalid` with caveats.
++
++## Required behavior
++
++- Review the research gate protocol and existing source-ledger schema, freshness checks, comparability fixtures, and claim-language linter if present.
++- Add or extend a checker or renderer that converts source-ledger rows into a comparability table with source ID, stable URL or DOI, retrieval date, metric, dataset, split, preprocessing/run condition when known, reported value, BSEBench frozen value, comparability class, and caveat.
++- The gate must reject rows that claim comparability while required fields are unknown, future-dated, stale beyond the configured policy, missing BSEBench frozen values, or missing caveats for partial/not-comparable rows.
++- Use synthetic fixture rows unless a committed real ledger with stable URLs or DOIs and retrieval dates already exists; do not invent literature numbers from memory.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or roadmap files.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this source-ledger comparison-table gate.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a SOTA or novelty comparison can produce a passing comparability table with missing stable URL/DOI, missing retrieval date, missing metric/dataset/split, missing BSEBench frozen value, future-dated retrieval, or absent caveat for partial/not-comparable rows, this task must fail.
++
++## Validation
++
++Run and record:
++
++- positive and negative source-ledger fixture checks for comparable, partial, not-comparable, stale, future-dated, missing-required-field, and missing-caveat rows;
++- `bash -n` for changed shell scripts;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+144,624
+Implemented and committed the backlog replenishment.
+
+Added six new BRIEFs under [cto/AUTONOMY_BACKLOG](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-phase-7-10-z-autonomy-backlog-replenishment-20260508T132015Z/cto/AUTONOMY_BACKLOG):
+
+- `phase-7-10-am-runner-hinf-artifact-replay-index`
+- `phase-7-10-an-stats-hinf-bootstrap-fragility-intervals`
+- `phase-7-10-ao-datasets-chemistry-provenance-crosswalk`
+- `phase-7-10-ap-async-brief-validation-command-gate`
+- `phase-7-10-aq-runner-phase8-11-handoff-bundle-preflight`
+- `phase-7-10-ar-async-source-ledger-comparison-table-gate`
+
+All are roadmap-mapped, falsifiable, validation-scoped, explicitly ban `claim_55`, and do not authorize thesis, registry, roadmap, unsupported SOTA, or novelty edits.
+
+Validation passed post-rebase:
+
+- Research BRIEF gate: `34 checked, 0 skipped`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`
+- `git diff --check`
+- Reserve count: `unqueued_reserve_count=10`
+
+Commit: `1397b2c876e15ef3dd2fd15bed6a9d5771249a0f` with GLASSBOX metadata and no `Co-Authored-By Claude`. Worktree is clean and the branch is ahead of `origin/main` by this commit.
