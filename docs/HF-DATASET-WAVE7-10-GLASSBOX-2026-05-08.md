@@ -130,3 +130,25 @@ Skipped/deferred rows from part7:
   payload bytes disguised as a complete mirror.
 - BatteryLife aggregate datasets must be labeled as aggregate corpora and
   deduplicated against individual source mirrors during any scientific count.
+
+## Post-Launch Check
+
+2026-05-08T13:30+02:00 quick check:
+
+- Authenticated HF dataset count: 108.
+- Active dataset workers: 13.
+- `sakuu-stanford-limetal-continuous-cycling-2025-raw`: correctly created a
+  private HF repo with `README.md` + `UPLOAD_BLOCKED.json` only because the OSF
+  node is public but does not expose an explicit redistribution license in the
+  checked API metadata.
+- `batterylife-processed-v10-2026-raw`: downloading the official Zenodo v10
+  archive set, about 30.9 GB total, with checksum verification planned before
+  upload.
+- `kit-naion-upscaling-formation-cycling-2023-raw`: verified Zenodo
+  CC-BY-4.0 metadata and prepared the `Na-upscaling.zip` payload upload.
+- `sintef-dlr-fzj-battery-pipeline-2025-raw`: verified Zenodo CC-BY-4.0
+  metadata and 12 official files.
+- `e3power-pulsed-liion-chemistries-2022-raw`: Fairdata/Etsin metadata verifies
+  open CC-BY-4.0, but the worker observed a server-side 500 while resolving
+  download access. Retry or blocked provenance is expected if the official
+  download endpoint remains unavailable.
