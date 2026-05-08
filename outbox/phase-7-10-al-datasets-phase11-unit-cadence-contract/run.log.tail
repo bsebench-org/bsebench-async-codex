@@ -1,0 +1,200 @@
++            columns["current_A"] = pa.array([-1.0] * n_samples, type=pa.float64())
++    else:
++        columns = {
++            "time": pa.array([float(idx) for idx in range(n_samples)], type=pa.float64()),
++            "V": pa.array([4.1 - idx * 0.1 for idx in range(n_samples)], type=pa.float64()),
++            "I": pa.array([-1.0] * n_samples, type=pa.float64()),
++        }
++    table = pa.table(columns)
++    if metadata is not None:
++        table = table.replace_schema_metadata(
++            {
++                UNIT_CADENCE_PARQUET_METADATA_KEY.encode("utf-8"): json.dumps(metadata).encode(
++                    "utf-8"
++                )
++            }
++        )
++    pq.write_table(table, path)
++
++
++def _contract(
++    tmp_path: Path,
++    *,
++    target: UnitCadenceContractTarget,
++    include_metadata_datasets: bool = False,
++) -> dict[str, object]:
++    manifests_dir = tmp_path / "manifests"
++    if not manifests_dir.exists():
++        _write_manifest(manifests_dir)
++    cache_root = tmp_path / "cache"
++    cache_root.mkdir(exist_ok=True)
++    return build_unit_cadence_contract(
++        manifests_dir=manifests_dir,
++        config_targets=[target],
++        include_loader_configs=False,
++        include_metadata_datasets=include_metadata_datasets,
++        cache_root_overrides={target.wrapper: cache_root},
++        datasets_roots=(),
++        env={},
++    )
++
++
++def test_explicit_unit_cadence_metadata_marks_config_ready(tmp_path: Path) -> None:
++    target = _target(file_plan_source="synthetic explicit fixture")
++    cache_root = tmp_path / "cache"
++    cache_root.mkdir()
++    _write_trace(cache_root / "trace.parquet", metadata=_unit_metadata())
++
++    payload = _contract(tmp_path, target=target)
++
++    config = payload["configs"][0]  # type: ignore[index]
++    assert config["readiness_status"] == READINESS_READY
++    assert config["ready_for_phase11_residual_decomposition"] is True
++    fields = config["fields"]
++    assert fields["voltage_unit"]["metadata_status"] == FIELD_EXPLICIT_METADATA  # type: ignore[index]
++    assert fields["current_unit"]["metadata_status"] == FIELD_EXPLICIT_METADATA  # type: ignore[index]
++    assert fields["timebase"]["metadata_status"] == FIELD_EXPLICIT_METADATA  # type: ignore[index]
++    assert fields["sampling_cadence"]["metadata_status"] == FIELD_EXPLICIT_METADATA  # type: ignore[index]
++    assert config["blocking_gaps"] == []
++
++
++def test_missing_current_unit_metadata_is_a_blocker(tmp_path: Path) -> None:
++    target = _target()
++    cache_root = tmp_path / "cache"
++    cache_root.mkdir()
++    _write_trace(cache_root / "trace.parquet", include_current=False)
++
++    payload = _contract(tmp_path, target=target)
++
++    config = payload["configs"][0]  # type: ignore[index]
++    fields = config["fields"]
++    assert config["readiness_status"] == READINESS_INSUFFICIENT_METADATA
++    assert fields["voltage_unit"]["metadata_status"] == FIELD_LOADER_DERIVED_METADATA  # type: ignore[index]
++    assert fields["current_unit"]["metadata_status"] == FIELD_MISSING_METADATA  # type: ignore[index]
++    assert "current_unit" in config["known_missing_fields"]
++    assert config["ready_for_phase11_residual_decomposition"] is False
++
++
++def test_missing_sampling_cadence_metadata_is_a_blocker(tmp_path: Path) -> None:
++    manifests_dir = tmp_path / "manifests"
++    _write_manifest(manifests_dir, sampling_rate_hz=None)
++    target = _target()
++    cache_root = tmp_path / "cache"
++    cache_root.mkdir()
++    _write_trace(cache_root / "trace.parquet", n_samples=1)
++
++    payload = _contract(tmp_path, target=target)
++
++    config = payload["configs"][0]  # type: ignore[index]
++    fields = config["fields"]
++    assert fields["voltage_unit"]["metadata_status"] == FIELD_LOADER_DERIVED_METADATA  # type: ignore[index]
++    assert fields["current_unit"]["metadata_status"] == FIELD_LOADER_DERIVED_METADATA  # type: ignore[index]
++    assert fields["timebase"]["metadata_status"] == FIELD_LOADER_DERIVED_METADATA  # type: ignore[index]
++    assert fields["sampling_cadence"]["metadata_status"] == FIELD_MISSING_METADATA  # type: ignore[index]
++    assert config["readiness_status"] == READINESS_INSUFFICIENT_METADATA
++    assert "sampling_cadence" in config["known_missing_fields"]
++
++
++def test_loader_derived_metadata_can_mark_config_ready(tmp_path: Path) -> None:
++    target = _target()
++    cache_root = tmp_path / "cache"
++    cache_root.mkdir()
++    _write_trace(cache_root / "trace.parquet", metadata=None)
++
++    payload = _contract(tmp_path, target=target)
++
++    config = payload["configs"][0]  # type: ignore[index]
++    fields = config["fields"]
++    assert config["readiness_status"] == READINESS_READY
++    assert fields["voltage_unit"]["metadata_status"] == FIELD_LOADER_DERIVED_METADATA  # type: ignore[index]
++    assert fields["current_unit"]["metadata_status"] == FIELD_LOADER_DERIVED_METADATA  # type: ignore[index]
++    assert fields["timebase"]["metadata_status"] == FIELD_LOADER_DERIVED_METADATA  # type: ignore[index]
++    assert fields["sampling_cadence"]["metadata_status"] == FIELD_LOADER_DERIVED_METADATA  # type: ignore[index]
++    assert fields["sampling_cadence"]["value"]["sampling_rate_hz"] == 1.0  # type: ignore[index]
++    json.dumps(payload, allow_nan=False)
++
++
++def test_metadata_only_manifest_fields_are_not_applicable(tmp_path: Path) -> None:
++    manifests_dir = tmp_path / "manifests"
++    _write_manifest(manifests_dir, sampling_rate_hz=2.0)
++
++    payload = build_unit_cadence_contract(
++        manifests_dir=manifests_dir,
++        include_loader_configs=False,
++        include_metadata_datasets=True,
++        datasets_roots=(),
++        env={},
++    )
++
++    assert payload["configs"] == []
++    row = payload["metadata_datasets"][0]
++    assert row["readiness_status"] == READINESS_NOT_APPLICABLE
++    assert row["fields"]["voltage_unit"]["metadata_status"] == FIELD_NOT_APPLICABLE
++    assert row["fields"]["current_unit"]["metadata_status"] == FIELD_NOT_APPLICABLE
++    assert row["fields"]["timebase"]["metadata_status"] == FIELD_NOT_APPLICABLE
++    assert row["fields"]["sampling_cadence"]["metadata_status"] == FIELD_EXPLICIT_METADATA
++    assert row["fields"]["sampling_cadence"]["value"]["sampling_rate_hz"] == 2.0
++
++
++def test_filename_unit_and_cadence_tokens_are_rejected_not_promoted(
++    tmp_path: Path,
++) -> None:
++    manifests_dir = tmp_path / "manifests"
++    _write_manifest(manifests_dir, sampling_rate_hz=None)
++    filename = "cell_voltage_V_current_A_time_s_1Hz.parquet"
++    target = _target(
++        filename=filename,
++        file_plan_source="undocumented filename fixture",
++    )
++    cache_root = tmp_path / "cache"
++    cache_root.mkdir()
++    _write_trace(cache_root / filename, canonical_columns=False)
++
++    payload = _contract(tmp_path, target=target)
++
++    config = payload["configs"][0]  # type: ignore[index]
++    fields = config["fields"]
++    assert config["readiness_status"] == READINESS_INSUFFICIENT_METADATA
++    assert config["ready_for_phase11_residual_decomposition"] is False
++    assert fields["voltage_unit"]["metadata_status"] == FIELD_UNSAFE_FILENAME_GUESS  # type: ignore[index]
++    assert fields["current_unit"]["metadata_status"] == FIELD_UNSAFE_FILENAME_GUESS  # type: ignore[index]
++    assert fields["timebase"]["metadata_status"] == FIELD_UNSAFE_FILENAME_GUESS  # type: ignore[index]
++    assert fields["sampling_cadence"]["metadata_status"] == FIELD_UNSAFE_FILENAME_GUESS  # type: ignore[index]
++    assert payload["anti_inference_policy"]["filenames_used_for_metadata"] is False
++    assert payload["summary"]["unsafe_filename_guess_rejections"] == 4
++    assert set(config["known_missing_fields"]) == {
++        "voltage_unit",
++        "current_unit",
++        "timebase",
++        "sampling_cadence",
++    }
+
+tokens used
+212,422
+Implemented and committed Phase 11 unit/cadence contract.
+
+Commit: `d62c02367a847c9eb9cb8442e713dbbce6cfdde1`
+
+Changed:
+- Added [unit_cadence_contract.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-al-datasets-phase11-unit-cadence-contract/src/bsebench_datasets/unit_cadence_contract.py)
+- Added [phase11_unit_cadence_contract.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-al-datasets-phase11-unit-cadence-contract/scripts/phase11_unit_cadence_contract.py)
+- Added focused tests in [test_unit_cadence_contract.py](/mnt/c/doctorat/bsebench-org/bsebench-datasets-phase-7-10-al-datasets-phase11-unit-cadence-contract/tests/test_unit_cadence_contract.py)
+
+Behavior covered:
+- Explicit Parquet unit/cadence metadata
+- Loader-derived canonical Tier 2 schema/timebase metadata
+- Missing unit metadata
+- Missing cadence metadata
+- Metadata-only/not-applicable rows
+- Unsafe filename-derived guess rejection
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_unit_cadence_contract.py -q`
+- `uv run --locked --all-extras python scripts/phase11_unit_cadence_contract.py --output /tmp/bsebench_phase11_unit_cadence_contract.json --allow-gaps`
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q` (`323 passed, 29 deselected`)
+- `uv run --locked --all-extras ruff check .`
+- `uv run --locked --all-extras ruff format --check .`
+- `git diff --check`
+- `git diff --cached --check`
+
+No protected thesis/claim/roadmap files were touched. The worktree is clean and the target branch is ahead by one commit.
