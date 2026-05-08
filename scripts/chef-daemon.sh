@@ -352,6 +352,31 @@ classify_error() {
 $log_tail" "$(changed_files_unavailable "worker status=error; chef did not check out target branch")"
 }
 
+is_superseded_phase7_block_remediation() {
+  local phase_id="$1"
+  local status_file="$2"
+  local target_repo
+
+  [[ "$phase_id" == phase-7-10-y-block-remediation-* ]] || return 1
+
+  target_repo=$(jq -r '.target_repo // ""' "$status_file" 2>/dev/null || echo "")
+  [[ "$target_repo" == *"bsebench-async-codex-cto-report"* ]] || return 1
+
+  [[ ! -f "$ASYNC_REPO/outbox/_blocks/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z.block" ]] || return 1
+  [[ -f "$ASYNC_REPO/outbox/$phase_id/SUMMARY.md" ]] || return 1
+  grep -q 'phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z' "$ASYNC_REPO/outbox/$phase_id/SUMMARY.md" || return 1
+  grep -q 'Merge readiness :' "$ASYNC_REPO/scripts/remote-worker.sh" || return 1
+
+  return 0
+}
+
+write_superseded_phase7_remediation_verdict() {
+  local phase_id="$1"
+
+  write_verdict "$phase_id" "approved" "superseded by GLASSBOX async fix 162eaee: remote-worker now records post-push merge readiness and marks stale-base branches error before chef merge. The original z backlog block is already removed, so this documentary y-remediation branch must not create another block cycle." "" "$(changed_files_unavailable "superseded documentary remediation; target branch merge intentionally skipped")"
+  log "$phase_id approved as superseded Phase 7 block remediation"
+}
+
 # Kaizen retro : after a verdict is written, dispatch codex with a tight
 # kaizen-BRIEF that produces KEEP/FIX/SHIP-ONE markdown. The codex run reads
 # inbox/<phase>/BRIEF.md + outbox/<phase>/SUMMARY.md + outbox/<phase>/CHEF_VERDICT.md
@@ -785,6 +810,10 @@ while true ; do
     status=$(jq -r '.status' "$status_path" 2>/dev/null || echo "unknown")
     case "$status" in
       done)
+        if is_superseded_phase7_block_remediation "$phase_id" "$status_path" ; then
+          write_superseded_phase7_remediation_verdict "$phase_id"
+          continue
+        fi
         verify_and_merge "$phase_id" "$status_path"
         if [[ -f "outbox/$phase_id/CHEF_VERDICT.md" ]] ; then
           decision=$(grep -E '^- Decision :' "outbox/$phase_id/CHEF_VERDICT.md" | awk -F': ' '{print $2}' | head -1)
