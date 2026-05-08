@@ -1,0 +1,200 @@
++
++Run and record:
++
++- focused tests for known-source, partial-source, unknown-source, cache-missing, loader-missing, and metadata-incomplete rows;
++- a read-only real provenance matrix command against available local metadata/cache roots;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-av-async-source-ledger-comparability-diff-gate/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-av-async-source-ledger-comparability-diff-gate/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..4ecc451dba5aebfacdfd765c62f1679f42fddf82
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-av-async-source-ledger-comparability-diff-gate/BRIEF.md
+@@ -0,0 +1,48 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-av-async-source-ledger-comparability-diff-gate
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.av - async source-ledger comparability diff gate
++
++You are a rigorous anti-hallucination and comparison-protocol engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add a gate that checks whether a source-ledger row is actually comparable to a frozen BSEBench evidence row before any SOTA or novelty wording can proceed.
++
++## Active lane
++
++SOTA comparison: guardrail tooling only, using synthetic fixtures unless a real committed ledger exists. The handoff artifact is a checker result that reports comparable, partial, not comparable, or invalid with field-level reasons.
++
++## Required behavior
++
++- Review the research gate protocol, existing source-ledger schema/checkers, and claim-language guardrails.
++- Add or extend a checker or fixture set that compares ledger fields against frozen evidence metadata: metric, units, dataset, split/profile, preprocessing/run condition, method/filter family, reported value, BSEBench value, and caveat.
++- A row may be marked comparable only when all required fields match or a reviewer-visible equivalence rule is explicitly encoded.
++- Rows with unknown metric, dataset, split, method, BSEBench value, source DOI/stable URL, retrieval date, or comparability caveat must be partial, not comparable, or invalid.
++- Do not invent literature rows or fill missing source fields from memory.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this source-ledger comparability gate.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a ledger row can be marked comparable while metric, dataset, split/profile, method, source URL/DOI, retrieval date, BSEBench frozen value, or caveat is missing or mismatched, this task must fail and leave a negative fixture proving the gap.
++
++## Validation
++
++Run and record:
++
++- positive and negative fixture checks for comparable, partial, not-comparable, invalid, missing-source, mismatched-dataset, mismatched-split, and missing-BSEBench-value rows;
++- `bash -n` for changed shell scripts;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-aw-runner-phase11-pcrlb-mad-preflight-ci/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-aw-runner-phase11-pcrlb-mad-preflight-ci/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..9837c4fc0d5621a9c04aa0f0a9df5ec46ada3ad5
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-aw-runner-phase11-pcrlb-mad-preflight-ci/BRIEF.md
+@@ -0,0 +1,50 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-runner
++target_branch: phase-7-10-aw-runner-phase11-pcrlb-mad-preflight-ci
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.aw - runner Phase 11 PCRLB/MAD preflight CI
++
++You are a rigorous BSEBench runner preflight engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add a CI-suitable dry-run preflight for Phase 11 PCRLB/MAD residual-decomposition inputs before expensive evidence generation is scheduled.
++
++## Active lane
++
++Evidence generation: preflight validation, not scientific interpretation. The handoff artifact is a deterministic readiness report for Phase 11 input contracts and CI failure conditions.
++
++## Required behavior
++
++- Review runner residual-input contracts, stats PCRLB/MAD preflight expectations, and datasets provenance metadata.
++- Add or extend a dry-run command that validates Phase 11 candidate configs for voltage/current/time units, sample cadence, sample count availability, residual field availability, PCRLB/MAD input availability, stats dependency identity, and sanitized provenance/cache readiness.
++- The command must not run filters or regenerate empirical evidence.
++- CI output must be finite JSON or stable text with machine-readable ready/not-ready counts and blocking reasons.
++- Do not assert sensor-floor, model-mismatch, residual decomposition, SOTA, novelty, or verified-claim results.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 11 PCRLB/MAD preflight.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a Phase 11 config with missing units, missing cadence, missing residual fields, missing PCRLB/MAD inputs, missing sample counts, or unknown stats dependency can be marked ready, this task must fail and block CI adoption.
++
++## Validation
++
++Run and record:
++
++- focused tests for ready, missing-units, missing-cadence, missing-residual-field, missing-PCRLB-MAD-input, missing-sample-count, and unknown-stats-dependency cases;
++- a real dry-run over the current Phase 11 candidate config set without running filters;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-ax-async-autonomy-reserve-queueability-audit/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-ax-async-autonomy-reserve-queueability-audit/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..28f5fc0b2584dd92411ac53222d17f1ea05205e9
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-ax-async-autonomy-reserve-queueability-audit/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-ax-async-autonomy-reserve-queueability-audit
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 60
++---
++
++# Phase 7.10.ax - async autonomy reserve queueability audit
++
++You are a rigorous async orchestration engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Make the autonomy reserve count auditable so stale, already-queued, or already-claimed BRIEFs cannot be mistaken for usable capacity.
++
++## Active lane
++
++Evidence generation: async validation infrastructure only. The handoff artifact is a dry-run reserve audit that lists queueable, queued, inbox-present, branch-claimed, malformed, and gate-failing BRIEFs.
++
++## Required behavior
++
++- Review `scripts/cto-autonomy-pacer.sh`, `cto/AUTONOMY_BACKLOG/`, `inbox/`, and the research BRIEF gate script.
++- Add or document a dry-run command that reports why each backlog BRIEF is or is not queueable under the same rules the pacer uses.
++- The audit must include phase id, target repo, target branch, gate status, queued marker status, inbox status, target-branch claimed status, and final queueable status.
++- Ensure the reserve count used for decisions cannot count `QUEUED.json` entries, existing inbox entries, malformed BRIEFs, or target branches that already exist locally or on origin.
++- Do not queue new work as part of the audit command unless the operator explicitly runs the pacer outside dry-run mode.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this reserve queueability audit.
++- Do not make SOTA, novelty, leaderboard, breakthrough, or verified-claim statements without a completed source ledger, stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If the reserve audit counts a queued BRIEF, existing inbox task, malformed BRIEF, gate-failing BRIEF, or already-claimed target branch as queueable, this task must fail and show the bad row in the validation log.
++
++## Validation
++
++Run and record:
++
++- fixture or temporary-directory probes for queueable, queued-marker, inbox-present, malformed-frontmatter, gate-failing, and branch-claimed cases;
++- the real dry-run reserve audit against current `cto/AUTONOMY_BACKLOG/`;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+142,704
+Implemented and pushed `phase-7-10-z-autonomy-backlog-replenishment-20260508T135020Z`.
+
+Added six new backlog BRIEFs under `cto/AUTONOMY_BACKLOG/`:
+
+- `phase-7-10-as-runner-hinf-manifest-replay-negative-control`
+- `phase-7-10-at-stats-hinf-fragility-minimal-subset-audit`
+- `phase-7-10-au-datasets-phase8-chemistry-provenance-matrix`
+- `phase-7-10-av-async-source-ledger-comparability-diff-gate`
+- `phase-7-10-aw-runner-phase11-pcrlb-mad-preflight-ci`
+- `phase-7-10-ax-async-autonomy-reserve-queueability-audit`
+
+All are falsifiable, include validation commands, forbid thesis/claim registry/roadmap edits, forbid unsupported SOTA/novelty claims, and explicitly forbid targeting `claim_55`.
+
+Validation passed:
+
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md` → `34 checked, 0 skipped`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`
+- `git diff --check`
+- Pacer-style reserve count → `8` queueable unqueued BRIEFs remain after main queued `phase-7-10-t`
+
+Commit: `e80d91f chore(cto): replenish autonomy backlog reserve`
