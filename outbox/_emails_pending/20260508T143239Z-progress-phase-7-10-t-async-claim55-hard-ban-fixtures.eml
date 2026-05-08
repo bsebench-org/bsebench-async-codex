@@ -1,0 +1,16 @@
+To: akir.oussama@gmail.com
+Subject: [ESCALATED] phase-7-10-t-async-claim55-hard-ban-fixtures (panel 77/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-08T16:32:39+02:00
+
+Phase    : phase-7-10-t-async-claim55-hard-ban-fixtures
+Etat     : escalated (escalated)
+Panel    : 77/100 (seuil 89)
+Quoi     : Phase 7.10.t - async claim_55 hard-ban fixtures
+Prochaine: phase-7-10-z-autonomy-backlog-replenishment-20260508T142013Z
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-t-async-claim55-hard-ban-fixtures/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-t-async-claim55-hard-ban-fixtures/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-t-async-claim55-hard-ban-fixtures/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
