@@ -299,6 +299,23 @@ if [[ $codex_exit -eq 0 ]] && ! git diff --quiet "origin/$base_branch" HEAD 2>/d
   rm -f "$push_stderr_file"
 fi
 
+merge_ready="not-checked"
+merge_ready_detail="branch was not pushed"
+if [[ "$push_result" = "ok" ]] ; then
+  if git fetch origin "$base_branch" --quiet ; then
+    if git merge-base --is-ancestor "origin/$base_branch" HEAD 2>/dev/null ; then
+      merge_ready="ok"
+      merge_ready_detail="origin/$base_branch is an ancestor of HEAD"
+    else
+      merge_ready="stale-base"
+      merge_ready_detail="origin/$base_branch is not an ancestor of HEAD; rebase before chef merge"
+    fi
+  else
+    merge_ready="unknown"
+    merge_ready_detail="could not fetch origin/$base_branch after push"
+  fi
+fi
+
 # ------------------------------------------------------------------ write outbox
 cd "$ASYNC_REPO"
 mkdir -p "outbox/$queued_phase"
@@ -314,6 +331,8 @@ cat > "outbox/$queued_phase/SUMMARY.md" <<EOF
 - Target branch : $target_branch
 - Branch SHA : ${branch_sha:-none}
 - Push result : $push_result
+- Merge readiness : $merge_ready
+- Merge readiness detail : $merge_ready_detail
 - Started : (see STATUS.json ts_started)
 - Finished : $(date -Iseconds)
 
@@ -338,6 +357,7 @@ rm -f "$log_file"
 final_status="done"
 [[ $codex_exit -ne 0 ]] && final_status="error"
 [[ "$push_result" = "push-failed" ]] && final_status="error"
+[[ "$merge_ready" = "stale-base" || "$merge_ready" = "unknown" ]] && final_status="error"
 
 jq --argjson c $codex_exit --arg s "$final_status" \
    '.status=$s|.ts_done=(now|todate)|.exit_code=$c' \
