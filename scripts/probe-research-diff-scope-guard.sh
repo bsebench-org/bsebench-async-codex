@@ -121,7 +121,35 @@ unsupported_comparison_language() {
   local repo="$tmp_root/unsupported-comparison"
   init_repo "$repo"
   commit_file "$repo" "reports/comparison.md" \
-    'This method is SOTA, novel, and a breakthrough over prior work.'
+    'This method is SOTA, novel, a winner, and a breakthrough over prior work.'
+  run_git_guard "$repo"
+}
+
+unsupported_phase_closure_language() {
+  local repo="$tmp_root/unsupported-phase-closure"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase9-closure.md" \
+    'Phase 9 scientific closure is complete and benchmark performance is validated.'
+  run_git_guard "$repo"
+}
+
+phase_closure_with_required_evidence() {
+  local repo="$tmp_root/phase-closure-evidence"
+  init_repo "$repo"
+
+  mkdir -p "$repo/reports"
+  cat > "$repo/reports/phase9-closure.md" <<'CLOSURE'
+Phase 9 scientific closure is complete for this synthetic fixture only.
+
+- cache_evidence: local cache manifest fixture-cache.json
+- provenance_evidence: fixture provenance row
+- Tier2 evidence: fixture Tier2 readiness row
+- source_ledger: fixture-source-ledger.md
+- empirical_run_artifact: fixture empirical run JSON
+- validation: fixture replay command passed
+CLOSURE
+  git -C "$repo" add reports/phase9-closure.md
+  git -C "$repo" commit -q -m "closure with required evidence"
   run_git_guard "$repo"
 }
 
@@ -146,6 +174,12 @@ LEDGER
 changed_file_list_comparison() {
   local paths="$tmp_root/paths.txt"
   printf '%s\n' "reports/sota-comparison.md" > "$paths"
+  bash "$GUARD" --dry-run --paths "$paths" 2>&1
+}
+
+changed_file_list_claim_readiness() {
+  local paths="$tmp_root/claim-paths.txt"
+  printf '%s\n' "reports/p9-closure-verdict.md" > "$paths"
   bash "$GUARD" --dry-run --paths "$paths" 2>&1
 }
 
@@ -179,6 +213,16 @@ require_failure_contains \
   "[REVIEW_REQUIRED] reports/comparison.md -- comparison language lacks completed source ledger and comparability table" \
   unsupported_comparison_language
 
+require_failure_contains \
+  "unsupported Phase 9 closure language" \
+  "[REVIEW_REQUIRED] reports/phase9-closure.md -- Phase 9/10/11 closure/performance language lacks cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  unsupported_phase_closure_language
+
+require_success_contains \
+  "Phase closure with required evidence markers" \
+  "[ALLOWED] reports/phase9-closure.md -- Phase 9/10/11 closure/performance language with required evidence markers in diff" \
+  phase_closure_with_required_evidence
+
 require_success_contains \
   "source-ledger-present comparison" \
   "[ALLOWED] reports/comparison.md -- comparison language with completed source ledger in diff" \
@@ -188,5 +232,10 @@ require_failure_contains \
   "changed-file list comparison without diff" \
   "[REVIEW_REQUIRED] reports/sota-comparison.md -- comparison-like path supplied without diff or source ledger evidence" \
   changed_file_list_comparison
+
+require_failure_contains \
+  "changed-file list claim readiness without diff" \
+  "[REVIEW_REQUIRED] reports/p9-closure-verdict.md -- claim-readiness-like path supplied without diff or closure evidence" \
+  changed_file_list_claim_readiness
 
 echo "PASS: research diff-scope guard fixtures passed ($passes checks)."

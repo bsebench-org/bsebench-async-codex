@@ -19,6 +19,8 @@ Checks changed paths and, when a git diff is available, added text for:
   - protected thesis, claim registry, claims/registry.yaml, roadmap, claim_55 edits
   - unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim wording
   - comparison wording backed by a complete source ledger and comparability table
+  - Phase 9/10/11 closure or performance wording backed by cache, provenance,
+    Tier2, source-ledger, empirical-run, and validation evidence markers
 
 Default git mode compares origin/main...HEAD in the current repository.
 USAGE
@@ -235,11 +237,25 @@ has_comparison_language() {
   [[ "$lower" =~ (^|[^a-z0-9])sota([^a-z0-9]|$) ]] && return 0
   [[ "$lower" =~ state-of-the-art ]] && return 0
   [[ "$lower" =~ (^|[^a-z0-9])novel(ty)?([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])winner([^a-z0-9]|$) ]] && return 0
   [[ "$lower" =~ leaderboard ]] && return 0
+  [[ "$lower" =~ best[[:space:]_-]*in[[:space:]_-]*field ]] && return 0
   [[ "$lower" =~ breakthrough ]] && return 0
   [[ "$lower" =~ verified[[:space:]_-]*claim ]] && return 0
   [[ "$lower" =~ better[[:space:]]+than[[:space:]]+(prior|previous)[[:space:]]+work ]] && return 0
   [[ "$lower" =~ outperform(s|ed|ing)?[[:space:]]+(prior|previous|baseline|sota|state-of-the-art) ]] && return 0
+  return 1
+}
+
+has_phase_closure_or_performance_language() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | lower_text)
+
+  has_field "$lower" 'phase[[:space:]_/-]*(9|10|11|9/10/11)[[:alnum:][:space:]_./:-]{0,160}(complete|completed|closed|claim[[:space:]_-]*ready|scientific[[:space:]_-]*(verdict|closure)|public[[:space:]_-]*benchmark[[:space:]_-]*ready|benchmark[[:space:]_-]*ready|performance[[:space:]_-]*(claim|established|validated|verified|ready))' && return 0
+  has_field "$lower" 'phase[[:space:]_-]*9[[:space:]]*/[[:space:]]*10[[:space:]]*/[[:space:]]*11[[:alnum:][:space:]_./:-]{0,160}(complete|completed|closed|claim[[:space:]_-]*ready|scientific[[:space:]_-]*(verdict|closure)|public[[:space:]_-]*benchmark[[:space:]_-]*ready|benchmark[[:space:]_-]*ready|performance[[:space:]_-]*(claim|established|validated|verified|ready))' && return 0
+  has_field "$lower" '(public[[:space:]_-]*benchmark|leaderboard)[[:alnum:][:space:]_./:-]{0,120}(ready|validated|complete|launched)' && return 0
+  has_field "$lower" '(benchmark|model|method)[[:alnum:][:space:]_./:-]{0,120}(winner|wins|best[[:space:]_-]*performance|beats[[:space:]_-]*baseline|performance[[:space:]_-]*(verified|validated|established))' && return 0
   return 1
 }
 
@@ -259,6 +275,14 @@ looks_like_comparison_path() {
   lower=$(printf '%s' "$path" | lower_text)
 
   [[ "$lower" =~ (sota|state-of-the-art|novelty|leaderboard|comparison|comparability|benchmark) ]]
+}
+
+looks_like_claim_readiness_path() {
+  local path="$1"
+  local lower
+  lower=$(printf '%s' "$path" | lower_text)
+
+  [[ "$lower" =~ (phase[-_]?9|phase[-_]?10|phase[-_]?11|phase9|phase10|phase11|p9|p10|p11).*(closure|verdict|performance|claim|benchmark) ]]
 }
 
 has_field() {
@@ -287,6 +311,18 @@ ledger_text_is_complete() {
   return 0
 }
 
+closure_evidence_text_is_complete() {
+  local text="$1"
+
+  has_field "$text" '(cache|local[_ -]?cache|cache[_ -]?evidence)' || return 1
+  has_field "$text" 'provenance' || return 1
+  has_field "$text" 'tier[[:space:]_-]*2|tier2' || return 1
+  has_field "$text" 'source[[:space:]_-]*ledger' || return 1
+  has_field "$text" 'empirical[[:space:]_-]*(run|artifact|result|trace|output|evidence)' || return 1
+  has_field "$text" '(validation|validated|replay|diff[[:space:]_-]*check)' || return 1
+  return 0
+}
+
 mapfile -t changed_paths < <(collect_paths)
 added_all="$(all_added_text || true)"
 
@@ -301,6 +337,11 @@ done
 ledger_present=0
 if [[ "$ledger_candidate" -eq 1 ]] && ledger_text_is_complete "$added_all" ; then
   ledger_present=1
+fi
+
+closure_evidence_present=0
+if closure_evidence_text_is_complete "$added_all" ; then
+  closure_evidence_present=1
 fi
 
 if [[ "$dry_run" -eq 1 ]] ; then
@@ -342,6 +383,17 @@ for path in "${changed_paths[@]}" ; do
     continue
   fi
 
+  if [[ -n "$added_text" ]] && has_phase_closure_or_performance_language "$added_text" ; then
+    if [[ "$closure_evidence_present" -eq 1 ]] ; then
+      emit_result "ALLOWED" "$path" "Phase 9/10/11 closure/performance language with required evidence markers in diff"
+      allowed=$((allowed + 1))
+    else
+      emit_result "REVIEW_REQUIRED" "$path" "Phase 9/10/11 closure/performance language lacks cache/provenance/Tier2/source-ledger/empirical-run evidence"
+      review=$((review + 1))
+    fi
+    continue
+  fi
+
   if [[ -n "$added_text" ]] && has_comparison_language "$added_text" ; then
     if [[ "$ledger_present" -eq 1 ]] ; then
       emit_result "ALLOWED" "$path" "comparison language with completed source ledger in diff"
@@ -359,6 +411,17 @@ for path in "${changed_paths[@]}" ; do
       allowed=$((allowed + 1))
     else
       emit_result "REVIEW_REQUIRED" "$path" "source ledger path changed but required fields are incomplete"
+      review=$((review + 1))
+    fi
+    continue
+  fi
+
+  if [[ -z "$diff_file" && -n "$paths_file" ]] && looks_like_claim_readiness_path "$path" ; then
+    if [[ "$closure_evidence_present" -eq 1 ]] ; then
+      emit_result "ALLOWED" "$path" "claim-readiness-like path with required evidence markers in diff"
+      allowed=$((allowed + 1))
+    else
+      emit_result "REVIEW_REQUIRED" "$path" "claim-readiness-like path supplied without diff or closure evidence"
       review=$((review + 1))
     fi
     continue
@@ -383,8 +446,8 @@ if [[ "${#changed_paths[@]}" -eq 0 ]] ; then
   echo "No changed files found."
 fi
 
-printf 'Research diff-scope summary: allowed=%d blocked=%d review_required=%d ledger_present=%d\n' \
-  "$allowed" "$blocked" "$review" "$ledger_present"
+printf 'Research diff-scope summary: allowed=%d blocked=%d review_required=%d ledger_present=%d closure_evidence_present=%d\n' \
+  "$allowed" "$blocked" "$review" "$ledger_present" "$closure_evidence_present"
 
 if [[ "$blocked" -gt 0 || "$review" -gt 0 ]] ; then
   echo "Research diff-scope guard failed: blocked or review-required edits are present." >&2
