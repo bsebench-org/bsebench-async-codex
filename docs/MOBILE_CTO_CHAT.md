@@ -35,3 +35,19 @@ stauts stp
 
 Thread created. Current operating mode: Phase 9/10/11 closure only, target 17
 Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
+
+## CODEX STATUS 2026-05-08 21:59 CEST
+
+- Codex exec actifs: `15` workdirs uniques, `45` PIDs.
+- Refill: `OK`; target `17`; cron minute active.
+- Upload HF: `0`.
+- Scope: Phase 9/10/11 only; Phase 12/13+ locked.
+- Message USER en attente: `no`.
+- Phase 9: `63%` (+0% depuis dernier status).
+- Phase 10: `59%` (+0% depuis dernier status).
+- Phase 11: `52%` (+0% depuis dernier status).
+- Scientific closure: `NO-GO` until cache/provenance/Tier2 empirical evidence passes.
+- Recent signals:
+  - bsebench-datasets-phase9-11-refill-p9-tier2-profile-cache-20260508T215254+0200.log: "STATUS_INVALID_METADATA", "STATUS_READY", +    "STATUS_SOURCE_LEDGER_UNAVAILABLE", +    "STATUS_TIER2_CACHE_UNVERIFIED", "STATUS_TRACE_UNAVAILABLE", "STATUS_UNKNOWN_CHEMISTRY", "S
+  - bsebench-stats-phase9-11-refill-p9-11-no-claims-linter-20260508T215035+0200.log: + + +@pytest.mark.fast +def test_top_level_export_matches_runner_export() -> None: +    assert build_phase_9_10_11_no_claims_lint_top_level is build_phase_9_10_11_no_claims_lint co
+  - bsebench-async-codex-phase9-11-refill-p9-11-acceptance-gate-20260508T215244+0200.log: +  "positive claim without artifact rejected" \ +  "[FAIL] positive closure has empirical artifact evidence" \ +  positive_claim_without_artifact + +echo "PASS: Phase 9/10/11 accep
