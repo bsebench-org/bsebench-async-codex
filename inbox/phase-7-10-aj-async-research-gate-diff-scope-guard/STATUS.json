@@ -1,10 +1,10 @@
 {
   "phase_id": "phase-7-10-aj-async-research-gate-diff-scope-guard",
-  "status": "running",
+  "status": "done",
   "ts_queued": "2026-05-08T12:40:27Z",
   "ts_started": "2026-05-08T12:49:54Z",
-  "ts_done": null,
-  "exit_code": null,
+  "ts_done": "2026-05-08T13:02:15Z",
+  "exit_code": 0,
   "worker_id": "france-personal-2",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
   "target_branch": "phase-7-10-aj-async-research-gate-diff-scope-guard",
