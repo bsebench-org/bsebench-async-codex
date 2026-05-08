@@ -1,0 +1,200 @@
++
++## Validation
++
++Run and record:
++
++- `uv run --locked --all-extras pytest tests/test_phase8_source_provenance_preflight.py -q`;
++- the real read-only Phase 8 source provenance preflight over the current candidate dataset list;
++- `uv run --locked --all-extras pytest tests/ -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-ap-async-source-ledger-command-gate/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-ap-async-source-ledger-command-gate/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..4a7c60a6e97c428fc4da484eae0b8e45b41f56e2
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-ap-async-source-ledger-command-gate/BRIEF.md
+@@ -0,0 +1,47 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++target_branch: phase-7-10-ap-async-source-ledger-command-gate
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++hard_wallclock_min: 75
++---
++
++# Phase 7.10.ap - async source-ledger command gate
++
++You are a rigorous BSEBench async research-gate engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add an async-side gate that rejects BRIEFs or reports that request SOTA/novelty comparison work without a concrete source-ledger validation command.
++
++## Active lane
++
++Evidence generation: orchestration validation, not scientific comparison. The handoff artifact is a shell-checkable gate plus fixtures proving that source-ledger work declares the command, required fields, and comparability caveats before workers run.
++
++## Required behavior
++
++- Inspect `docs/RESEARCH-GATE-PROTOCOL-2026-05-07.md`, existing brief gate scripts, source-ledger schema work, and backlog/inbox examples.
++- Add or extend an async gate that detects SOTA, novelty, leaderboard, better-than-prior-work, or comparison wording and requires a source-ledger validation command plus required fields: stable URL or DOI, retrieval date, metric, dataset, split, BSEBench value, comparability, and caveat.
++- Include positive and negative fixtures for BRIEFs that mention SOTA comparison, BRIEFs that explicitly ban unsupported SOTA claims, and mechanical evidence tasks that do not perform comparison.
++- The gate must not require source ledgers for tasks that only prohibit unsupported SOTA language and do no comparison work.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this async source-ledger command gate.
++- Do not make unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim statements. A SOTA claim requires a source ledger with stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If a fixture can request SOTA/novelty/comparison work without declaring a source-ledger validation command and the required comparability fields, or if a purely prohibitive no-SOTA BRIEF is falsely rejected, the task must fail.
++
++## Validation
++
++Run and record:
++
++- `bash scripts/check-source-ledger-command-gate.sh --fixtures`;
++- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md`;
++- `bash -n scripts/check-source-ledger-command-gate.sh scripts/check-research-brief-gates.sh`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-aq-runner-phase11-residual-replay-smoke/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-aq-runner-phase11-residual-replay-smoke/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..2b3c90f8aea278e6595d5353a6484bb978e5ad80
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-aq-runner-phase11-residual-replay-smoke/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-runner
++target_branch: phase-7-10-aq-runner-phase11-residual-replay-smoke
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-datasets
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 90
++---
++
++# Phase 7.10.aq - runner Phase 11 residual replay smoke
++
++You are a rigorous BSEBench runner validation engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add a tiny Phase 11 residual replay smoke check that proves runner residual trace metadata can be consumed by stats decomposition tooling before scheduling expensive full runs.
++
++## Active lane
++
++Evidence generation: preflight replay validation on synthetic or already committed sample artifacts. The handoff artifact is a smoke JSON with residual input identity, stats command identity, compared fields, mismatch count, and blocking gaps.
++
++## Required behavior
++
++- Inspect runner residual trace export helpers, Phase 11 residual input contract work, and stats residual decomposition contract tooling.
++- Add or extend a runner smoke command that uses a minimal fixture or committed sample artifact to validate field names, voltage/current/time units, sample counts, residual arrays, stats dependency identity, and replay command wiring.
++- The smoke command must not run full filters, must not create new real-data evidence, and must report `mechanical evidence only` plus `claim_55_targeted=false`.
++- The output must distinguish fixture replay success from real Phase 11 evidence readiness; passing the smoke check alone must not be described as a scientific result.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 11 residual replay smoke.
++- Do not make unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim statements. A SOTA claim requires a source ledger with stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If the smoke fixture lacks required units, residual component fields, sample counts, stats dependency identity, replay command identity, or reports a non-zero mismatch count, the task must fail and block Phase 11 scheduling.
++
++## Validation
++
++Run and record:
++
++- `uv run --locked --all-extras pytest tests/test_phase11_residual_replay_smoke.py -q`;
++- the real smoke command over the fixture or committed sample artifact without running filters;
++- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+diff --git a/cto/AUTONOMY_BACKLOG/phase-7-10-ar-datasets-phase11-cache-redaction-audit/BRIEF.md b/cto/AUTONOMY_BACKLOG/phase-7-10-ar-datasets-phase11-cache-redaction-audit/BRIEF.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..08c170a5598e75ec2983abab6b2c9593b407328d
+--- /dev/null
++++ b/cto/AUTONOMY_BACKLOG/phase-7-10-ar-datasets-phase11-cache-redaction-audit/BRIEF.md
+@@ -0,0 +1,49 @@
++---
++target_repo: /mnt/c/doctorat/bsebench-org/bsebench-datasets
++target_branch: phase-7-10-ar-datasets-phase11-cache-redaction-audit
++base_branch: main
++add_dir:
++  - /mnt/c/doctorat/bsebench-org/bsebench-runner
++  - /mnt/c/doctorat/bsebench-org/bsebench-stats
++  - /mnt/c/doctorat/bsebench-org/bsebench-async-codex
++hard_wallclock_min: 75
++---
++
++# Phase 7.10.ar - datasets Phase 11 cache redaction audit
++
++You are a rigorous BSEBench dataset provenance engineer. You are not alone in this codebase; do not revert or overwrite unrelated edits.
++
++## Goal
++
++Add a Phase 11 cache/provenance redaction audit so readiness reports can be committed without leaking user-specific local paths or secrets.
++
++## Active lane
++
++Evidence generation: provenance sanitation validation. The handoff artifact is a read-only audit report that shows which cache/provenance fields are safe to commit, redacted, hashed, or blocked.
++
++## Required behavior
++
++- Inspect existing local-cache manifest, Phase 11 provenance inventory, dataset catalog, and loader provenance audit outputs.
++- Add or extend a datasets command that audits Phase 11 cache/provenance reports for absolute local paths, home-directory fragments, access tokens, private cache roots, unstable timestamps, and missing dataset source identity.
++- The command must preserve useful provenance through stable dataset IDs, source URL or DOI fields when known, hashes where practical, and explicit `redacted` markers for unsafe local details.
++- The report must distinguish `safe_to_commit`, `redacted`, `blocked_missing_source`, and `blocked_secret_or_path` per field or dataset.
++- Do not edit thesis files, claim registry files, `claims/registry.yaml`, `claim_55`, or `docs/RESEARCH-ROADMAP-2026-05-06.md`.
++- Do not target `claim_55`; `claim_55` is protected and unrelated to this Phase 11 cache redaction audit.
++- Do not make unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim statements. A SOTA claim requires a source ledger with stable URL or DOI, retrieval date, exact metric, dataset, split, and comparability table.
++
++## Falsification gate
++
++If an audit fixture with a local absolute path, home-directory fragment, token-like value, missing source identity, or unstable machine-specific field is marked safe to commit, the task must fail.
++
++## Validation
++
++Run and record:
++
++- `uv run --locked --all-extras pytest tests/test_phase11_cache_redaction_audit.py -q`;
++- the real read-only redaction audit over current Phase 11 provenance/cache candidate output or fixtures;
++- `uv run --locked --all-extras pytest tests/ -q`;
++- `uv run --locked --all-extras ruff check .`;
++- `uv run --locked --all-extras ruff format --check .`;
++- `git diff --check`.
++
++Commit with GLASSBOX metadata. No `Co-Authored-By Claude`.
+
+tokens used
+96,148
+Implemented and committed `2b8a05a` (`chore(cto): replenish autonomy backlog reserve`).
+
+Added six new backlog BRIEFs under `cto/AUTONOMY_BACKLOG/`:
+
+- `phase-7-10-am-runner-hinf-manifest-replay-matrix`
+- `phase-7-10-an-stats-hinf-fragility-bounds-audit`
+- `phase-7-10-ao-datasets-phase8-source-provenance-preflight`
+- `phase-7-10-ap-async-source-ledger-command-gate`
+- `phase-7-10-aq-runner-phase11-residual-replay-smoke`
+- `phase-7-10-ar-datasets-phase11-cache-redaction-audit`
+
+Each brief includes validation commands, a concrete falsification gate, no thesis/claim registry/roadmap edits, no unsupported SOTA/novelty claims, and an explicit `claim_55` targeting ban.
+
+Validation passed:
+
+- `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-*/BRIEF.md` → `34 checked, 0 skipped`
+- `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`
+- `git diff --check`
+- reserve proof: `reserve_count=10`
+
+The commit has GLASSBOX metadata and no co-author trailer. Working tree is clean; branch is `ahead 1, behind 5` relative to `origin/main`.
