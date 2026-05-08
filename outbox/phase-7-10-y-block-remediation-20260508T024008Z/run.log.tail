@@ -1,0 +1,200 @@
++  passed with no output.
++- `git diff --check` passed with no output after this incident note was
++  written.
+
+codex
+Recorded and committed the GLASSBOX incident note:
+
+[CTO_INCIDENT_20260508T024008Z_PHASE_7_10_Z_BLOCK.md](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-cto-report-phase-7-10-y-block-remediation-20260508T024008Z/cto/OUTBOX/CTO_INCIDENT_20260508T024008Z_PHASE_7_10_Z_BLOCK.md)
+
+Classification: infra-only, still valid. I left the block file in place because the blocked branch is still non-linear against `origin/main`, `ADVISOR_CHECK.md` is absent, and no `CTO_UNBLOCK.md` proof exists.
+
+Commit: `23b9a99326bc8aa170cc3ba070d57c48a179fbd5`  
+No `Co-Authored-By Claude` trailer.
+
+Validation passed and is recorded in the note:
+- active block `find`
+- daemon/process `pgrep`
+- research brief gate dry-run
+- daemon script `bash -n`
+- `git diff --check`
+
+Working tree is clean, branch is ahead of `origin/main` by 1 commit.
+diff --git a/cto/OUTBOX/CTO_INCIDENT_20260508T024008Z_PHASE_7_10_Z_BLOCK.md b/cto/OUTBOX/CTO_INCIDENT_20260508T024008Z_PHASE_7_10_Z_BLOCK.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..c7b61b60f6f55dcce9178a2cc28affa32736ecb4
+--- /dev/null
++++ b/cto/OUTBOX/CTO_INCIDENT_20260508T024008Z_PHASE_7_10_Z_BLOCK.md
+@@ -0,0 +1,152 @@
++# CTO Incident - phase 7.10.z autonomy backlog block
++
++Saved: 2026-05-08T02:40:08Z. Role: codex-incident-remediation-FR.
++
++## Classification
++
++Infra-only, still valid.
++
++The active block is not a scientific-result rejection. The blocked worker output
++adds backlog-planning BRIEFs, and worker-side validation reported green. The
++block remains valid because the branch is still non-linear against current
++`origin/main`, `ADVISOR_CHECK.md` is absent for this phase, and no
++`CTO_UNBLOCK.md` recovery proof exists.
++
++This is not stale-after-fix. Previous remediation branches recorded the same
++diagnosis, but this branch still sees the active block file and the blocked
++phase still lacks the recovery proof required to delete it.
++
++## Active Block
++
++- Block file:
++  `outbox/_blocks/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z.block`
++- Blocked phase:
++  `phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z`
++- Block text:
++  `Phase ... BLOCKED at 2026-05-08T02:04:38+02:00. Panel avg=81, advisor=BLOCK.`
++- Worker target repo:
++  `/mnt/c/doctorat/bsebench-org/bsebench-async-codex`
++- Worker branch:
++  `origin/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z`
++- Worker SHA:
++  `f2fbb3f830ed197e904b5a45d62bc64f79d500b3`
++- Current `origin/main` after fetch:
++  `4827cefce9c0b724a1ce8489a5d63399bc5aa1d9`
++- Merge base:
++  `dd906caaba88a4bc81978bac52370a603484549f`
++
++## Root Cause
++
++The worker completed and pushed six new autonomy backlog BRIEFs, but the branch
++was based on stale merge base `dd906caaba88a4bc81978bac52370a603484549f` while
++`origin/main` advanced through later async state commits. Chef uses a
++fast-forward-only merge gate, so the merge attempt correctly failed as
++non-linear.
++
++The panel correctly identified this as a source-of-truth and chef-reproducible
++mergeability failure. The advisor artifact was not produced; the block file
++records `advisor=BLOCK`, and the live chef log records advisor Codex exit
++non-zero before repeated pause messages. This is a fail-closed evidence gap, not
++unblock evidence.
++
++Secondary operations evidence shows intermittent fresh `.git/index.lock`
++contention in `/mnt/c/doctorat/bsebench-org/bsebench-async-codex`. That lock
++contention is not the direct unblock gate here because the current ancestry
++checks still fail and `CTO_UNBLOCK.md` is absent.
++
++## Blast Radius
++
++- One active block pauses chef-daemon progress by design.
++- Normal scientific queueing is paused; the pacer is queueing bounded
++  block-remediation work while the block remains.
++- Worker daemons, chef daemon, and CTO daemon are live, but daemon liveness does
++  not clear the failed fast-forward gate.
++- Watchdog state records the same block across the active async clone,
++  worker-2 clone, and CTO-report clone.
++- Two stale running statuses remain visible in watchdog context:
++  `phase-7-10-l-stats-hinf-fragility-threshold-calibration` and
++  `phase-7-10-z-autonomy-backlog-replenishment-20260507T193014Z`.
++- This incident response did not edit thesis files, claim registry files,
++  `claims/registry.yaml`, `claim_55`, roadmap files, source ledgers, or
++  scientific claim text.
++
++## Current Evidence
++
++- `CHEF_VERDICT.md` records decision `escalated` and
++  `ff-merge phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z -> main failed (non-linear ?)`.
++- `PANEL_CHECK.md` records panel average `81` and flags the failed
++  fast-forward merge into `main`.
++- `ADVISOR_CHECK.md` is not present for this phase; absence is treated as a
++  fail-closed artifact gap.
++- `SUMMARY.md` records worker exit `0`, push result `ok`, and branch SHA
++  `f2fbb3f830ed197e904b5a45d62bc64f79d500b3`.
++- `KAIZEN.md` identifies the durable fix path: add a post-worker
++  `git fetch origin main && git merge-base --is-ancestor origin/main HEAD`
++  check before treating a pushed branch as merge-ready.
++- Current ancestry proof after `git fetch origin --prune`:
++  - `git merge-base --is-ancestor origin/main origin/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z`
++    exits `1`.
++  - `git merge-base --is-ancestor origin/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z origin/main`
++    exits `1`.
++- `git diff --name-status origin/main...origin/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z`
++  shows only six intended backlog BRIEF additions:
++  `phase-7-10-q`, `phase-7-10-r`, `phase-7-10-s`, `phase-7-10-t`,
++  `phase-7-10-u`, and `phase-7-10-v`.
++- No
++  `outbox/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z/CTO_UNBLOCK.md`
++  exists.
++- Latest worker logs read:
++  `/mnt/c/doctorat/bsebench-org/.async-worker.log` and
++  `/mnt/c/doctorat/bsebench-org/.async-worker-2.log`. They show ongoing worker
++  ticks, intermittent fresh `index.lock` contention, current remediation
++  worktree creation, and a start-push race for this remediation branch.
++- Latest chef log read:
++  `/home/oakir/.async-chef.log`. It shows repeated pauses on one block through
++  `2026-05-08T04:42:27+02:00`.
++- Latest pacer log read:
++  `/home/oakir/.local/state/bsebench-async-watchdog/pacer.log`. It records the
++  active block and queues this remediation at `2026-05-08T04:40:08+02:00`.
++- Watchdog log read:
++  `/home/oakir/.local/state/bsebench-async-watchdog/watchdog.log`. It records
++  the block across the three async clones and the stale running statuses.
++
++## Exact Recovery Gate
++
++Do not delete
++`outbox/_blocks/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z.block`
++until a recovery branch proves all of the following:
++
++1. Rebase or recreate
++   `phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z` on current
++   `origin/main` without changing the six backlog BRIEF intents.
++2. Add
++   `outbox/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z/CTO_UNBLOCK.md`
++   with root cause, new branch SHA, ancestry proof, validation outputs, and
++   confirmation that no protected files were edited.
++3. After fetching, prove
++   `git merge-base --is-ancestor origin/main HEAD` exits `0` on the recovery
++   branch.
++4. Run and pass:
++   - `bash scripts/check-research-brief-gates.sh --dry-run cto/AUTONOMY_BACKLOG/phase-7-10-{q,r,s,t,u,v}-*/BRIEF.md`
++   - `bash -n scripts/cto-autonomy-pacer.sh scripts/check-research-brief-gates.sh`
++   - `git diff --check`
++5. Show `git diff --name-status origin/main...HEAD` contains only the six
++   intended backlog BRIEFs plus the `CTO_UNBLOCK.md` evidence file.
++6. Only after those proofs are committed with GLASSBOX metadata may the block
++   file be removed in the same recovery branch.
++
++## Validation Record
++
++- `find outbox/_blocks -maxdepth 1 -type f -name '*.block' -print` returned:
++  `outbox/_blocks/phase-7-10-z-autonomy-backlog-replenishment-20260507T235013Z.block`
++- `pgrep -af 'worker-daemon|chef-daemon|cto-daemon|codex exec|/usr/bin/codex|@openai/codex'`
++  returned two worker daemons (`46594`, `47258`), the long-lived interactive
++  Codex process (`55485`, `55492`), one CTO daemon (`251599`), one chef daemon
++  (`508965`), and this remediation `codex exec` process (`1022060`, `1022061`,
++  `1022068`).
++- `bash scripts/check-research-brief-gates.sh --dry-run inbox/phase-7-10-y-block-remediation-20260508T024008Z/BRIEF.md`
++  passed: `Research BRIEF gate checks passed: 1 checked, 0 skipped.`
++- `bash -n scripts/cto-autonomy-pacer.sh scripts/remote-worker.sh scripts/chef-daemon.sh scripts/cto-watchdog-10min.sh`
++  passed with no output.
++- `git diff --check` passed with no output after this incident note was
++  written.
+
+tokens used
+271,059
+Recorded and committed the GLASSBOX incident note:
+
+[CTO_INCIDENT_20260508T024008Z_PHASE_7_10_Z_BLOCK.md](/mnt/c/doctorat/bsebench-org/bsebench-async-codex-cto-report-phase-7-10-y-block-remediation-20260508T024008Z/cto/OUTBOX/CTO_INCIDENT_20260508T024008Z_PHASE_7_10_Z_BLOCK.md)
+
+Classification: infra-only, still valid. I left the block file in place because the blocked branch is still non-linear against `origin/main`, `ADVISOR_CHECK.md` is absent, and no `CTO_UNBLOCK.md` proof exists.
+
+Commit: `23b9a99326bc8aa170cc3ba070d57c48a179fbd5`  
+No `Co-Authored-By Claude` trailer.
+
+Validation passed and is recorded in the note:
+- active block `find`
+- daemon/process `pgrep`
+- research brief gate dry-run
+- daemon script `bash -n`
+- `git diff --check`
+
+Working tree is clean, branch is ahead of `origin/main` by 1 commit.

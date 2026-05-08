@@ -1,10 +1,10 @@
 {
   "phase_id": "phase-7-10-y-block-remediation-20260508T024008Z",
-  "status": "running",
+  "status": "done",
   "ts_queued": "2026-05-08T02:40:08Z",
   "ts_started": "2026-05-08T02:40:35Z",
-  "ts_done": null,
-  "exit_code": null,
+  "ts_done": "2026-05-08T02:47:18Z",
+  "exit_code": 0,
   "worker_id": "france-personal",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex-cto-report",
   "target_branch": "phase-7-10-y-block-remediation-20260508T024008Z",
