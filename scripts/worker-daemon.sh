@@ -33,6 +33,7 @@ set -uo pipefail
 INTERVAL_SEC="${WORKER_INTERVAL_SEC:-60}"
 QUIET="${QUIET:-0}"
 WORKER_ID="${WORKER_ID:-france-personal}"
+SUPERVISE_CHEF_DAEMON="${SUPERVISE_CHEF_DAEMON:-1}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ASYNC_REPO="${ASYNC_REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 
@@ -72,6 +73,8 @@ trap 'echo "[$(date -Iseconds)] worker daemon stopped (signal received)" ; exit 
 # bootstrap chicken-and-egg : chef-daemon never has to update itself,
 # the worker meta-supervisor handles it.
 ensure_chef_daemon_fresh() {
+  [[ "$SUPERVISE_CHEF_DAEMON" == "1" ]] || return 0
+
   local chef_script="$SCRIPT_DIR/chef-daemon.sh"
   [[ -f "$chef_script" ]] || return 0  # nothing to supervise
 
@@ -112,9 +115,9 @@ ensure_chef_daemon_fresh() {
     # log lines appear immediately in .async-chef.log instead of being
     # block-buffered by glibc (which kept us blind for 1h+ on 2026-05-06).
     if command -v stdbuf >/dev/null 2>&1 ; then
-      nohup stdbuf -oL -eL bash "$chef_script" > "$HOME/.async-chef.log" 2>&1 &
+      nohup env ASYNC_REPO="$ASYNC_REPO" stdbuf -oL -eL bash "$chef_script" > "$HOME/.async-chef.log" 2>&1 &
     else
-      nohup bash "$chef_script" > "$HOME/.async-chef.log" 2>&1 &
+      nohup env ASYNC_REPO="$ASYNC_REPO" bash "$chef_script" > "$HOME/.async-chef.log" 2>&1 &
     fi
     disown 2>/dev/null || true
     echo "[$(date -Iseconds)] worker: chef-daemon launched (disk_sha=$disk_sha)"
