@@ -131,3 +131,19 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
   - bsebench-async-codex-phase9-11-refill-p9-11-acceptance-gate-20260508T232957+0200.log: Objective: Phase 9/10/11 acceptance gate checklist: tooling vs scientific closure. Rules: no Co-Authored-By Claude. Commit subject must start with GLASSBOX. No Hugging Face uploads
   - bsebench-stats-phase9-11-refill-p9-11-no-claims-linter-20260508T232951+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
   - bsebench-runner-phase9-11-refill-p9-11-dryrun-cli-smoke-20260508T232944+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
+
+## CODEX STATUS 2026-05-08 23:45 CEST
+
+- Codex exec actifs: `1` workdirs uniques, `3` PIDs.
+- Refill: `OK`; target `17`; cron minute active.
+- Upload HF: `0`.
+- Scope: Phase 9/10/11 only; Phase 12/13+ locked.
+- Message USER en attente: `no`.
+- Phase 9: `70%` (+0% depuis dernier status).
+- Phase 10: `62%` (+0% depuis dernier status).
+- Phase 11: `54%` (+0% depuis dernier status).
+- Scientific closure: `NO-GO` until cache/provenance/Tier2 empirical evidence passes.
+- Recent signals:
+  - bsebench-runner-phase9-11-refill-p9-profile-empirical-scheduler-20260508T234500+0200.log: Objective: Phase 9 empirical profile dry-run scheduler; refuse all-blocked matrices. Rules: no Co-Authored-By Claude. Commit subject must start with GLASSBOX. No Hugging Face uploa
+  - bsebench-datasets-phase9-11-refill-p11-tier2-residual-cache-20260508T234453+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
+  - bsebench-datasets-phase9-11-refill-p10-tier2-aging-cache-20260508T234446+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
