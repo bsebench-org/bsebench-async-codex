@@ -51,3 +51,19 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
   - bsebench-datasets-phase9-11-refill-p9-tier2-profile-cache-20260508T215254+0200.log: "STATUS_INVALID_METADATA", "STATUS_READY", +    "STATUS_SOURCE_LEDGER_UNAVAILABLE", +    "STATUS_TIER2_CACHE_UNVERIFIED", "STATUS_TRACE_UNAVAILABLE", "STATUS_UNKNOWN_CHEMISTRY", "S
   - bsebench-stats-phase9-11-refill-p9-11-no-claims-linter-20260508T215035+0200.log: + + +@pytest.mark.fast +def test_top_level_export_matches_runner_export() -> None: +    assert build_phase_9_10_11_no_claims_lint_top_level is build_phase_9_10_11_no_claims_lint co
   - bsebench-async-codex-phase9-11-refill-p9-11-acceptance-gate-20260508T215244+0200.log: +  "positive claim without artifact rejected" \ +  "[FAIL] positive closure has empirical artifact evidence" \ +  positive_claim_without_artifact + +echo "PASS: Phase 9/10/11 accep
+
+## CODEX STATUS 2026-05-08 22:30 CEST
+
+- Codex exec actifs: `0` workdirs uniques, `0` PIDs.
+- Refill: `OK`; target `17`; cron minute active.
+- Upload HF: `0`.
+- Scope: Phase 9/10/11 only; Phase 12/13+ locked.
+- Message USER en attente: `no`.
+- Phase 9: `70%` (+0% depuis dernier status).
+- Phase 10: `62%` (+3% depuis dernier status).
+- Phase 11: `54%` (+0% depuis dernier status).
+- Scientific closure: `NO-GO` until cache/provenance/Tier2 empirical evidence passes.
+- Recent signals:
+  - bsebench-runner-phase9-11-refill-p10-aging-empirical-scheduler-20260508T223000+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
+  - bsebench-runner-phase9-11-refill-p9-profile-empirical-scheduler-20260508T222955+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
+  - bsebench-datasets-phase9-11-refill-p11-tier2-residual-cache-20260508T222951+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
