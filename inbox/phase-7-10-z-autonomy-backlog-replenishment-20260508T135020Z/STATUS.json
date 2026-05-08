@@ -1,0 +1,14 @@
+{
+  "phase_id": "phase-7-10-z-autonomy-backlog-replenishment-20260508T135020Z",
+  "status": "queued",
+  "ts_queued": "2026-05-08T13:50:20Z",
+  "ts_started": null,
+  "ts_done": null,
+  "exit_code": null,
+  "worker_id": null,
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-async-codex",
+  "target_branch": "phase-7-10-z-autonomy-backlog-replenishment-20260508T135020Z",
+  "base_branch": "main",
+  "queued_by": "cto-autonomy-pacer",
+  "source_backlog": "dynamic-reserve-low"
+}
