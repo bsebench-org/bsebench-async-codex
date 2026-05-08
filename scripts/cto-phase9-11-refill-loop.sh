@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Maintain Codex capacity using Phase 9/10/11-only work until checkpoint closure.
 
-set -euo pipefail
+set -uo pipefail
 
 ROOT="${BSEBENCH_ROOT:-/mnt/c/doctorat/bsebench-org}"
 STATE_DIR="${STATE_DIR:-/home/oakir/.local/state/bsebench-async-watchdog}"
@@ -105,7 +105,10 @@ launch_one() {
     return 1
   fi
 
-  git -C "$base" worktree add -q -b "$branch" "$wt" HEAD
+  if ! git -C "$base" worktree add -q -b "$branch" "$wt" HEAD >> "$LOG_FILE" 2>&1; then
+    log "LAUNCH_FAIL repo=$repo branch=$branch step=worktree_add"
+    return 1
+  fi
   prompt=$(printf '%s\n' \
 "You are a BSEBench Phase 9/10/11 closure worker. Do not work on Phase 12/13 or later." \
 "Objective: $objective" \
@@ -126,7 +129,8 @@ launch_one() {
       --add-dir "$ROOT/bsebench-filters" \
       --add-dir "$ROOT/bsebench-async-codex" \
       > "$run_log" 2>&1 &
-  log "LAUNCHED repo=$repo branch=$branch pid=$! log=$run_log"
+  local pid="$!"
+  log "LAUNCHED repo=$repo branch=$branch pid=$pid log=$run_log"
 }
 
 write_report() {
