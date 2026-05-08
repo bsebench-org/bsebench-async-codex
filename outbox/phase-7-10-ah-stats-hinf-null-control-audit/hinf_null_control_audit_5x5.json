@@ -1,0 +1,132 @@
+{
+  "falsification_gate": {
+    "blocking_fragility": false,
+    "candidate_status": "not_flagged_fragile",
+    "mechanical_evidence_effect": "strengthens",
+    "null_control_overlap": false,
+    "observed_margin_overlaps_tolerance": false,
+    "pass": true,
+    "policy": "blocking fragility prevents downstream claim registration support; this audit provides no scientific verdict",
+    "risk_count": 0,
+    "risk_ids": [],
+    "status": "null_control_separated"
+  },
+  "mechanical_evidence": {
+    "mechanical_effect": "strengthens",
+    "mechanical_effect_detail": "config-bootstrap lower-tail margin stays above the tolerance",
+    "null_control": {
+      "comparison_rule": "blocking fragility when the observed margin or the fixed-seed bootstrap lower-tail margin is at or below margin_tolerance",
+      "config_labels": [
+        "Yao BCDC T25",
+        "Yao US06 T25",
+        "Panasonic US06 T25",
+        "NASA B0005 T24",
+        "CALCE A123 DST T25"
+      ],
+      "control_kind": "config_bootstrap_with_replacement",
+      "justification": "Resample retained configs with replacement while preserving each frozen per-config residual-correlation matrix; this checks whether the target top-margin survives config perturbation without changing residual values.",
+      "lower_quantile": 0.05,
+      "n_configs": 5,
+      "n_resamples": 512,
+      "null_control_statistic": 0.4537286599598518,
+      "null_control_statistic_name": "bootstrap_p5_target_top_margin_abs_correlation",
+      "random_engine": "python_random.Random",
+      "resample_index_digest_sha256": "613d8033e91691d85ac2a557b6b1f38e845c758096237b641653bb00b5ff02a9",
+      "resampled_config_count_per_run": 5,
+      "seed": 710010,
+      "statistic_name": "target_top_margin_abs_correlation",
+      "summary": {
+        "fraction_at_or_above_observed_statistic": 0.443359375,
+        "fraction_at_or_below_margin_tolerance": 0.0,
+        "lower_quantile": 0.4537286599598518,
+        "max": 0.7762569244100023,
+        "mean": 0.6059083495123294,
+        "median": 0.6040338098505237,
+        "min": 0.329973375787757,
+        "n_at_or_above_observed_statistic": 227,
+        "n_at_or_below_margin_tolerance": 0,
+        "upper_95_quantile": 0.738928244272098
+      }
+    },
+    "observed_statistic": {
+      "definition": "largest absolute target-filter residual correlation minus the second largest absolute target-filter residual correlation",
+      "peer_correlations_sorted": [
+        {
+          "abs_correlation": 0.8870889996288478,
+          "correlation": 0.8870889996288478,
+          "peer_filter": "EKF"
+        },
+        {
+          "abs_correlation": 0.26529211558795396,
+          "correlation": 0.26529211558795396,
+          "peer_filter": "UKFDef"
+        },
+        {
+          "abs_correlation": 0.13619668042454816,
+          "correlation": 0.13619668042454816,
+          "peer_filter": "JUKFV6B"
+        },
+        {
+          "abs_correlation": 0.012880056269532505,
+          "correlation": 0.012880056269532505,
+          "peer_filter": "EnsembleMeta"
+        }
+      ],
+      "runner_up_peer": {
+        "abs_correlation": 0.26529211558795396,
+        "correlation": 0.26529211558795396,
+        "peer_filter": "UKFDef"
+      },
+      "source": "frozen_equal_config_aggregate",
+      "statistic_name": "target_top_margin_abs_correlation",
+      "strongest_peer": {
+        "abs_correlation": 0.8870889996288478,
+        "correlation": 0.8870889996288478,
+        "peer_filter": "EKF"
+      },
+      "target_filter": "Hinf",
+      "value": 0.6217968840408938
+    },
+    "values_compared": {
+      "margin_tolerance": 0.05,
+      "null_control_statistic": 0.4537286599598518,
+      "null_control_statistic_minus_tolerance": 0.4037286599598518,
+      "observed_minus_tolerance": 0.5717968840408938,
+      "observed_statistic": 0.6217968840408938
+    }
+  },
+  "mechanical_evidence_only": true,
+  "null_control_policy": {
+    "blocking_fragility_rule": "uncertainty, instability, or null-control overlap is a blocking mechanical fragility signal, not a scientific claim verdict",
+    "bootstrap_resamples": 512,
+    "control_kind": "config_bootstrap_with_replacement",
+    "lower_quantile": 0.05,
+    "margin_tolerance": 0.05,
+    "pass_rule": "observed statistic and null-control lower-tail statistic must both be greater than margin_tolerance",
+    "seed": 710010,
+    "statistic_name": "target_top_margin_abs_correlation",
+    "target_filter": "Hinf"
+  },
+  "schema_version": "hinf_residual_null_control_audit_v1",
+  "scientific_interpretation": {
+    "claim_statement": "none",
+    "comparability_table_present": false,
+    "scientific_verdict": "none",
+    "source_ledger_present": false,
+    "status": "not_interpreted"
+  },
+  "script": "bsebench_stats.runners.hinf_null_control",
+  "source_inputs": {
+    "evidence": {
+      "claim_55_targeted": false,
+      "mechanical_evidence_only": true,
+      "path": "/mnt/c/doctorat/bsebench-org/bsebench-runner/outputs/hinf_residual_evidence_5x5.json",
+      "schema_version": "1.0",
+      "scientific_verdict": "none",
+      "script": "scripts/hinf_residual_evidence_5x5.py",
+      "sha256": "35c255c696fd9b63552c2206d08009aea834c17f3f09e2bd49b7ac5666917f78",
+      "size_bytes": 2679574,
+      "status": "read"
+    }
+  }
+}
