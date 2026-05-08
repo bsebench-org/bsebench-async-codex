@@ -1,0 +1,200 @@
++    "write_phase8_11_provenance_hash_ledger",
+ ]
+diff --git a/tests/test_phase8_11_provenance_hash_ledger.py b/tests/test_phase8_11_provenance_hash_ledger.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..6370482a6f6b2e0faf7ec1cbae4c4a09cb24e3b3
+--- /dev/null
++++ b/tests/test_phase8_11_provenance_hash_ledger.py
+@@ -0,0 +1,171 @@
++"""Tests for the sanitized Phase 8/11 provenance hash ledger."""
++
++from __future__ import annotations
++
++import hashlib
++import json
++from pathlib import Path
++
++import numpy as np
++import pyarrow as pa
++import pyarrow.parquet as pq
++
++from bsebench_datasets.auditj_local_cache_manifest import (
++    CLAIM_SUPPORT_NOT_READY,
++    PHASE8_11_LEDGER_SCHEMA_VERSION,
++    build_phase8_11_provenance_hash_ledger,
++    format_phase8_11_provenance_hash_ledger_summary,
++)
++
++
++def _write_split(path: Path, configs: list[tuple[str, str, float]]) -> Path:
++    config_lines = "\n".join(
++        f"  - {{wrapper: {wrapper}, profile: {profile}, T_C: {t_c:g}}}"
++        for wrapper, profile, t_c in configs
++    )
++    path.write_text(
++        "\n".join(
++            [
++                'schema_version: "1.0"',
++                "split_id: synthetic_audit_j",
++                "description: synthetic split for Phase 8/11 ledger tests",
++                "forensic:",
++                "  source_file: synthetic.py",
++                '  source_lines: "1-3"',
++                "  source_commit: deadbeef",
++                "configs:",
++                config_lines,
++                "",
++            ]
++        ),
++        encoding="utf-8",
++    )
++    return path
++
++
++def _write_loader_parquet(path: Path, *, temperature_c: float = 25.0) -> None:
++    table = pa.table(
++        {
++            "time_s": pa.array(np.arange(12, dtype=np.float64), type=pa.float64()),
++            "voltage_V": pa.array(np.linspace(4.0, 3.6, 12), type=pa.float64()),
++            "current_A": pa.array(np.full(12, -2.0), type=pa.float64()),
++            "temperature_C": pa.array(np.full(12, temperature_c), type=pa.float64()),
++        }
++    )
++    pq.write_table(table, str(path))
++
++
++def _config_by_label(payload: dict[str, object]) -> dict[str, dict[str, object]]:
++    return {str(config["label"]): config for config in payload["configs"]}  # type: ignore[index]
++
++
++def test_loader_ready_without_source_identity_is_not_claim_ready(tmp_path: Path) -> None:
++    split_path = _write_split(tmp_path / "split.yaml", [("calce_legacy", "DST", 25.0)])
++    manifests_dir = tmp_path / "manifests"
++    manifests_dir.mkdir()
++    cache_root = tmp_path / "calce"
++    cache_root.mkdir()
++    _write_loader_parquet(cache_root / "calce_a123_DST_T25.parquet")
++
++    payload = build_phase8_11_provenance_hash_ledger(
++        split_path,
++        cache_root_overrides={"calce_legacy": cache_root},
++        datasets_roots=(),
++        env={},
++        include_strict_hinf=False,
++        include_metadata_datasets=False,
++        manifests_dir=manifests_dir,
++    )
++
++    config = _config_by_label(payload)["calce_legacy:DST:T25"]
++    assert payload["schema_version"] == PHASE8_11_LEDGER_SCHEMA_VERSION
++    assert config["loader_readiness"]["ready"] is True  # type: ignore[index]
++    assert config["required_cache_file_hash_status"]["status"] == "ready"  # type: ignore[index]
++    assert config["claim_support_status"] == CLAIM_SUPPORT_NOT_READY
++    assert set(config["missing_fields"]) >= {  # type: ignore[arg-type]
++        "source_identity",
++        "retrieval_or_source_date",
++        "license_provenance",
++        "required_source_file_hash_status",
++    }
++    assert payload["falsification_gate"]["passed"] is True  # type: ignore[index]
++    assert payload["falsification_gate"]["loader_ready_but_not_claim_ready"] == [  # type: ignore[index]
++        "calce_legacy:DST:T25"
++    ]
++
++
++def test_phase8_lg_hg2_manifest_source_and_cache_hashes_are_reported(
++    tmp_path: Path,
++) -> None:
++    split_path = _write_split(tmp_path / "split.yaml", [("calce_legacy", "DST", 25.0)])
++    manifests_dir = Path(__file__).resolve().parents[1] / "manifests"
++    cache_root = tmp_path / "lg_hg2"
++    cache_root.mkdir()
++    parquet_path = cache_root / "lg_P065_rep2_S03.parquet"
++    _write_loader_parquet(parquet_path)
++
++    payload = build_phase8_11_provenance_hash_ledger(
++        split_path,
++        cache_root_overrides={"lg_hg2": cache_root},
++        datasets_roots=(),
++        env={},
++        include_strict_hinf=False,
++        include_metadata_datasets=False,
++        manifests_dir=manifests_dir,
++    )
++
++    config = _config_by_label(payload)["phase8_lg_hg2_manifest_grid:lg_P065_rep2_S03"]
++    assert config["loader_readiness"]["ready"] is True  # type: ignore[index]
++    assert config["manifest_identifier"]["value"] == {  # type: ignore[index]
++        "name": "lg_hg2_stroebl_2024",
++        "path": "manifests/lg_hg2_stroebl_2024.yaml",
++    }
++    assert config["source_identity"]["status"] == "ready"  # type: ignore[index]
++    assert config["source_identity"]["value"]["canonical_doi"] == "10.35097/1947"  # type: ignore[index]
++    assert config["license_provenance"]["status"] == "ready"  # type: ignore[index]
++    assert config["required_source_file_hash_status"]["status"] == "ready"  # type: ignore[index]
++    assert (
++        config["required_source_file_hash_status"]["files"][0]["path"]  # type: ignore[index]
++        == "cell_logext_P065_2_S03_C02_truncated.csv"
++    )
++    assert (
++        config["required_source_file_hash_status"]["files"][0]["hash_status"]  # type: ignore[index]
++        == "declared"
++    )
++    assert config["required_cache_file_hash_status"]["status"] == "ready"  # type: ignore[index]
++    assert (
++        config["required_cache_file_hash_status"]["files"][0]["sha256"]  # type: ignore[index]
++        == hashlib.sha256(parquet_path.read_bytes()).hexdigest()
++    )
++    assert config["claim_support_status"] == CLAIM_SUPPORT_NOT_READY
++    assert "retrieval_or_source_date" in config["missing_fields"]  # type: ignore[operator]
++    json.dumps(payload, allow_nan=False)
++
++
++def test_ledger_omits_machine_local_paths_and_redacts_secret_fragments(
++    tmp_path: Path,
++) -> None:
++    split_path = _write_split(tmp_path / "split.yaml", [("calce_legacy", "DST", 25.0)])
++    manifests_dir = tmp_path / "manifests"
++    manifests_dir.mkdir()
++    secret_root = tmp_path / "token=supersecret"
++    secret_root.mkdir()
++    _write_loader_parquet(secret_root / "calce_a123_DST_T25.parquet")
++
++    payload = build_phase8_11_provenance_hash_ledger(
++        split_path,
++        cache_root_overrides={"calce_legacy": secret_root},
++        datasets_roots=(),
++        env={},
++        include_strict_hinf=False,
++        include_metadata_datasets=False,
++        manifests_dir=manifests_dir,
++    )
++
++    dumped = json.dumps(payload, allow_nan=False)
++    summary = format_phase8_11_provenance_hash_ledger_summary(payload)
++    assert "supersecret" not in dumped
++    assert "supersecret" not in summary
++    assert str(tmp_path) not in dumped
++    assert str(tmp_path) not in summary
++    assert payload["path_sanitization"]["local_absolute_paths_included"] is False  # type: ignore[index]
+
+tokens used
+227,932
+Implemented and committed `f74d326` (`GLASSBOX: add Phase 8/11 provenance hash ledger`).
+
+Added:
+- Sanitized Phase 8/11 provenance/hash ledger builder in `auditj_local_cache_manifest.py`.
+- Read-only CLI: `scripts/phase8_11_provenance_hash_ledger.py`.
+- Targeted tests: `tests/test_phase8_11_provenance_hash_ledger.py`.
+
+The real ledger command ran against `../_datasets` and `../bsebench-runner`; it reported `evidence_ready=False`, `58` configs, `0` loader-ready, `0` claim-ready, and explicit `not_ready_for_claim_support` gaps. Generated JSON/Markdown artifacts were checked for local path/secret leakage and removed.
+
+Validation passed:
+- `uv run --locked --all-extras pytest tests/test_phase8_11_provenance_hash_ledger.py -q`
+- real ledger CLI command with `--allow-gaps`
+- `uv run --locked --all-extras pytest tests/ -m "not slow" -q`
+- `uv run --locked --all-extras ruff check .`
+- `uv run --locked --all-extras ruff format --check .`
+- `git diff --check`
+
+Worktree is clean; branch is ahead by 1 commit.
