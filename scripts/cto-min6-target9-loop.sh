@@ -110,7 +110,7 @@ tick() {
   if [[ "$uploads" -gt 0 ]]; then
     log "UPLOAD_GUARD uploads=$uploads action=manual_stop_required"
   fi
-  if [[ "$active" -lt "$MIN_CODEX" ]]; then
+  if [[ "$active" -lt "$TARGET_CODEX" ]]; then
     launch_capacity "$active"
   fi
 }
