@@ -1,0 +1,15 @@
+To: akir.oussama@gmail.com
+From: cto-kpi@bsebench.local
+Subject: [BSEBench KPI] codex=7 P9=20a P10=20a P11=0a
+Date: Fri, 08 May 2026 14:49:32 +0200
+Message-ID: <177824457280.1609788.9244395496359359714@ECOFIXE20.ecomundo.int>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Depuis le dernier point: 4 commit(s) GLASSBOX async, 2 taches directes Phase =
+9/10/11+site actives, 4 uploads HF actifs, block chef=3D0.
+KPI: codex_exec=3D7, HF datasets=3D114, P9=3D0% verifie/20% actif, P10=3D0% v=
+erifie/20% actif, P11=3D0% verifie/0% actif; ETA preflights P9/P10/P11=3D1-3h=
+ si validations vertes, ETA phases completes=3Dapres cache/provenance et runs=
+ empiriques.
