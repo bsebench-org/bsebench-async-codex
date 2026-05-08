@@ -1,0 +1,839 @@
+{
+  "schema_version": 1,
+  "scope": "Phase 9/10/11",
+  "scientific_status": "NO_GO",
+  "merge_policy": {
+    "action": "do_not_merge",
+    "allow_merge": false,
+    "commit_subject_prefix": "GLASSBOX",
+    "guardrails": [
+      "No Co-Authored-By Claude trailer.",
+      "No Hugging Face upload.",
+      "No dataset download.",
+      "No thesis edit.",
+      "No roadmap edit.",
+      "No claim registry edit.",
+      "No protected-claim edit.",
+      "No public performance claim without source-ledger and empirical evidence."
+    ]
+  },
+  "validation_order": [
+    {
+      "id": "scope_lock",
+      "requires": [
+        "Phase 9/10/11 scope only",
+        "no protected paths",
+        "no public performance claim"
+      ],
+      "fail_closed_on": [
+        "phase outside scope",
+        "protected-path diff",
+        "unsupported claim wording"
+      ]
+    },
+    {
+      "id": "branch_metadata",
+      "requires": [
+        "GLASSBOX commit subject",
+        "no Co-Authored-By Claude trailer",
+        "pushed branch SHA"
+      ],
+      "fail_closed_on": [
+        "missing pushed branch",
+        "bad commit subject",
+        "forbidden trailer"
+      ]
+    },
+    {
+      "id": "protected_diff",
+      "requires": [
+        "diff excludes thesis",
+        "diff excludes roadmap",
+        "diff excludes claim registry",
+        "diff excludes protected-claim files",
+        "diff excludes dataset download and upload paths"
+      ],
+      "fail_closed_on": [
+        "thesis edit",
+        "roadmap edit",
+        "claim registry edit",
+        "protected-claim edit",
+        "dataset download or upload workflow"
+      ]
+    },
+    {
+      "id": "local_cache_provenance_tier2",
+      "requires": [
+        "local cache evidence",
+        "provenance manifest or hash evidence",
+        "Tier2 artifact identity"
+      ],
+      "fail_closed_on": [
+        "missing cache",
+        "missing provenance",
+        "missing Tier2",
+        "path-only identity",
+        "unverified local artifact"
+      ]
+    },
+    {
+      "id": "source_ledger",
+      "requires": [
+        "source-ledger row",
+        "stable URL or DOI when external comparison is involved",
+        "retrieval date",
+        "metric, dataset, split, and caveat fields"
+      ],
+      "fail_closed_on": [
+        "missing source-ledger",
+        "stale source-ledger",
+        "future-dated source-ledger",
+        "incomplete comparability row"
+      ]
+    },
+    {
+      "id": "empirical_run",
+      "requires": [
+        "empirical-run artifact",
+        "runner configuration identity",
+        "stats handoff identity"
+      ],
+      "fail_closed_on": [
+        "missing empirical-run",
+        "synthetic-only evidence",
+        "unknown runner configuration",
+        "missing stats handoff"
+      ]
+    },
+    {
+      "id": "repo_local_validation",
+      "requires": [
+        "focused tests for changed entrypoints",
+        "format check when available",
+        "lint check when available",
+        "diff guard when available"
+      ],
+      "fail_closed_on": [
+        "test failure",
+        "format failure",
+        "lint failure",
+        "diff guard failure"
+      ]
+    },
+    {
+      "id": "cross_repo_dependency",
+      "requires": [
+        "dependency branches validated first",
+        "no simultaneous merge of dependent rows",
+        "validation logs recorded before next row"
+      ],
+      "fail_closed_on": [
+        "missing dependency evidence",
+        "unknown dependency branch",
+        "conflicting dependency order"
+      ]
+    },
+    {
+      "id": "checkpoint_report",
+      "requires": [
+        "Phase 9/10/11 checkpoint status",
+        "blockers listed",
+        "no complete status without evidence"
+      ],
+      "fail_closed_on": [
+        "missing checkpoint report",
+        "missing blocker list",
+        "completion declared without evidence"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "p9-11-merge-matrix",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: cache/provenance/Tier2/source-ledger/empirical-run evidence is not fully verified in this async matrix."
+      ],
+      "validation_commands": [
+        "python3 scripts/check_phase9_11_merge_matrix.py docs/PHASE_9_10_11_MERGE_MATRIX_2026-05-09.json",
+        "bash scripts/probe-phase9-11-merge-matrix.sh"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "p9-11-no-claims-linter",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: guardrail tooling alone is not cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run local linter fixtures",
+        "run protected diff guard"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "p9-11-anti-claim-audit",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-no-claims-linter"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: anti-claim audit cannot clear missing cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run anti-claim fixtures",
+        "run protected diff guard"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "p9-11-checkpoint-report",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-merge-matrix",
+        "p9-11-anti-claim-audit"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: checkpoint report must list missing cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "render checkpoint status",
+        "verify no complete status appears without evidence"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "p9-11-acceptance-gate",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-checkpoint-report"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: acceptance gate cannot accept missing cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run acceptance gate fixtures",
+        "verify positive closure requires artifacts"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-datasets",
+      "branch_slug": "p9-11-local-path-discovery",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-merge-matrix"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: local path discovery must not become path-only cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run local path discovery in read-only mode",
+        "verify no dataset download"
+      ]
+    },
+    {
+      "phase": "P9",
+      "repo": "bsebench-datasets",
+      "branch_slug": "p9-tier2-profile-cache",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-local-path-discovery"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 9 needs verified cache/provenance/Tier2/source-ledger/empirical-run evidence before any merge order can advance."
+      ],
+      "validation_commands": [
+        "run Phase 9 Tier2 cache audit",
+        "verify provenance manifest identity"
+      ]
+    },
+    {
+      "phase": "P10",
+      "repo": "bsebench-datasets",
+      "branch_slug": "p10-tier2-aging-cache",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-local-path-discovery"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 10 needs verified cache/provenance/Tier2/source-ledger/empirical-run evidence before any merge order can advance."
+      ],
+      "validation_commands": [
+        "run Phase 10 Tier2 aging cache audit",
+        "verify SOH split provenance"
+      ]
+    },
+    {
+      "phase": "P11",
+      "repo": "bsebench-datasets",
+      "branch_slug": "p11-tier2-residual-cache",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-local-path-discovery"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 11 needs verified cache/provenance/Tier2/source-ledger/empirical-run evidence before any merge order can advance."
+      ],
+      "validation_commands": [
+        "run Phase 11 Tier2 residual cache audit",
+        "verify unit and cadence provenance"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-specs",
+      "branch_slug": "p9-11-schema-export-audit",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-merge-matrix"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: schema export audit is validation support, not cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run schema export tests",
+        "run format and lint checks if available"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-filters",
+      "branch_slug": "p9-11-contract-export-audit",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-schema-export-audit"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: filter contract audit is validation support, not cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run filter contract tests",
+        "run format and lint checks if available"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-runner",
+      "branch_slug": "p9-11-dryrun-cli-smoke",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-11-contract-export-audit"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: dry-run CLI smoke cannot substitute for cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run dry-run CLI smoke fixtures",
+        "verify no expensive filters run"
+      ]
+    },
+    {
+      "phase": "P9",
+      "repo": "bsebench-runner",
+      "branch_slug": "p9-profile-empirical-scheduler",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-tier2-profile-cache",
+        "p9-11-dryrun-cli-smoke"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 9 scheduler must refuse all-blocked cache/provenance/Tier2/source-ledger/empirical-run matrices."
+      ],
+      "validation_commands": [
+        "run Phase 9 scheduler dry run",
+        "verify all-blocked matrix is rejected"
+      ]
+    },
+    {
+      "phase": "P10",
+      "repo": "bsebench-runner",
+      "branch_slug": "p10-aging-empirical-scheduler",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p10-tier2-aging-cache",
+        "p9-11-dryrun-cli-smoke"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 10 scheduler must require split/cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run Phase 10 scheduler dry run",
+        "verify missing split/cache/provenance blocks"
+      ]
+    },
+    {
+      "phase": "P11",
+      "repo": "bsebench-runner",
+      "branch_slug": "p11-residual-trace-scheduler",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p11-tier2-residual-cache",
+        "p9-11-dryrun-cli-smoke"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 11 scheduler must require units/cadence/cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run Phase 11 residual scheduler dry run",
+        "verify missing units/cadence/components block"
+      ]
+    },
+    {
+      "phase": "P9",
+      "repo": "bsebench-stats",
+      "branch_slug": "p9-profile-verdict-inputs",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-profile-empirical-scheduler"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 9 verdict inputs must reject synthetic-only or missing cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run Phase 9 verdict-input validator fixtures",
+        "verify synthetic-only evidence is rejected"
+      ]
+    },
+    {
+      "phase": "P10",
+      "repo": "bsebench-stats",
+      "branch_slug": "p10-aging-verdict-inputs",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p10-aging-empirical-scheduler"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 10 verdict inputs must require aging/SOH cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run Phase 10 verdict-input validator fixtures",
+        "verify missing aging/SOH evidence is rejected"
+      ]
+    },
+    {
+      "phase": "P11",
+      "repo": "bsebench-stats",
+      "branch_slug": "p11-residual-verdict-inputs",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p11-residual-trace-scheduler"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 11 verdict inputs must require residual trace cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "run Phase 11 verdict-input validator fixtures",
+        "verify missing residual trace evidence is rejected"
+      ]
+    },
+    {
+      "phase": "P9",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "phase-9-final-verdict",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p9-profile-verdict-inputs",
+        "p9-11-acceptance-gate"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 9 final verdict is blocked until cache/provenance/Tier2/source-ledger/empirical-run evidence exists."
+      ],
+      "validation_commands": [
+        "verify Phase 9 evidence bundle",
+        "verify no complete verdict without artifacts"
+      ]
+    },
+    {
+      "phase": "P10",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "phase-10-final-verdict",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p10-aging-verdict-inputs",
+        "p9-11-acceptance-gate"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 10 final verdict is blocked until cache/provenance/Tier2/source-ledger/empirical-run evidence exists."
+      ],
+      "validation_commands": [
+        "verify Phase 10 evidence bundle",
+        "verify no complete verdict without artifacts"
+      ]
+    },
+    {
+      "phase": "P11",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "phase-11-final-verdict",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "p11-residual-verdict-inputs",
+        "p9-11-acceptance-gate"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: Phase 11 final verdict is blocked until cache/provenance/Tier2/source-ledger/empirical-run evidence exists."
+      ],
+      "validation_commands": [
+        "verify Phase 11 evidence bundle",
+        "verify no complete verdict without artifacts"
+      ]
+    },
+    {
+      "phase": "P9_10_11",
+      "repo": "bsebench-async-codex",
+      "branch_slug": "phase-9-10-11-final-synthesis",
+      "current_decision": "BLOCKED",
+      "merge_action": "do_not_merge",
+      "merge_after": [
+        "phase-9-final-verdict",
+        "phase-10-final-verdict",
+        "phase-11-final-verdict"
+      ],
+      "required_evidence": [
+        "cache evidence",
+        "provenance evidence",
+        "Tier2 evidence",
+        "source-ledger evidence",
+        "empirical-run evidence"
+      ],
+      "current_evidence": {
+        "cache": "unverified",
+        "provenance": "unverified",
+        "tier2": "unverified",
+        "source_ledger": "missing",
+        "empirical_run": "missing"
+      },
+      "blockers": [
+        "NO_GO: final synthesis is blocked until every Phase 9/10/11 verdict has cache/provenance/Tier2/source-ledger/empirical-run evidence."
+      ],
+      "validation_commands": [
+        "verify all phase verdict bundles",
+        "verify synthesis keeps NO_GO when any evidence class is missing"
+      ]
+    }
+  ]
+}
