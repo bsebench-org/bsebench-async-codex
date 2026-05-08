@@ -1,0 +1,23 @@
+To: akir.oussama@gmail.com
+Subject: [BLOCKED] phase-7-10-aj-async-research-gate-diff-scope-guard (panel 81/100)
+From: chef-daemon <noreply@bsebench-async-codex>
+Date: 2026-05-08T15:13:35+02:00
+
+Phase    : phase-7-10-aj-async-research-gate-diff-scope-guard
+Etat     : blocked (escalated)
+Panel    : 81/100 (seuil 89)
+Quoi     : Phase 7.10.aj - async research-gate diff-scope guard
+Prochaine: (aucune phase en attente)
+
+Liens :
+- Verdict : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-aj-async-research-gate-diff-scope-guard/CHEF_VERDICT.md
+- Kaizen  : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-aj-async-research-gate-diff-scope-guard/KAIZEN.md
+- Panel   : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-aj-async-research-gate-diff-scope-guard/PANEL_CHECK.md
+- Repo    : https://github.com/bsebench-org/bsebench-async-codex
+
+ATTENTION : chef-daemon est PAUSE.
+Action :
+  (a) supprime outbox/_blocks/phase-7-10-aj-async-research-gate-diff-scope-guard.block pour reprendre, OU
+  (b) queue une fix-BRIEF dans inbox/ qui repond aux preoccupations.
+
+ADVISOR_CHECK : https://github.com/bsebench-org/bsebench-async-codex/blob/main/outbox/phase-7-10-aj-async-research-gate-diff-scope-guard/ADVISOR_CHECK.md
