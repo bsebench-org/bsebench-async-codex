@@ -164,3 +164,35 @@ Skipped/deferred rows from part7:
   were not explicit enough for payload redistribution.
 - `kit-naion-upscaling-formation-cycling-2023-raw` and
   `e3power-pulsed-liion-chemistries-2022-raw`: still running/no final status.
+
+2026-05-08T14:12:38+02:00 status check:
+
+- Authenticated HF dataset count: 113.
+- Active dataset workers: 5:
+  - `batterylife-processed-v10-2026-raw`
+  - `calce-cx2-prismatic-aging-raw`
+  - `kit-nmc-csio-aging-v2-logdata-2024-raw`
+  - `stanford-ev-real-driving-aging-2022-raw`
+  - `tum-wildfeuer-vtc5a-aging-2023-raw`
+- Newly completed/uploaded since previous checkpoint:
+  - `batterylife-raw-hf-2026-raw`: uploaded, 270 HF files, about 7.94 GB
+    source payload. Repo switched public after private LFS/storage rejection
+    under verified MIT license; Zenodo raw record is restricted and upstream
+    HF file-table size metadata has inconsistencies, but mirrored files match
+    LFS SHA-256 IDs.
+  - `kit-naion-upscaling-formation-cycling-2023-raw`: uploaded private,
+    `Na-upscaling.zip` 660,036,021 bytes, Zenodo MD5 verified.
+  - `e3power-pulsed-liion-chemistries-2022-raw`: uploaded private, 58 HF files,
+    official package plus 43 extracted raw files; DOI/open access/CC-BY-4.0
+    verified from Fairdata/Metax and hashes matched metadata.
+  - `rwth-jellyroll-deformation-2021-raw`: uploaded public after private
+    LFS/storage exception, 44,525,118,339 source bytes.
+  - `unisa-cau-thermal-eis-ncr18650b-2025-raw`: uploaded, 13 HF files,
+    1,192,032,576 bytes.
+  - `snu-single-point-critical-health-30q-2024-raw`: uploaded, 11 HF files.
+- `sakuu-stanford-limetal-continuous-cycling-2025-raw`: remains blocked
+  correctly with `README.md` + `UPLOAD_BLOCKED.json` only because license terms
+  were not explicit enough for raw `.mat` payload redistribution.
+- `batterylife-processed-v10-2026-raw`: still active; public retry is
+  transferring the official about 30.9 GB Zenodo v10 archive set after private
+  storage rejection under open-license exception.
