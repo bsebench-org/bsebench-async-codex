@@ -877,6 +877,21 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Garde-fou: la page parle de readiness plumbing, candidate queue, mechanical gate; pas de claim SOC/SOH.
 - Next: integrer les audits sidecar Phase 12 + datasets/HF et choisir le prochain commit produit a plus forte valeur.
 
+## CODEX STATUS 2026-05-09 11:42 CEST
+
+- Codex exec actifs: `0` OS-level workers; readonly status loop active (`cto_readonly_status_loop.py`).
+- Mode: commits directs verifies, pas de workers vides/no-op.
+- Phase 9: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 12: `68%` (`+16%` since 11:17).
+- Nouveaux livrables Phase 12:
+  - `bsebench-stats` `95ddd11`: preflight conserve axes, truth/split/parameter hashes, artifacts et readiness_key.
+  - `bsebench-runner` `ba5dea0`: gate runner durci; bloque mismatch axes et artifact hashes manquants; demo JSON regeneree.
+- Validation: stats `19 passed`; runner `28 passed`; ruff check/format et diff check OK.
+- HF lane: toujours `0` upload; queue de validation poussee dans `bsebench-datasets` `a0ee63f`.
+- Next: produire le rapport d'audit Phase 12 transversal puis preparer le premier producteur realiste de TransferReadiness depuis manifests/caches.
+
 ## CODEX STATUS 2026-05-09 11:15 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
