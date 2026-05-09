@@ -1681,3 +1681,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
   list, Phase 16 recommendation, and Claude Code/LLM bootstrap prompt.
 - Validation: `git diff --check` passed; document is ASCII-only.
 - Scientific status remains `NO_GO_CLAIM`.
+
+## CODEX STATUS 2026-05-09 20:45 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
