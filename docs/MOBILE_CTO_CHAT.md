@@ -1560,3 +1560,12 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 19:00 CEST
+
+- Phase 15: `64%` complete (`+64%` since 18:42 CEST launch checkpoint), based on `7/11` product tasks done and pushed.
+- Phase 15 direct monitor: running `4`, done `7`, error `0`, queued `0`.
+- Done branches pushed: specs adaptive schema, filters EMA helper, filters residual contract, stats adaptive delta gate, runner adaptive plan, datasets calibration evidence, website Phase 15 page.
+- Running now: filters adaptation safety, stats adaptive report gate, runner adaptive dry-run CLI, stats synthetic EMA fixtures.
+- Supervisor loop: active PID `3084015`; it continues monitoring every 5 minutes and will hold new launches on any error.
+- Scientific status: `NO_GO_CLAIM`; no RMSE gain, no >20% improvement, no neural training, no real-trace estimator execution.
