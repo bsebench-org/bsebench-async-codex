@@ -1,0 +1,160 @@
++    records = [
++        _record("EstimatorB", 0.30, split="fold-2", evidence_hash="hash-b2"),
++        _record("EstimatorA", 0.10, split="fold-1", evidence_hash="hash-a1"),
++        _record("EstimatorA", 0.20, split="fold-2", evidence_hash="hash-a2"),
++        _record("EstimatorB", 0.40, split="fold-1", evidence_hash="hash-b1"),
++    ]
++
++    report = build_bootstrap_uncertainty_report(
++        records,
++        n_resamples=64,
++        seed=99,
++        confidence_level=0.90,
++    )
++    replay = build_phase13_bootstrap_uncertainty(
++        list(reversed(records)),
++        n_resamples=64,
++        seed=99,
++        confidence_level=0.90,
++    )
++
++    assert report == replay
++    assert report["schema_version"] == "phase13_bootstrap_uncertainty_v1"
++    assert report["status"] == "ok"
++    assert report["record_count"] == 4
++    assert report["group_count"] == 2
++    assert report["guarded_fields"] == [
++        "candidate",
++        "metric",
++        "split",
++        "evidence",
++        "hashes",
++        "provenance",
++    ]
++    assert "leaderboard_winner" in report["unsupported_claims"]
++    assert report["claim_scope"] == (
++        "bootstrap uncertainty over supplied finite metric evidence only"
++    )
++
++    groups = {(row["candidate"], row["metric"]): row for row in report["groups"]}
++    assert list(groups) == [("EstimatorA", "soc_rmse"), ("EstimatorB", "soc_rmse")]
++    estimator_a = groups[("EstimatorA", "soc_rmse")]
++    assert estimator_a["unit"] == "percentage_point"
++    assert estimator_a["direction"] == "lower"
++    assert estimator_a["sample_count"] == 2
++    assert estimator_a["splits"] == ["fold-1", "fold-2"]
++    assert estimator_a["split_counts"] == {"fold-1": 1, "fold-2": 1}
++    assert estimator_a["evidence_hashes"] == [
++        "hash-a1",
++        "hash-a2",
++        "source-hash-a1",
++        "source-hash-a2",
++    ]
++    assert estimator_a["summary"]["observed"] == pytest.approx(0.15)
++    _assert_finite_json(report)
++
++
++@pytest.mark.fast
++def test_build_bootstrap_uncertainty_report_expands_metrics_mapping() -> None:
++    records = [
++        {
++            "candidate": "EstimatorA",
++            "metrics": {"soc_rmse": 0.10, "soh_mae": 0.20},
++            "split": "fold-1",
++            "hashes": {"input": "hash-a1"},
++            "evidence": {"artifact": "metrics.json"},
++            "provenance": {"producer": "unit-test"},
++        },
++        {
++            "candidate": "EstimatorA",
++            "metrics": {"soc_rmse": 0.30, "soh_mae": 0.40},
++            "split": "fold-2",
++            "hashes": {"input": "hash-a2"},
++            "evidence": {"artifact": "metrics.json"},
++            "provenance": {"producer": "unit-test"},
++        },
++    ]
++
++    report = build_bootstrap_uncertainty_report(records, n_resamples=16, seed=5)
++
++    assert report["record_count"] == 4
++    assert [(row["candidate"], row["metric"]) for row in report["groups"]] == [
++        ("EstimatorA", "soc_rmse"),
++        ("EstimatorA", "soh_mae"),
++    ]
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "message"),
++    [
++        (lambda record: record.pop("evidence"), r"evidence"),
++        (lambda record: record.pop("provenance"), r"provenance"),
++        (lambda record: record["axes"].pop("split"), r"split"),
++        (
++            lambda record: (
++                record["evidence"].pop("sha256"),
++                record["provenance"].pop("source_sha256"),
++            ),
++            r"hashes",
++        ),
++        (lambda record: record.update({"value": float("nan")}), r"finite metric value"),
++        (lambda record: record.update({"value": True}), r"finite metric value"),
++    ],
++)
++def test_missing_evidence_hashes_splits_provenance_or_finite_metrics_fail_closed(
++    mutate,
++    message: str,
++) -> None:
++    records = [
++        _record("EstimatorA", 0.10, split="fold-1"),
++        _record("EstimatorA", 0.20, split="fold-2"),
++    ]
++    mutate(records[0])
++
++    with pytest.raises(BootstrapUncertaintyError, match=message):
++        build_bootstrap_uncertainty_report(records, n_resamples=8, seed=1)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("kwargs", "message"),
++    [
++        ({"n_resamples": 1}, r"n_resamples"),
++        ({"seed": -1}, r"seed"),
++        ({"confidence_level": 1.0}, r"confidence_level"),
++        ({"statistic": "trimmed_mean"}, r"statistic"),
++    ],
++)
++def test_bootstrap_options_fail_closed(kwargs: dict[str, object], message: str) -> None:
++    with pytest.raises(BootstrapUncertaintyError, match=message):
++        bootstrap_metric_summary([1.0, 2.0], **kwargs)
++
++
++@pytest.mark.fast
++def test_bootstrap_metric_summary_rejects_non_finite_arrays_and_short_samples() -> None:
++    with pytest.raises(BootstrapUncertaintyError, match="finite"):
++        bootstrap_metric_summary([1.0, np.inf])
++
++    with pytest.raises(BootstrapUncertaintyError, match="numeric"):
++        bootstrap_metric_summary([1.0, True])
++
++    with pytest.raises(BootstrapUncertaintyError, match="at least 2"):
++        bootstrap_metric_summary([1.0])
+
+tokens used
+125,983
+Implemented and pushed commit `800292c` to `glassbox-phase13-04-stats-bootstrap-uncertainty-20260509T134830Z`.
+
+Changes:
+- Added `phase13_bootstrap_uncertainty.py` with deterministic bootstrap resampling, metric summaries, record-level guarded reports, reproducible seeds, finite guards, and evidence/hash/split/provenance fail-closed validation.
+- Added focused tests for determinism, finite JSON outputs, grouped summaries, metrics-map expansion, and failure modes.
+- Minimally exported the new helpers from `bsebench_stats.__init__`.
+
+Validation run:
+- `uv run --extra dev pytest -q tests/test_phase13_bootstrap_uncertainty.py` passed: 15 tests.
+- `git diff --check` passed.
+- `uv run --extra dev ruff check src tests` passed.
+- `uv run --extra dev mypy src/bsebench_stats/phase13_bootstrap_uncertainty.py` passed.
+
+Full pytest was skipped; the broader cheap project check was the full ruff pass.
