@@ -1,0 +1,160 @@
++- A preregistered empirical protocol for any information-bound comparison,
++  including numerical tolerances and uncertainty reporting.
++- Independent audit of model assumptions, leakage controls, provenance hashes,
++  matrix validation, and parameter-freezing.
++- Reproducible empirical runs with statistical summaries.
++
++Until those checks pass, public wording should say **theory preflight**,
++**tooling preflight**, or **blocked-by-default information-bound plumbing**, not
++benchmark superiority or SOC/SOH performance.
+
+codex
+Implemented and pushed `31591ba3df2f3a9fa0c5be459c24850ba8dedd64` to `glassbox-phase14-11-website-phase14-page-20260509T145752Z`.
+
+Changed:
+- Added [phase14-information-bounds.md](/mnt/c/doctorat/bsebench-org/bsebench-website-glassbox-phase14-11-website-phase14-page-20260509T145752Z/src/content/docs/phase14-information-bounds.md) with explicit `NO_GO_CLAIM`, theory/tooling-only scope, and fail-closed policy.
+- Added the page to the Starlight sidebar in [astro.config.mjs](/mnt/c/doctorat/bsebench-org/bsebench-website-glassbox-phase14-11-website-phase14-page-20260509T145752Z/astro.config.mjs:50).
+
+Validation:
+- `npm ci`
+- `npm run build` passed and generated `/phase14-information-bounds/`
+- `git diff --check` passed
+- No broader check script exists in `package.json`; no tests added because this is docs-only with no owned test path.
+diff --git a/astro.config.mjs b/astro.config.mjs
+index 778cab203e1e941374d8e908701f45a2bf866cf8..f230020c41c89b3b72b05ba24b89e9921e691bc6
+--- a/astro.config.mjs
++++ b/astro.config.mjs
+@@ -50,6 +50,7 @@
+             { label: "Standards", slug: "standards" },
+             { label: "Transfer Readiness", slug: "transfer-readiness" },
+             { label: "Phase 13 Ensemble Methods", slug: "phase13-ensemble-methods" },
++            { label: "Phase 14 Information Bounds", slug: "phase14-information-bounds" },
+             { label: "Citation", slug: "citation" },
+             { label: "License", slug: "license" },
+           ],
+diff --git a/src/content/docs/phase14-information-bounds.md b/src/content/docs/phase14-information-bounds.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..336dbde45f33fc16e74af5b86712b24722686cc1
+--- /dev/null
++++ b/src/content/docs/phase14-information-bounds.md
+@@ -0,0 +1,106 @@
++---
++title: Phase 14 Information Bounds
++description: Theory and tooling preflight status for information-bound work.
++---
++
++BSEBench treats Phase 14 information-bound work as blocked by default. The
++current public surface is theory and tooling preflight only: it can describe
++what evidence a later information-bound comparison would need, and it can
++refuse under-specified arithmetic inputs. It does not authorize SOC derivation,
++SOH derivation, estimator execution, transfer execution, method ranking, or
++benchmark conclusions.
++
++This page is a public status note for preflight readiness. It is not a theorem,
++empirical result, leaderboard, proof of a tight bound, or claim of universal
++validity.
++
++## Current status
++
++| Area | Status | Evidence |
++|---|---|---|
++| PCRLB/MAD floor preflight | Ready for synthetic arithmetic validation | `bsebench-stats` PCRLB/MAD floor preflight runner |
++| Runner dependency metadata | Ready to require declared PCRLB/MAD floor inputs | `bsebench-runner` residual input contract metadata checks |
++| Real-data evidence | Not cleared | No Phase 14 permission to execute estimators or download datasets |
++| Covariance and information matrices | Not evidence-cleared | Future gates must validate dimensions, finiteness, symmetry, and positive-semidefinite or positive-definite requirements before any use |
++| Bound interpretation | Blocked | No public theorem, tightness result, or SOC/SOH performance conclusion is authorized |
++
++Scientific claim status: **NO_GO_CLAIM**. Phase 14 artifacts are preflight
++plumbing for future information-bound work. They do not show that any estimator
++reaches, misses, improves on, or is limited by an information bound.
++
++## Required evidence
++
++A future information-bound comparison must declare:
++
++- Dataset identity, split identity, timebase, chemistry, temperature range,
++  profile family, and cell population.
++- SOC and SOH truth provenance, including recalibration or reference method
++  whenever truth labels participate in a claim path.
++- Measurement model, process model, noise model, parameter provenance, and
++  frozen estimator configuration.
++- Bound formulation, implementation identity, versioned source, numerical
++  tolerances, and unit conventions.
++- Covariance or information matrix dimensions, labels, units, finite values,
++  symmetry policy, and definiteness policy.
++- Comparison labels, MAD values, PCRLB values, and matching units when using
++  the current PCRLB/MAD floor preflight surface.
++- Content hashes for dataset, configuration, run, metric, preflight, and bound
++  artifacts wherever those artifacts participate in a claim path.
++- A scientific verdict that remains `NO_GO_CLAIM` until an empirical protocol
++  and independent audit explicitly authorize a stronger claim.
++
++## Failure policy
++
++The readiness chain is fail-closed:
++
++- Missing dataset, split, truth, model, parameter, or artifact provenance blocks
++  comparison.
++- Missing comparison labels, units, MAD values, or PCRLB values blocks the
++  current floor preflight.
++- Non-finite MAD or PCRLB values block the current floor preflight.
++- Negative MAD values or non-positive PCRLB values block the current floor
++  preflight.
++- Dimension mismatches between labels, MAD values, PCRLB values, covariance
++  matrices, information matrices, or state labels block comparison.
++- Invalid covariance or information matrices block comparison.
++- Unsupported claim wording, including theorem, tight-bound, estimator
++  superiority, SOC/SOH performance, transfer, leaderboard, or universal-validity
++  language, is rejected unless a later empirical gate explicitly authorizes it.
++
++## Phase 14 outputs
++
++The current Phase 14 implementation surface is limited to repository-level
++preflight plumbing:
++
++- `bsebench-stats`: a neutral PCRLB/MAD floor preflight that validates a small
++  synthetic-testable payload, computes finite arithmetic deltas and ratios, and
++  assigns no scientific verdict.
++- `bsebench-runner`: residual input contract checks that require PCRLB/MAD
++  floor metadata when a residual component declares that dependency.
++
++No Phase 14 website page, runner, or stats helper currently authorizes estimator
++execution, real-data evaluation, dataset upload, Hugging Face publication, or
++scientific promotion beyond **NO_GO_CLAIM**.
++
++## What remains
++
++Before BSEBench can publish information-bound conclusions, the project still
++needs:
++
++- Public schemas for bound inputs, covariance matrices, information matrices,
++  and comparison reports.
++- Synthetic fixtures that exercise missing evidence, non-finite values,
++  dimension mismatches, invalid matrices, and unsupported verdicts.
++- Real Tier 2 canonical Parquet datasets with verified licenses, checksums,
++  split manifests, and SOC/SOH truth provenance.
++- Frozen measurement models, process models, estimator parameters, and immutable
++  run manifests.
++- A preregistered empirical protocol for any information-bound comparison,
++  including numerical tolerances and uncertainty reporting.
++- Independent audit of model assumptions, leakage controls, provenance hashes,
++  matrix validation, and parameter-freezing.
++- Reproducible empirical runs with statistical summaries.
++
++Until those checks pass, public wording should say **theory preflight**,
++**tooling preflight**, or **blocked-by-default information-bound plumbing**, not
++benchmark superiority or SOC/SOH performance.
+
+tokens used
+140,445
+Implemented and pushed `31591ba3df2f3a9fa0c5be459c24850ba8dedd64` to `glassbox-phase14-11-website-phase14-page-20260509T145752Z`.
+
+Changed:
+- Added [phase14-information-bounds.md](/mnt/c/doctorat/bsebench-org/bsebench-website-glassbox-phase14-11-website-phase14-page-20260509T145752Z/src/content/docs/phase14-information-bounds.md) with explicit `NO_GO_CLAIM`, theory/tooling-only scope, and fail-closed policy.
+- Added the page to the Starlight sidebar in [astro.config.mjs](/mnt/c/doctorat/bsebench-org/bsebench-website-glassbox-phase14-11-website-phase14-page-20260509T145752Z/astro.config.mjs:50).
+
+Validation:
+- `npm ci`
+- `npm run build` passed and generated `/phase14-information-bounds/`
+- `git diff --check` passed
+- No broader check script exists in `package.json`; no tests added because this is docs-only with no owned test path.
