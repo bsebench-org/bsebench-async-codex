@@ -23,6 +23,9 @@ Rules:
 Template to append at the bottom:
 
 ```markdown
+## USER 
+donne status phase 10 et lance 5 agent codex pour avancées phase 11 en parallel 
+
 ## USER 2026-05-08 21:30 CEST
 
 message here
