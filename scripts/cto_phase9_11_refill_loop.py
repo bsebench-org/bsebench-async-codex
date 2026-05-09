@@ -41,13 +41,9 @@ TASKS: list[tuple[str, str, str]] = [
     ("bsebench-stats", "p11-residual-verdict-inputs", "Phase 11 verdict-input validator; require residual trace evidence."),
     ("bsebench-specs", "p9-11-schema-export-audit", "Phase 9/10/11 schema/export audit with focused fail-closed tests."),
     ("bsebench-filters", "p9-11-contract-export-audit", "Phase 9/10/11 filter contract/export audit with focused tests."),
-    ("bsebench-async-codex", "p9-11-checkpoint-report", "Phase 9/10/11 checkpoint report: evidence, blockers, GO/NO-GO, next queue."),
-    ("bsebench-async-codex", "p9-11-merge-matrix", "Phase 9/10/11 branch merge matrix and validation order; do not merge."),
-    ("bsebench-async-codex", "p9-11-anti-claim-audit", "Phase 9/10/11 anti-claim audit; forbid unsupported closure/performance claims."),
     ("bsebench-datasets", "p9-11-local-path-discovery", "Phase 9/10/11 local Tier2 path discovery; no downloads/uploads."),
     ("bsebench-runner", "p9-11-dryrun-cli-smoke", "Phase 9/10/11 dry-run CLI smoke fixtures; no expensive filters."),
     ("bsebench-stats", "p9-11-no-claims-linter", "Phase 9/10/11 no-claims linter for SOTA/winner/leaderboard wording."),
-    ("bsebench-async-codex", "p9-11-acceptance-gate", "Phase 9/10/11 acceptance gate checklist: tooling vs scientific closure."),
 ]
 
 
