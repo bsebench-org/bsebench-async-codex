@@ -1074,3 +1074,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 13:07 CEST
+
+- Codex exec actifs: `0`; direct verified commit mode.
+- Phase 12 transfer-readiness/SOC-evidence chain: `97%` (`+2%` since 12:48).
+- New pushed deliverable: `bsebench-datasets` commit `9de818d` (`GLASSBOX add Phase 12 SOC evidence remediation plan`).
+- What changed: the SOC evidence gate is now converted into a machine-readable remediation queue and Markdown report.
+- Remediation numbers: `240` traces considered, `0` ready for SOC derivation, `240` need ground-truth metadata, `72` also need capacity evidence, `0` need time/current repair.
+- Highest-priority package: `attach_ground_truth_evidence_metadata`; required completion evidence includes OCV curve source/hash, recalibration-anchor manifest hash, and updated Parquet hashes.
+- Decision: `blocked_evidence_collection_required`; SOC derivation remains forbidden and transfer execution remains forbidden.
+- Validation: four-eyes subagent verdict `commit OK`; targeted pytest `4 passed`; ruff format/check OK; git diff check OK; changed-file anti-claim scan OK.
+- Next: implement the parameter-freeze manifest/gate, then bind SOC evidence remediation + parameter freeze into a single execution-clearance gate.
