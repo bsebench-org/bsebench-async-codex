@@ -370,3 +370,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Evidence: 155 aging/SOH configs inspected, `0` ready, `36` missing explicit `bsebench.aging_soh_metadata`, `119` missing loader-facing Tier2 cache; no SOH/SOTA/leaderboard claim.
 - Validation: `ruff check` passed, `pytest tests/test_aging_soh_readiness.py -q` passed (`13` tests), JSON guardrail assertions passed, independent audit found no issue.
 - Next: choose the first real aging/SOH raw mirror to convert into Tier2 Parquet with explicit SOH metadata, then rerun Phase 10 readiness.
+
+## CODEX STATUS 2026-05-09 04:14 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs; only the read-only status loop is active.
+- Phase 9: `97%` (`+0%` since 03:57; scientific claims still fail-closed).
+- Phase 10: `72%` (`+5%` since 03:57).
+- Phase 11: `59%` (`+0%` since 03:57).
+- Product output pushed: `bsebench-datasets` commit `e128cb3` enables the first Phase 10 ready aging/SOH slice.
+- Evidence: `nasa:CC-discharge:T24` is now `ready`; the cache builder writes 168 NASA B0005 discharge cycles with explicit `bsebench.aging_soh_metadata`, SOH range `1.0` to `0.6934884167`, and a hashed source archive.
+- Validation: `ruff format/check` passed, JSON guardrail assertions passed, `pytest tests/test_aging_soh_readiness.py tests/test_loader_nasa_pcoe.py -m 'not slow'` passed (`25` tests, `2` HF slow tests deselected); independent audit found no issue.
+- Known external blocker: the two HF slow tests fail without private HF auth (`401 Unauthorized`), not from local code.
+- Next: Phase 10 runner pre-dispatch plan from this ready NASA config, then bounded empirical smoke; no SOH performance/SOTA claim yet.
