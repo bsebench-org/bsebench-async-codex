@@ -1120,3 +1120,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Blocking gaps: runner preflight blocked, `240` traces need ground-truth metadata, `72` need capacity evidence, and calibration hashes are missing for parameter freeze.
 - Validation: targeted pytest `5 passed`; ruff format/check OK; git diff check OK; four-eyes subagent verdict `commit autorisé`; changed-file anti-claim scan OK.
 - Next: Phase 12 can only move by producing real SOC evidence and calibration evidence, or by explicitly scoping a SOH-only pilot without SOC/SOH universal claims.
+
+## CODEX STATUS 2026-05-09 13:30 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
