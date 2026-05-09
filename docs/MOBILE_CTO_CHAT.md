@@ -785,3 +785,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 10:34 CEST
+
+- Codex exec actifs: `4` Phase 12 workers réels et détachés (`specs`, `datasets/HF registry`, `stats`, `runner`) + readonly status loop.
+- Correction qualité: deux vagues précédentes ont été classées comme lancements vides et nettoyées; elles ne comptent pas comme progrès.
+- Cleanup: `100%` (`+0%`); 7 repos clean avant lancement Phase 12.
+- Phase 9: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 12: `8%` (`+3%` since 10:18); cleanup/plan committed and 4 real workers now active.
+- HF lane: consolidation only; no upload until source/license/status table exists.
+- Next: monitor logs, integrate first successful worker branches, replace any no-op worker with smaller manual patch.
