@@ -443,3 +443,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Evidence: Hinf fails closed after `5` checked / `6` attempted steps; EKF fails closed after `4` checked / `5` attempted steps because `soc_estimated` leaves `[0, 1]` under forced degraded initial SOC.
 - Validation: `ruff` passed, targeted `pytest` passed (`21` tests), JSON no-claim assertions passed, `git diff --check` passed, and Halley audit findings were fixed before commit.
 - Next: Phase 10 contract-clean estimator/adaptation work; do not relax the SOC/SOH bounded-output contract and do not turn these diagnostics into performance/SOTA claims.
+
+## CODEX STATUS 2026-05-09 05:00 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `98%` (`+0%` since previous mobile status).
+- Phase 10: `82%` (`+0%` since previous mobile status).
+- Phase 11: `59%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
