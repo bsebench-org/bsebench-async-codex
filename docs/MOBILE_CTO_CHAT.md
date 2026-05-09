@@ -797,3 +797,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 12: `8%` (`+3%` since 10:18); cleanup/plan committed and 4 real workers now active.
 - HF lane: consolidation only; no upload until source/license/status table exists.
 - Next: monitor logs, integrate first successful worker branches, replace any no-op worker with smaller manual patch.
+
+## CODEX STATUS 2026-05-09 10:45 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
