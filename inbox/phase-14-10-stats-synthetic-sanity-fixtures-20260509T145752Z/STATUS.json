@@ -1,16 +1,18 @@
 {
   "base_branch": "main",
+  "branch_sha": "4bbacf983e9cbf6359215f96123014e10a50d50f",
   "depends_on": [
     "stats-linear-pcrlb"
   ],
   "direct_log": "/home/oakir/.local/state/bsebench-phase14-direct/phase-14-10-stats-synthetic-sanity-fixtures-20260509T145752Z.log",
   "direct_worktree": "/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-10-stats-synthetic-sanity-fixtures-20260509T145752Z",
-  "exit_code": null,
+  "exit_code": 0,
   "phase_id": "phase-14-10-stats-synthetic-sanity-fixtures-20260509T145752Z",
-  "status": "running_direct",
+  "push_result": "ok",
+  "status": "done",
   "target_branch": "glassbox-phase14-10-stats-synthetic-sanity-fixtures-20260509T145752Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
-  "ts_done": null,
+  "ts_done": "2026-05-09T15:40:36.337519Z",
   "ts_queued": "2026-05-09T14:57:52.652525Z",
   "ts_started": null,
   "worker_id": "direct:3072478"

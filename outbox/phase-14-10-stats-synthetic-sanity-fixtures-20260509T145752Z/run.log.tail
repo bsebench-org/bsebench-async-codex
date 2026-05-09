@@ -1,0 +1,160 @@
++
++def _load_scalar_fixture() -> dict[str, object]:
++    return json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
++
++
++def _assert_json_finite(value: object, path: str = "$") -> None:
++    if isinstance(value, bool) or value is None or isinstance(value, str):
++        return
++    if isinstance(value, int | float):
++        assert math.isfinite(float(value)), f"{path} must be finite"
++        return
++    if isinstance(value, list):
++        for index, item in enumerate(value):
++            _assert_json_finite(item, f"{path}[{index}]")
++        return
++    if isinstance(value, dict):
++        for key, item in value.items():
++            assert isinstance(key, str), f"{path} keys must be strings"
++            _assert_json_finite(item, f"{path}.{key}")
++        return
++    raise AssertionError(f"{path} has unsupported JSON type {type(value).__name__}")
++
++
++def _numeric_leaf_values(value: object) -> list[float]:
++    if isinstance(value, bool):
++        return []
++    if isinstance(value, int | float):
++        return [float(value)]
++    if isinstance(value, list):
++        values: list[float] = []
++        for item in value:
++            values.extend(_numeric_leaf_values(item))
++        return values
++    if isinstance(value, dict):
++        values = []
++        for item in value.values():
++            values.extend(_numeric_leaf_values(item))
++        return values
++    return []
++
++
++@pytest.mark.fast
++def test_scalar_fixture_schema_is_synthetic_and_claim_ineligible() -> None:
++    fixture = _load_scalar_fixture()
++
++    json.dumps(fixture, allow_nan=False)
++    _assert_json_finite(fixture)
++
++    assert set(fixture) == EXPECTED_TOP_LEVEL_KEYS
++    assert fixture["schema_version"] == "phase14_linear_gaussian_bound_fixture_v1"
++    assert fixture["fixture_id"] == "phase14_linear_gaussian_bound_scalar_v1"
++    assert fixture["fixture_scope"] == SYNTHETIC_FIXTURE_SCOPE
++    assert fixture["fixture_kind"] == "scalar_linear_gaussian_sanity"
++    assert fixture["claim_eligibility"] == "claim_ineligible_synthetic_preflight"
++    assert fixture["dataset_source"] == "synthetic_constants_no_dataset"
++    assert fixture["estimator_execution"] == "not_permitted"
++    assert fixture["claims"] == []
++    assert fixture["unsupported_claims"] == UNSUPPORTED_CLAIMS
++    for matrix_key in MATRIX_KEYS:
++        assert fixture[matrix_key] == [[1.0]]
++
++
++@pytest.mark.fast
++def test_scalar_fixture_builds_expected_finite_pcrlb_report() -> None:
++    fixture = _load_scalar_fixture()
++
++    report = build_linear_gaussian_pcrlb_report(fixture)
++    expected = fixture["expected_reference"]
++    assert isinstance(expected, dict)
++
++    assert report["schema_version"] == PHASE14_LINEAR_PCRLB_SCHEMA_VERSION
++    assert report["status"] == "pass"
++    assert report["method"] == LINEAR_GAUSSIAN_TICHAVSKY_METHOD
++    assert report["method"] == expected["method"]
++    assert report["fixture_scope"] == SYNTHETIC_FIXTURE_SCOPE
++    assert report["dimensions"] == {"state_dim": 1, "measurement_dim": 1, "steps": 4}
++    assert report["unsupported_claims"] == fixture["unsupported_claims"]
++    assert "battery evidence" in str(report["claim_scope"])
++    assert "SOC/SOH performance claim" in str(report["claim_scope"])
++
++    assert report["recursion_terms"] == {
++        "process_information": [[1.0]],
++        "measurement_information": [[1.0]],
++        **expected["recursion_terms"],
++    }
++    assert _numeric_leaf_values(report["information_sequence"]) == pytest.approx(
++        _numeric_leaf_values(expected["information_sequence"])
++    )
++    assert _numeric_leaf_values(report["covariance_lower_bound_sequence"]) == pytest.approx(
++        _numeric_leaf_values(expected["covariance_lower_bound_sequence"])
++    )
++    json.dumps(report, allow_nan=False)
++    _assert_json_finite(report)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "error_type", "message"),
++    [
++        (lambda fixture: fixture.pop("Q"), Phase14LinearPcrlbError, r"requires supplied"),
++        (lambda fixture: fixture.update({"Q": [[math.inf]]}), Phase14LinearPcrlbError, r"finite"),
++        (
++            lambda fixture: fixture.update({"H": [[1.0, 0.0]]}),
++            Phase14LinearPcrlbError,
++            r"H column count",
++        ),
++        (
++            lambda fixture: fixture.update({"Q": [[0.0]]}),
++            Phase14MatrixCheckError,
++            r"positive definite",
++        ),
++        (
++            lambda fixture: fixture.update({"prior_information": [[0.0]]}),
++            Phase14MatrixCheckError,
++            r"positive definite",
++        ),
++        (
++            lambda fixture: fixture.update({"fixture_scope": "real_battery_evidence"}),
++            Phase14LinearPcrlbError,
++            r"synthetic",
++        ),
++        (
++            lambda fixture: fixture.update({"claims": ["leaderboard_status"]}),
++            Phase14LinearPcrlbError,
++            r"refuses",
++        ),
++    ],
++)
++def test_scalar_fixture_mutations_fail_closed(
++    mutate: Callable[[dict[str, object]], object],
++    error_type: type[Exception],
++    message: str,
++) -> None:
++    fixture = copy.deepcopy(_load_scalar_fixture())
++    mutate(fixture)
++
++    with pytest.raises(error_type, match=message) as exc_info:
++        build_linear_gaussian_pcrlb_report(fixture)
++
++    diagnostics = getattr(exc_info.value, "diagnostics", {})
++    if diagnostics:
++        json.dumps(diagnostics, allow_nan=False)
+
+tokens used
+107,335
+Implemented and pushed commit `4bbacf9` to `glassbox-phase14-10-stats-synthetic-sanity-fixtures-20260509T145752Z`.
+
+Changed:
+- Added synthetic fixture docs: [README.md](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-10-stats-synthetic-sanity-fixtures-20260509T145752Z/tests/fixtures/phase14_linear_gaussian_bound/README.md)
+- Added scalar claim-ineligible fixture: [scalar_fixture.json](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-10-stats-synthetic-sanity-fixtures-20260509T145752Z/tests/fixtures/phase14_linear_gaussian_bound/scalar_fixture.json)
+- Added focused schema, finite, PCRLB, and fail-closed tests: [test_phase14_synthetic_sanity.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-10-stats-synthetic-sanity-fixtures-20260509T145752Z/tests/test_phase14_synthetic_sanity.py)
+
+Validation:
+- `uv run --locked --extra dev pytest tests/test_phase14_synthetic_sanity.py -q`: 9 passed
+- `uv run --locked --extra dev pytest tests/test_phase14_synthetic_sanity.py tests/test_phase14_linear_pcrlb.py tests/test_phase14_matrix_checks.py -q`: 27 passed
+- `uv run --locked --extra dev pytest -q`: 420 passed
+- `uv run --locked --extra dev ruff check tests/test_phase14_synthetic_sanity.py`: passed
+- `git diff --check`: passed
+
+No validation skipped.
