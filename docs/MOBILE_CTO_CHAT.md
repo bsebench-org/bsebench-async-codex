@@ -1017,6 +1017,17 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Validation: script assertions passed on local artifacts; targeted pytest `14 passed`; ruff format/check OK; git diff check OK.
 - Dataset truth audit result: no local cross-dataset candidate has both finite SOC and SOH truth. NASA B0005 is SOH-ready but SOC-null; CALCE local caches have V/I/T/time only. Next high-value task is SOC truth derivation/recalibration or an explicitly scoped SOH-only pilot.
 
+## CODEX STATUS 2026-05-09 12:38 CEST
+
+- Codex exec actifs: `0`; direct verified commit mode.
+- Phase 12 transfer-readiness chain: `93%` (`+2%` since 12:30).
+- New pushed deliverable: `bsebench-datasets` commit `0ca4268` (`GLASSBOX audit Phase 12 local truth candidates`).
+- What changed: reproducible local Parquet truth audit across Phase 9/10 caches.
+- Audit numbers: `240` Parquet files, `659466` rows, `0` SOC+SOH-ready traces, `168` SOH-only NASA B0005 traces, `72` no-truth CALCE traces.
+- Decision: `blocked_no_local_soc_soh_pair`; execution remains forbidden for SOC/SOH transfer.
+- Validation: script ran on local caches; targeted pytest `21 passed`; ruff format/check OK; git diff check OK; no-claim phrase scan OK.
+- Next: build the SOC truth derivation/recalibration gate and/or an explicitly scoped SOH-only pilot, but do not present SOH-only as universal SOC/SOH readiness.
+
 ## CODEX STATUS 2026-05-09 12:30 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
