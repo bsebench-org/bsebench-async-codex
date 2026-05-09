@@ -431,3 +431,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `59%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 04:56 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs; only the read-only CTO status loop is active.
+- Upload HF: `0`; uploads remain stopped until the consolidated registry line-by-line status is done.
+- Phase 9: `98%` (`+1%` since 04:45; empirical smoke closure checkpoint pushed, still no leaderboard/scientific claim).
+- Phase 10: `82%` (`+7%` since 04:45; real bounded NASA B0005 smoke diagnostics are now pushed).
+- Phase 11: `59%` (`+0%` since 04:45).
+- Product output pushed: `bsebench-runner` commit `7be1dec` adds `scripts/phase10_aging_soh_smoke.py`, tests, Hinf/EKF smoke artifacts, and `PHASE_10_NASA_PCOE_AGING_SOH_SMOKE_2026-05-09.md`.
+- Evidence: Hinf fails closed after `5` checked / `6` attempted steps; EKF fails closed after `4` checked / `5` attempted steps because `soc_estimated` leaves `[0, 1]` under forced degraded initial SOC.
+- Validation: `ruff` passed, targeted `pytest` passed (`21` tests), JSON no-claim assertions passed, `git diff --check` passed, and Halley audit findings were fixed before commit.
+- Next: Phase 10 contract-clean estimator/adaptation work; do not relax the SOC/SOH bounded-output contract and do not turn these diagnostics into performance/SOTA claims.
