@@ -1,0 +1,52 @@
+{
+  "phase": 14,
+  "date": "2026-05-09",
+  "verdict": {
+    "tooling": "GO_TOOLING",
+    "integration": "GO_INTEGRATION",
+    "validation": "GO_VALIDATION",
+    "claims": "NO_GO_CLAIM"
+  },
+  "direct_monitor": {
+    "done": 11,
+    "error": 0,
+    "queued": 0,
+    "running_direct": 0
+  },
+  "product_heads": {
+    "bsebench-specs": "1a67d01",
+    "bsebench-stats": "866d589",
+    "bsebench-runner": "ed7fde2",
+    "bsebench-filters": "7da2092",
+    "bsebench-datasets": "f09d4f8",
+    "bsebench-website": "31591ba"
+  },
+  "worker_commits": {
+    "phase-14-01-specs-information-bound-schema-20260509T145752Z": "1a67d01",
+    "phase-14-02-stats-matrix-checks-20260509T145752Z": "ca78475",
+    "phase-14-03-stats-linear-pcrlb-20260509T145752Z": "a4569e0",
+    "phase-14-04-stats-model-uncertainty-20260509T145752Z": "16cd2b3",
+    "phase-14-05-stats-bound-report-gate-20260509T145752Z": "d276787",
+    "phase-14-06-runner-bound-plan-20260509T145752Z": "f4c6c40",
+    "phase-14-07-runner-bound-dryrun-cli-20260509T145752Z": "ed7fde2",
+    "phase-14-08-datasets-noise-evidence-20260509T145752Z": "f09d4f8",
+    "phase-14-09-filters-ecm-linearization-20260509T145752Z": "4c1d1d4",
+    "phase-14-10-stats-synthetic-sanity-fixtures-20260509T145752Z": "4bbacf9",
+    "phase-14-11-website-phase14-page-20260509T145752Z": "31591ba"
+  },
+  "cleanup": {
+    "worktrees_removed": 11,
+    "local_branches_deleted": 11,
+    "remote_branches_deleted": 11,
+    "skipped_deletions": 0
+  },
+  "validation_summary": {
+    "stats_final_focused": "55 passed",
+    "stats_final_full": "437 passed",
+    "filters_full": "198 passed",
+    "website_build_pages": 14,
+    "secret_scan": "clean on Phase 14 changed files",
+    "claim_scan": "expected guardrail/test/docs hits only"
+  },
+  "scientific_boundary": "tooling/theory preflight only; no theorem, tight bound, Bayesian model-uncertainty PCRLB, SOC/SOH performance, ranking, SOTA, transfer success, or universal-validity claim"
+}

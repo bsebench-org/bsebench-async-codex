@@ -1,6 +1,6 @@
 {
   "base_branch": "main",
-  "branch_sha": "16cd2b370937da243cc3e4d38b39e999dbf90040",
+  "branch_sha": "d276787f7cfebcefb1bd160e68b94a18428d456c",
   "depends_on": [
     "stats-linear-pcrlb",
     "stats-model-uncertainty"
@@ -13,7 +13,7 @@
   "status": "done",
   "target_branch": "glassbox-phase14-05-stats-bound-report-gate-20260509T145752Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
-  "ts_done": "2026-05-09T15:46:49.539440Z",
+  "ts_done": "2026-05-09T15:49:46.000000Z",
   "ts_queued": "2026-05-09T14:57:52.652525Z",
   "ts_started": null,
   "worker_id": "direct:3074578"

@@ -1418,6 +1418,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Validation added since 17:22: stats linear PCRLB merged after targeted checks plus full stats suite `400 passed`, ruff OK, diff check OK, push OK.
 - Scientific status: `NO_GO_CLAIM`; no theorem, tight-bound, SOTA, empirical validation, upload, or estimator execution.
 
+## CODEX STATUS 2026-05-09 17:55 CEST
+
+- Phase 14: `100%` (`+27%` since 17:29; 11/11 tasks done, 0 running, 0 queued, 0 errors).
+- Product mains final: specs `1a67d01`, stats `866d589`, runner `ed7fde2`, filters `7da2092`, datasets `f09d4f8`, website `31591ba`.
+- Final validation: stats Phase 14 focused suite `55 passed`; full stats suite `437 passed`; filters full suite `198 passed`; website build `14` pages; no Phase 14 changed-file secret hits.
+- Cleanup complete: 11 worktrees removed, 11 local Phase 14 branches deleted, 11 remote Phase 14 branches deleted, 0 skipped.
+- Report files: `docs/PHASE_14_FINAL_CLOSURE_REPORT_2026-05-09.md` and `docs/PHASE_14_CLOSURE_LEDGER_2026-05-09.json`.
+- Scientific status: `NO_GO_CLAIM`; Phase 14 is tooling/theory preflight only, with no theorem, tight-bound, SOTA, empirical validation, upload, estimator execution, or SOC/SOH performance claim.
+
 ## CODEX STATUS 2026-05-09 17:30 CEST
 
 - Codex exec actifs: `2` workdirs, `6` PIDs.
