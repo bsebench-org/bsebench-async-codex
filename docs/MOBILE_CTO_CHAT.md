@@ -1003,3 +1003,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Scientific gate: `preflight_blocked`, as expected. Blockers are `inventory_not_ready`, `truth_not_ready`, and `parameters_not_frozen`; no estimator run and no performance claim.
 - Validation: targeted pytest `21 passed`; `ruff format --check` OK; `ruff check` OK; `git diff --check` OK; stats preflight returned expected code `2`.
 - Next: Phase 12 runner-matrix gate and/or replace this blocked pilot with a source-target pair that has finite SOC truth plus frozen estimator parameters.
+
+## CODEX STATUS 2026-05-09 12:30 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
