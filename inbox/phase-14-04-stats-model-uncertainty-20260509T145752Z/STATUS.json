@@ -3,13 +3,15 @@
   "depends_on": [
     "stats-matrix-checks"
   ],
+  "direct_log": "/home/oakir/.local/state/bsebench-phase14-direct/phase-14-04-stats-model-uncertainty-20260509T145752Z.log",
+  "direct_worktree": "/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-04-stats-model-uncertainty-20260509T145752Z",
   "exit_code": null,
   "phase_id": "phase-14-04-stats-model-uncertainty-20260509T145752Z",
-  "status": "queued",
+  "status": "running_direct",
   "target_branch": "glassbox-phase14-04-stats-model-uncertainty-20260509T145752Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
   "ts_done": null,
   "ts_queued": "2026-05-09T14:57:52.652525Z",
   "ts_started": null,
-  "worker_id": null
+  "worker_id": "direct:3066037"
 }
