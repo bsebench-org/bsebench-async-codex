@@ -348,6 +348,19 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
 
+## CODEX STATUS 2026-05-09 08:06 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 audit/validation closed; next work is Phase 10 only.
+- Phase 9: `100%` (`+2%` since previous mobile status) for operational smoke closure.
+- Phase 10: `86%` (`+0%` since previous mobile status).
+- Phase 11: `59%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` for public leaderboard claims; `GO_TOOLING + GO_EMPIRICAL_SMOKE` for Phase 9 internal checkpoint.
+- New pushed commit: `5495444` (`GLASSBOX: record Phase 9 final audit report`).
+- Next: Phase 10 native contract-clean estimator path / diagnostic adaptation guardrails.
+
 ## CODEX STATUS 2026-05-09 03:49 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
@@ -595,6 +608,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Upload HF: `0`.
 - Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
 - Phase 9: `98%` (`+0%` since previous mobile status).
+- Phase 10: `86%` (`+0%` since previous mobile status).
+- Phase 11: `59%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 08:15 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+2%` since previous mobile status).
 - Phase 10: `86%` (`+0%` since previous mobile status).
 - Phase 11: `59%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
