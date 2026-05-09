@@ -1086,3 +1086,26 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Decision: `blocked_evidence_collection_required`; SOC derivation remains forbidden and transfer execution remains forbidden.
 - Validation: four-eyes subagent verdict `commit OK`; targeted pytest `4 passed`; ruff format/check OK; git diff check OK; changed-file anti-claim scan OK.
 - Next: implement the parameter-freeze manifest/gate, then bind SOC evidence remediation + parameter freeze into a single execution-clearance gate.
+
+## CODEX STATUS 2026-05-09 13:14 CEST
+
+- Codex exec actifs: `0`; direct verified commit mode.
+- Phase 12 transfer-readiness/execution-clearance chain: `98%` (`+1%` since 13:07).
+- New pushed deliverable: `bsebench-filters` commit `a1c9a01` (`GLASSBOX add Phase 12 parameter freeze gate`).
+- What changed: deterministic Hinf Phase 12 config is now hashed in a parameter-freeze manifest and blocked until empirical calibration evidence is present.
+- Freeze numbers: config SHA-256 `f6b9f8523c72d5ca05af7c2bbe563c721a5f270ee18399b92b2d86808b5a6dd6`; freeze status `missing_calibration_evidence`; `parameter_use_allowed=false`; `transfer_execution_allowed=false`.
+- Required evidence: calibration dataset manifest hash, calibration split manifest hash, calibration run-log hash, and matching estimator config hash.
+- Validation: local `.venv` created with `uv`; targeted pytest `3 passed`; ruff format/check OK; git diff check OK; four-eyes subagent verdict `commit acceptable`; changed-file anti-claim scan OK.
+- Next: bind SOC evidence remediation + parameter freeze + runner preflight into a single Phase 12 execution-clearance gate.
+
+## CODEX STATUS 2026-05-09 13:15 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
