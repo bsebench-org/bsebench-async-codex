@@ -1,0 +1,160 @@
++        "member_id": member_id,
++        "estimator_id": f"unit.{member_id}",
++        "dataset_id": "unit.dataset",
++        "split_id": split_id,
++        "task": "soc_soh",
++        "metrics": {
++            "soc_rmse": 0.024,
++            "soh_mae": 0.011,
++        },
++        "evidence": {
++            "truth": {
++                "uri": f"truth/{member_id}.json",
++                "sha256": "a" * 64,
++            },
++            "split": {
++                "split_id": split_id,
++                "uri": "splits/holdout.json",
++                "sha256": "b" * 64,
++            },
++            "parameter_freeze": {
++                "status": "frozen",
++                "parameter_use_allowed": True,
++                "uri": f"params/{member_id}.json",
++                "sha256": "c" * 64,
++                "config_sha256": "d" * 64,
++            },
++            "provenance": {
++                "source_type": "dry_run_member_descriptor",
++                "source_uri": f"members/{member_id}.json",
++                "source_sha256": "e" * 64,
++            },
++        },
++    }
++
++
++def test_phase13_ensemble_plan_allows_dry_run_scheduling_for_complete_members() -> None:
++    plan = build_phase13_ensemble_plan(
++        candidates=[_candidate("member_a"), _candidate("member_b")],
++        generated_at="2026-05-09T13:48:30Z",
++    )
++
++    assert plan["schema_version"] == PHASE13_ENSEMBLE_PLAN_SCHEMA_VERSION
++    assert plan["scientific_verdict"] == NO_GO_CLAIM
++    assert plan["mechanical_validation_only"] is True
++    assert plan["dry_run_only"] is True
++    assert plan["decision"]["schedule_status"] == "ready"
++    assert plan["decision"]["ensemble_scheduling_allowed"] is True
++    assert plan["decision"]["estimator_execution_allowed"] is False
++    assert plan["decision"]["transfer_execution_allowed"] is False
++    assert plan["decision"]["soc_derivation_allowed"] is False
++    assert plan["decision"]["parameter_use_allowed"] is False
++    assert plan["summary"]["ready_member_count"] == 2
++    assert plan["blocking_gaps"] == []
++    assert all(member["scheduling_allowed"] is True for member in plan["members"])
++
++
++def test_phase13_ensemble_plan_blocks_when_truth_split_freeze_or_provenance_missing() -> None:
++    candidate = _candidate()
++    candidate["metrics"] = {}
++    candidate["evidence"] = {
++        "truth": {"uri": "truth/member_a.json"},
++        "split": {"split_id": "different", "uri": "splits/holdout.json", "sha256": "bad"},
++        "parameter_freeze": {
++            "status": "draft",
++            "parameter_use_allowed": False,
++            "sha256": "c" * 64,
++        },
++        "provenance": {"source_type": "dry_run_member_descriptor"},
++    }
++
++    plan = build_phase13_ensemble_plan(candidates=[candidate, _candidate("member_b")])
++    blocked = plan["members"][0]
++
++    assert plan["decision"]["schedule_status"] == "blocked"
++    assert plan["decision"]["ensemble_scheduling_allowed"] is False
++    assert blocked["readiness"] == "blocked"
++    assert "missing_truth_sha256" in blocked["blocking_gaps"]
++    assert "split_id_mismatch" in blocked["blocking_gaps"]
++    assert "invalid_split_sha256" in blocked["blocking_gaps"]
++    assert "parameter_freeze_not_frozen" in blocked["blocking_gaps"]
++    assert "missing_parameter_config_sha256" in blocked["blocking_gaps"]
++    assert "missing_provenance_source_uri" in blocked["blocking_gaps"]
++    assert "missing_provenance_source_sha256" in blocked["blocking_gaps"]
++    assert "missing_finite_metrics" in blocked["blocking_gaps"]
++    assert "candidate_member_evidence_incomplete" in plan["blocking_gaps"]
++
++
++def test_phase13_ensemble_plan_blocks_non_finite_metrics_without_serializing_nan() -> None:
++    candidate = _candidate()
++    candidate["metrics"] = {
++        "soc_rmse": math.nan,
++        "soh_mae": 0.015,
++        "interval": [0.1, math.inf],
++    }
++
++    plan = build_phase13_ensemble_plan(candidates=[candidate, _candidate("member_b")])
++
++    assert plan["decision"]["ensemble_scheduling_allowed"] is False
++    assert "metric_non_finite:metrics.soc_rmse" in plan["members"][0]["blocking_gaps"]
++    assert "metric_non_finite:metrics.interval[1]" in plan["members"][0]["blocking_gaps"]
++    assert plan["members"][0]["metrics"]["values"]["soc_rmse"] is None
++    json.dumps(plan, allow_nan=False)
++
++
++def test_phase13_ensemble_plan_blocks_single_member_even_when_complete() -> None:
++    plan = build_phase13_ensemble_plan(candidates=[_candidate()])
++
++    assert plan["decision"]["schedule_status"] == "blocked"
++    assert plan["summary"]["ready_member_count"] == 1
++    assert "insufficient_ready_members" in plan["blocking_gaps"]
++
++
++def test_phase13_ensemble_plan_blocks_empty_candidate_set() -> None:
++    plan = build_phase13_ensemble_plan(candidates=[])
++
++    assert plan["decision"]["ensemble_scheduling_allowed"] is False
++    assert plan["summary"]["candidate_member_count"] == 0
++    assert "candidate_members_missing" in plan["blocking_gaps"]
++    assert "insufficient_ready_members" in plan["blocking_gaps"]
++
++
++def test_phase13_ensemble_plan_rejects_invalid_input_collection() -> None:
++    with pytest.raises(Phase13EnsemblePlanError, match="candidates must be a sequence"):
++        build_phase13_ensemble_plan(candidates="not-a-list")  # type: ignore[arg-type]
++
++    with pytest.raises(Phase13EnsemblePlanError, match="min_members must be at least 2"):
++        build_phase13_ensemble_plan(candidates=[_candidate()], min_members=1)
++
++
++def test_phase13_ensemble_plan_load_write_and_hash_are_deterministic(tmp_path: Path) -> None:
++    descriptor_path = tmp_path / "candidates.json"
++    descriptor_path.write_text(
++        json.dumps({"candidates": [_candidate("member_a"), _candidate("member_b")]}) + "\n",
++        encoding="utf-8",
++    )
++    candidates = load_candidate_descriptors_json(descriptor_path)
++    plan = build_phase13_ensemble_plan(candidates=candidates)
++    output_path = write_phase13_ensemble_plan_json(plan, tmp_path / "plan.json")
++    loaded = json.loads(output_path.read_text(encoding="utf-8"))
++
++    assert loaded == plan
++    assert len(phase13_ensemble_plan_sha256(plan)) == 64
++    assert phase13_ensemble_plan_sha256(plan) == phase13_ensemble_plan_sha256(loaded)
+
+tokens used
+111,408
+Implemented and pushed commit `13f2574` to `glassbox-phase13-06-runner-ensemble-plan-20260509T134830Z`.
+
+Changes:
+- Added [phase13_ensemble_plan.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase13-06-runner-ensemble-plan-20260509T134830Z/src/bsebench_runner/phase13_ensemble_plan.py): dry-run ensemble plan builder, strict JSON writer/loader/hash helper, fail-closed member blockers for missing truth, split, parameter-freeze, provenance, hashes, and finite metrics.
+- Added [test_phase13_ensemble_plan.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase13-06-runner-ensemble-plan-20260509T134830Z/tests/test_phase13_ensemble_plan.py): focused tests for ready scheduling, missing evidence, invalid hashes, non-finite metrics, insufficient members, and deterministic load/write/hash behavior.
+
+Validation:
+- `uv run --extra dev pytest tests/test_phase13_ensemble_plan.py` passed: 7 tests.
+- `uv run --extra dev ruff check src tests` passed.
+- `uv run --extra dev ruff format --check ...` passed.
+- `uv run --extra dev mypy src/bsebench_runner/phase13_ensemble_plan.py` passed.
+- `git diff --check` passed.
+
+Skipped: full project pytest suite was not run; targeted pytest plus broader static checks were run.
