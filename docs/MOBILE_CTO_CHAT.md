@@ -259,3 +259,19 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
   - bsebench-stats-phase9-11-refill-p10-aging-verdict-inputs-20260509T012954+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
   - bsebench-stats-phase9-11-refill-p9-profile-verdict-inputs-20260509T012944+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
   - bsebench-runner-phase9-11-refill-p11-residual-trace-scheduler-20260509T012934+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
+
+## CODEX STATUS 2026-05-09 02:00 CEST
+
+- Codex exec actifs: `16` workdirs uniques, `48` PIDs.
+- Refill: `OK`; target `17`; cron minute active.
+- Upload HF: `0`.
+- Scope: Phase 9/10/11 only; Phase 12/13+ locked.
+- Message USER en attente: `no`.
+- Phase 9: `70%` (+0% depuis dernier status).
+- Phase 10: `66%` (+4% depuis dernier status).
+- Phase 11: `59%` (+5% depuis dernier status).
+- Scientific closure: `NO-GO` until cache/provenance/Tier2 empirical evidence passes.
+- Recent signals:
+  - bsebench-stats-phase9-11-refill-p9-profile-verdict-inputs-20260509T015022+0200.log: +                    "source_ledger_sha256": "2" * 64, +                    "cache_root": "cache://bsebench/phase9/tier2/profile-axis", +                    "cache_sha256": "3" * 6
+  - bsebench-datasets-phase9-11-refill-p11-tier2-residual-cache-20260509T014930+0200.log: +    assert config["empirical_run_evidence"]["status"] == "unknown_metadata"  # type: ignore[index] json.dumps(payload, allow_nan=False) succeeded in 2798ms: 3 files already format
+  - bsebench-runner-phase9-11-refill-p10-aging-empirical-scheduler-20260509T014955+0200.log: A  src/bsebench_runner/aging_soh_scheduler.py M  src/bsebench_runner/cli.py A  tests/test_aging_soh_scheduler.py codex Ruff format, ruff lint, and cached diff checks are clean. The
