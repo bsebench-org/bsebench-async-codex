@@ -1,0 +1,160 @@
++        "transfer_execution_attempted": False,
++        "reason": "phase13_plan_fixture_validation_only",
++    }
++    assert report["claims"] == {
++        "frontier_performance": False,
++        "method_victory": False,
++        "leaderboard_status": False,
++        "soc_soh_performance": False,
++        "universal_empirical_validity": False,
++    }
++    assert report["blocking_gaps"] == []
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.parametrize(
++    ("mutation", "expected_gap"),
++    [
++        (
++            lambda payload: payload.pop("evidence"),
++            "missing_artifact_evidence",
++        ),
++        (
++            lambda payload: payload["evidence"][0].pop("sha256"),
++            "evidence[0].missing_sha256",
++        ),
++        (
++            lambda payload: payload.pop("split"),
++            "missing_split",
++        ),
++        (
++            lambda payload: payload["candidate_reports"][0].pop("provenance"),
++            "candidate_reports[0].missing_provenance",
++        ),
++        (
++            lambda payload: payload["candidate_reports"][0]["ensemble"]["members"][0][
++                "provenance"
++            ].pop("artifact_sha256"),
++            "candidate_reports[0].ensemble.members[0].provenance.missing_artifact_sha256",
++        ),
++    ],
++)
++def test_phase13_dry_run_missing_evidence_fails_closed(mutation, expected_gap: str) -> None:
++    payload = _fixture()
++    mutation(payload)
++
++    report = validate_ensemble_plan_fixture(payload, required_metric_keys=["soc_rmse"])
++
++    assert report["decision"]["validation_status"] == "blocked"
++    assert report["decision"]["fixture_mechanically_valid"] is False
++    assert expected_gap in report["blocking_gaps"]
++    assert report["execution"]["attempted"] is False
++
++
++def test_phase13_dry_run_non_finite_metric_fails_closed() -> None:
++    payload = _fixture()
++    payload["candidate_reports"][0]["metrics"]["soc_rmse"] = float("nan")
++
++    report = validate_ensemble_plan_fixture(payload, required_metric_keys=["soc_rmse"])
++
++    assert report["decision"]["validation_status"] == "blocked"
++    assert "ensemble_contract_invalid" in report["blocking_gaps"]
++    assert "finite number" in report["component_status"]["ensemble_contract"]["error"]
++    json.dumps(report, allow_nan=False)
++
++
++def test_phase13_dry_run_cli_writes_ready_report(
++    tmp_path: Path,
++    capsys: pytest.CaptureFixture[str],
++) -> None:
++    plan = _write_json(tmp_path / "plan.json", _fixture())
++    output = tmp_path / "report.json"
++
++    rc = main(
++        [
++            "--plan-json",
++            str(plan),
++            "--output",
++            str(output),
++            "--metric",
++            "soc_rmse",
++            "--generated-at-utc",
++            "2026-05-09T12:00:00Z",
++        ]
++    )
++
++    assert rc == 0
++    assert "status=ready" in capsys.readouterr().out
++    report = json.loads(output.read_text(encoding="utf-8"))
++    assert report["decision"]["validation_status"] == "ready"
++    assert report["input"]["sha256"]
++    assert report["execution"]["attempted"] is False
++
++
++def test_phase13_dry_run_cli_returns_blocked_code_unless_allowed(
++    tmp_path: Path,
++) -> None:
++    payload = _fixture()
++    payload["split"].pop("manifest_sha256")
++    plan = _write_json(tmp_path / "blocked-plan.json", payload)
++
++    assert main(["--plan-json", str(plan), "--metric", "soc_rmse"]) == 2
++    assert main(["--plan-json", str(plan), "--metric", "soc_rmse", "--allow-blocked"]) == 0
++
++
++def test_phase13_dry_run_loader_rejects_non_standard_json_constants(tmp_path: Path) -> None:
++    payload = _fixture()
++    payload["candidate_reports"][0]["metrics"]["soc_rmse"] = float("nan")
++    plan = _write_json(tmp_path / "nan-plan.json", payload, allow_nan=True)
++
++    with pytest.raises(Phase13DryRunError, match="non-standard JSON constant"):
++        load_ensemble_plan_fixture(plan)
++
++
++def test_phase13_dry_run_module_entrypoint_smoke(tmp_path: Path) -> None:
++    plan = _write_json(tmp_path / "plan.json", _fixture())
++    output = tmp_path / "module-report.json"
++    env = {
++        **os.environ,
++        "PYTHONPATH": f"{Path.cwd() / 'src'}{os.pathsep}{os.environ.get('PYTHONPATH', '')}",
++    }
++
++    result = subprocess.run(
++        [
++            sys.executable,
++            "-m",
++            "bsebench_runner.phase13_dry_run_cli",
++            "--plan-json",
++            str(plan),
++            "--output",
++            str(output),
++            "--metric",
++            "soc_rmse",
++        ],
++        check=False,
++        env=env,
++        text=True,
++        capture_output=True,
++    )
++
++    assert result.returncode == 0, result.stderr
++    report = json.loads(output.read_text(encoding="utf-8"))
++    assert report["execution"]["filter_execution_attempted"] is False
++    assert report["decision"]["estimator_execution_allowed"] is False
+
+tokens used
+131,294
+Implemented and pushed commit `6cae1a88bfd358a7be444d02ee5425032a4aa0d2` to `origin/glassbox-phase13-08-runner-dry-run-cli-20260509T134830Z`.
+
+Changed:
+- Added [phase13_dry_run_cli.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase13-08-runner-dry-run-cli-20260509T134830Z/src/bsebench_runner/phase13_dry_run_cli.py)
+- Added [test_phase13_dry_run_cli.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase13-08-runner-dry-run-cli-20260509T134830Z/tests/test_phase13_dry_run_cli.py)
+
+Validation run:
+- `uv run --extra dev pytest tests/test_phase13_dry_run_cli.py` passed, including the module-entrypoint no-execution smoke path.
+- `uv run --extra dev ruff check src/bsebench_runner/phase13_dry_run_cli.py tests/test_phase13_dry_run_cli.py` passed.
+- `uv run --extra dev ruff check` passed.
+- `git diff --cached --check` passed before commit.
+
+Skipped:
+- Full pytest suite was not run; I used the focused Phase 13 tests plus broader lint as the cheap project-wide check. `gh` is not installed, so no PR was opened.
