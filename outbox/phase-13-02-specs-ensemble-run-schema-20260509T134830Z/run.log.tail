@@ -1,0 +1,160 @@
++    assert "split" in str(exc_info.value).lower()
++
++
++def test_missing_core_evidence_kind_fails_closed():
++    """Required provenance evidence kinds cannot be omitted."""
++    payload = _payload()
++    payload["provenance"]["evidence"] = [
++        artifact
++        for artifact in payload["provenance"]["evidence"]
++        if artifact["kind"] != "uncertainty_report"
++    ]
++
++    with pytest.raises(ValidationError, match="uncertainty_report"):
++        Phase13EnsembleRun.model_validate(payload)
++
++
++def test_member_artifact_hash_must_match_member_evidence():
++    """Member artifact hashes must be backed by member-specific evidence."""
++    payload = _payload()
++    payload["members"][0]["artifact_sha256"] = "e" * 64
++
++    with pytest.raises(ValidationError, match="member_artifact evidence"):
++        Phase13EnsembleRun.model_validate(payload)
++
++
++def test_member_specific_evidence_requires_member_id():
++    """Member evidence without a member_id is invalid."""
++    payload = _payload()
++    for artifact in payload["provenance"]["evidence"]:
++        if artifact["kind"] == "member_predictions":
++            artifact.pop("member_id")
++            break
++
++    with pytest.raises(ValidationError, match="member_predictions evidence requires member_id"):
++        Phase13EnsembleRun.model_validate(payload)
++
++
++def test_interval_uncertainty_requires_calibration_split_and_level():
++    """Interval uncertainty methods must declare calibration identity and level."""
++    payload = _payload()
++    payload["uncertainty"] = {
++        "method": "conformal_interval",
++        "report_sha256": UNCERTAINTY_SHA,
++    }
++
++    with pytest.raises(ValidationError, match="confidence_level"):
++        Phase13EnsembleRun.model_validate(payload)
++
++
++def test_metric_keys_must_match_observed_metrics():
++    """Metric keys are fail-closed against missing metric observations."""
++    payload = _payload()
++    payload["metric_keys"].append("soh_mae")
++
++    with pytest.raises(ValidationError, match=r"metrics\[\*\]\.key"):
++        Phase13EnsembleRun.model_validate(payload)
++
++
++def test_metrics_must_be_finite():
++    """Non-finite metric values are rejected."""
++    payload = _payload()
++    payload["metrics"][0]["value"] = math.inf
++
++    with pytest.raises(ValidationError) as exc_info:
++        Phase13EnsembleRun.model_validate(payload)
++
++    assert "finite" in str(exc_info.value).lower()
++
++
++def test_compute_profile_hashes_must_match_evidence():
++    """Compute profile and runner manifest hashes must point at evidence."""
++    payload = _payload()
++    payload["compute"]["profile_sha256"] = "e" * 64
++
++    with pytest.raises(ValidationError, match="compute_profile evidence"):
++        Phase13EnsembleRun.model_validate(payload)
++
++
++def test_accepted_verdict_requires_passing_checks():
++    """Accepted verdicts cannot carry failed or not-run checks."""
++    payload = _payload()
++    payload["verdict"]["status"] = "accepted"
++    payload["verdict"]["checks"][0]["status"] = "not_run"
++
++    with pytest.raises(ValidationError, match="accepted verdict"):
++        Phase13EnsembleRun.model_validate(payload)
++
++
++def test_verdict_check_hash_must_match_verdict_report():
++    """Verdict checks must be backed by the verdict report artifact."""
++    payload = _payload()
++    payload["verdict"]["checks"][0]["evidence_sha256"] = METRICS_SHA
++
++    with pytest.raises(ValidationError, match="verdict_report evidence"):
++        Phase13EnsembleRun.model_validate(payload)
++
++
++def test_unknown_claim_like_fields_are_rejected():
++    """Unsupported extra fields are not silently retained."""
++    payload = _payload()
++    payload["leaderboard_rank"] = 1
++
++    with pytest.raises(ValidationError) as exc_info:
++        Phase13EnsembleRun.model_validate(payload)
++
++    assert "extra" in str(exc_info.value).lower()
++
++
++def test_checked_in_phase13_ensemble_schema_valid_json():
++    """Checked-in phase13_ensemble_run.schema.json parses as valid JSON."""
++    schema = json.loads(SCHEMA_PATH.read_text())
++
++    assert schema["title"] == "Phase13EnsembleRun"
++    assert schema["$id"] == "https://bsebench.org/schemas/phase13_ensemble_run.schema.json"
++    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
++    assert {
++        "split",
++        "members",
++        "uncertainty",
++        "metric_keys",
++        "metrics",
++        "compute",
++        "verdict",
++        "provenance",
++    } <= set(schema["required"])
++
++
++def test_jsonschema_validation_if_available():
++    """The checked-in JSON Schema validates required fields when jsonschema is installed."""
++    jsonschema = pytest.importorskip("jsonschema")
++    schema = json.loads(SCHEMA_PATH.read_text())
++    validator = jsonschema.Draft202012Validator(schema)
++
++    validator.validate(_payload())
++
++    invalid = _payload()
++    invalid.pop("provenance")
++    errors = list(validator.iter_errors(invalid))
++
++    assert any("provenance" in [str(part) for part in error.path] for error in errors) or errors
+
+tokens used
+112,139
+Implemented and pushed commit `d48d9e3` to `origin/glassbox-phase13-02-specs-ensemble-run-schema-20260509T134830Z`.
+
+Added the Phase 13 fail-closed ensemble run contract in:
+- `schemas/phase13_ensemble_run.schema.json`
+- `src/bsebench_specs/phase13_ensemble_run.py`
+- `tests/test_phase13_ensemble_run_schema.py`
+- minimal package export in `src/bsebench_specs/__init__.py`
+
+Validation run:
+- `uv run --extra dev pytest tests/test_phase13_ensemble_run_schema.py`: passed, with the optional in-env `jsonschema` test skipped
+- `uv run --extra dev --with jsonschema python ...`: JSON Schema validation passed
+- `uv run --extra dev ruff check ...`: passed
+- `uv run python -m json.tool schemas/phase13_ensemble_run.schema.json`: passed
+- `git diff --check`: passed
+- `uv run --extra dev pytest`: `183 passed, 1 skipped`
+
+The one skipped test is the optional project-env `jsonschema` import check; I validated the schema explicitly with `jsonschema` via `uv --with jsonschema`.

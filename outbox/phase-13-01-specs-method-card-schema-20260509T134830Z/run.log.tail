@@ -1,0 +1,160 @@
++    payload["evidence"] = [
++        artifact for artifact in payload["evidence"] if artifact["kind"] != "provenance_bundle"
++    ]
++
++    with pytest.raises(ValidationError, match="provenance_bundle"):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++
++def test_dangling_hash_reference_fails_closed() -> None:
++    """Member and config evidence references must resolve to declared artifacts."""
++    payload = valid_method_card_payload()
++    payload["members"][0]["config_evidence_id"] = "missing_config_hash"
++
++    with pytest.raises(ValidationError, match="config_evidence_id"):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++
++def test_missing_split_metric_fails_closed() -> None:
++    """Every declared split must have finite metric evidence."""
++    payload = valid_method_card_payload()
++    payload["splits"].append(
++        {
++            "split_id": "test_split",
++            "dataset_id": "CALCE_A123_25C_DST",
++            "role": "test",
++            "manifest_evidence_id": "split_manifest",
++            "manifest_sha256": "6" * 64,
++        }
++    )
++
++    with pytest.raises(ValidationError, match="test_split"):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++
++def test_non_finite_metric_value_fails_closed() -> None:
++    """Finite metric checks reject NaN and infinity."""
++    payload = valid_method_card_payload()
++    payload["finite_metric_checks"][0]["value"] = math.inf
++
++    with pytest.raises(ValidationError):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++
++def test_weighted_aggregation_requires_finite_weights_for_all_members() -> None:
++    """Weighted aggregation cannot omit, add, or use invalid member weights."""
++    payload = valid_method_card_payload()
++    payload["aggregation"]["weight_by_member_id"] = {
++        "ekf_member": 1.0,
++        "unknown_member": 0.5,
++    }
++
++    with pytest.raises(ValidationError, match="weights must cover exactly"):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++    payload = valid_method_card_payload()
++    payload["aggregation"]["weight_by_member_id"]["observer_member"] = math.nan
++
++    with pytest.raises(ValidationError, match="finite and nonnegative"):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++
++def test_member_families_must_match_members() -> None:
++    """Declared member families are fail-closed against the member list."""
++    payload = valid_method_card_payload()
++    payload["member_families"] = ["filter", "ai_estimator"]
++
++    with pytest.raises(ValidationError, match="member_families"):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++
++def test_claim_language_and_claim_fields_are_rejected() -> None:
++    """Method cards cannot smuggle method-victory or leaderboard claims."""
++    payload = valid_method_card_payload()
++    payload["method"]["summary"] = "Frontier SOTA method that wins the leaderboard."
++
++    with pytest.raises(ValidationError, match="summary"):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++    payload = valid_method_card_payload()
++    payload["no_claim_status"]["leaderboard_status_claim"] = True
++
++    with pytest.raises(ValidationError):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++
++def test_phase12_authorized_gate_requires_gate_evidence() -> None:
++    """Opening a Phase 12 blocker requires explicit gate-report evidence."""
++    payload = valid_method_card_payload()
++    payload["phase12_gates"]["estimator_execution"] = "authorized_by_gate"
++
++    with pytest.raises(ValidationError, match="gate_evidence_id"):
++        Phase13EnsembleMethodCard.model_validate(payload)
++
++    payload["phase12_gates"]["gate_evidence_id"] = "gate_report"
++    payload["evidence"].append(_evidence("gate_report", "gate_report", "9"))
++    card = Phase13EnsembleMethodCard.model_validate(payload)
++
++    assert card.phase12_gates.estimator_execution == "authorized_by_gate"
++
++
++def test_phase13_ensemble_method_card_schema_valid_json() -> None:
++    """Checked-in phase13_ensemble_method_card.schema.json parses as valid JSON."""
++    assert SCHEMA_PATH.exists()
++    schema = _load_checked_in_schema()
++
++    assert schema["title"] == "Phase13EnsembleMethodCard"
++    assert schema["$id"] == "https://bsebench.org/schemas/phase13_ensemble_method_card.schema.json"
++    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
++    assert "no_claim_status" in schema["required"]
++    assert "finite_metric_checks" in schema["required"]
++
++
++def test_generated_schema_exposes_fail_closed_required_fields() -> None:
++    """Generated schema requires the contract fields that close common evidence gaps."""
++    schema = Phase13EnsembleMethodCard.model_json_schema()
++
++    required = set(schema["required"])
++    assert {
++        "method",
++        "member_families",
++        "members",
++        "aggregation",
++        "splits",
++        "evidence",
++        "finite_metric_checks",
++        "phase12_gates",
++        "no_claim_status",
++    } <= required
++    assert schema["properties"]["members"]["minItems"] == 2
++    assert schema["properties"]["finite_metric_checks"]["minItems"] == 1
++
++
++def test_checked_in_schema_matches_generated_schema() -> None:
++    """Checked-in schema stays synchronized with the Pydantic contract."""
++    generated = Phase13EnsembleMethodCard.model_json_schema()
++    generated["$id"] = "https://bsebench.org/schemas/phase13_ensemble_method_card.schema.json"
++    generated["$schema"] = "https://json-schema.org/draft/2020-12/schema"
++
++    assert _load_checked_in_schema() == generated
+
+tokens used
+167,082
+Implemented and pushed `glassbox-phase13-01-specs-method-card-schema-20260509T134830Z`.
+
+Changes:
+- Added [phase13_ensemble_method_card.py](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase13-01-specs-method-card-schema-20260509T134830Z/src/bsebench_specs/phase13_ensemble_method_card.py) with fail-closed Pydantic contract.
+- Added checked-in JSON Schema at [phase13_ensemble_method_card.schema.json](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase13-01-specs-method-card-schema-20260509T134830Z/schemas/phase13_ensemble_method_card.schema.json).
+- Added focused tests at [test_phase13_ensemble_method_card.py](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase13-01-specs-method-card-schema-20260509T134830Z/tests/test_phase13_ensemble_method_card.py).
+
+Validation run:
+- `uv run --extra dev pytest tests/test_phase13_ensemble_method_card.py` passed, 13 tests.
+- `uv run --extra dev pytest tests/test_schema_export.py` passed.
+- `uv run --extra dev ruff check src/bsebench_specs/phase13_ensemble_method_card.py tests/test_phase13_ensemble_method_card.py` passed.
+- `uv run python -m json.tool schemas/phase13_ensemble_method_card.schema.json >/dev/null` passed.
+- `git diff --check` and `git diff --cached --check` passed.
+
+Skipped: full repository pytest suite was not run; I ran the focused suite plus the local schema/export checks.
+
+Commit pushed:
+`53ca307 GLASSBOX [role: phase13-specs-method-card] add ensemble method-card schema`

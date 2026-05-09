@@ -1,0 +1,160 @@
++
++def member_evidence(offset: int = 0) -> dict[str, str]:
++    chars = "abcdef0123456789"
++    return {
++        "dataset_manifest_sha256": sha(chars[offset]),
++        "split_manifest_sha256": sha(chars[offset + 1]),
++        "provenance_sha256": sha(chars[offset + 2]),
++        "estimator_config_sha256": sha(chars[offset + 3]),
++    }
++
++
++def update_evidence() -> dict[str, str]:
++    return {
++        "dataset_manifest_sha256": sha("1"),
++        "split_manifest_sha256": sha("2"),
++        "metrics_manifest_sha256": sha("3"),
++        "provenance_sha256": sha("4"),
++    }
++
++
++def member(member_id: str, weight: float, *, offset: int = 0) -> TimeVaryingWeightMember:
++    return TimeVaryingWeightMember(
++        member_id=member_id,
++        estimator_name=f"{member_id}-estimator",
++        implementation=f"bsebench_filters.{member_id}",
++        split_id="phase13-validation-split",
++        provenance_id=f"{member_id}-provenance",
++        initial_weight=weight,
++        evidence=member_evidence(offset),
++    )
++
++
++def update(
++    metrics_by_member: dict[str, dict[str, float]],
++    *,
++    step_index: int = 3,
++) -> TimeVaryingWeightUpdateInput:
++    return TimeVaryingWeightUpdateInput(
++        update_id=f"phase13-update-{step_index}",
++        step_index=step_index,
++        t=12.5,
++        split_id="phase13-validation-split",
++        provenance_id="phase13-update-provenance",
++        metrics_by_member=metrics_by_member,
++        evidence=update_evidence(),
++    )
++
++
++def test_time_varying_weight_update_is_deterministic_bounded_and_audited() -> None:
++    adapter = Phase13TimeVaryingWeightAdapter(
++        [
++            member("ekf", 0.5, offset=0),
++            member("hinf", 0.5, offset=4),
++        ],
++        min_weight=0.2,
++        max_weight=0.7,
++    )
++
++    weights = adapter.update_weights(
++        update(
++            {
++                "ekf": {"validation_residual_mae": 0.2},
++                "hinf": {"validation_residual_mae": 0.8},
++            }
++        )
++    )
++
++    assert weights == pytest.approx({"ekf": 0.7, "hinf": 0.3})
++    evidence = adapter.get_adaptation_evidence()
++    assert evidence["schema_version"] == PHASE13_TIME_VARYING_WEIGHTS_SCHEMA_VERSION
++    assert evidence["claim_status"] == "NO_GO_CLAIM"
++    assert evidence["claim_eligible"] is False
++    assert evidence["estimator_execution_allowed"] is False
++    assert evidence["parameter_use_allowed"] is False
++    assert evidence["soc_derivation_allowed"] is False
++    assert evidence["current_weights"] == pytest.approx(weights)
++    assert len(evidence["events"][0]["input_sha256"]) == 64
++    assert evidence["events"][0]["candidate_weights"] == pytest.approx(
++        {"ekf": 0.8, "hinf": 0.2}
++    )
++
++
++def test_constructor_fails_closed_for_missing_member_hash_evidence() -> None:
++    bad_member = member("ekf", 1.0)
++    bad_evidence = dict(bad_member.evidence)
++    bad_evidence.pop("split_manifest_sha256")
++    bad_member = TimeVaryingWeightMember(
++        member_id=bad_member.member_id,
++        estimator_name=bad_member.estimator_name,
++        implementation=bad_member.implementation,
++        split_id=bad_member.split_id,
++        provenance_id=bad_member.provenance_id,
++        initial_weight=bad_member.initial_weight,
++        evidence=bad_evidence,
++    )
++
++    with pytest.raises(
++        ValueError,
++        match=r"members\.ekf\.evidence\.split_manifest_sha256",
++    ):
++        Phase13TimeVaryingWeightAdapter([bad_member])
++
++
++def test_update_fails_closed_when_a_member_metric_is_missing() -> None:
++    adapter = Phase13TimeVaryingWeightAdapter(
++        [
++            member("ekf", 0.5, offset=0),
++            member("hinf", 0.5, offset=4),
++        ],
++    )
++
++    with pytest.raises(ValueError, match="missing members: hinf"):
++        adapter.update_weights(update({"ekf": {"validation_residual_mae": 0.2}}))
++
++    assert adapter.get_weights() == pytest.approx({"ekf": 0.5, "hinf": 0.5})
++    assert adapter.get_adaptation_evidence()["events"] == []
++
++
++def test_update_fails_closed_for_nonfinite_metrics_and_missing_update_hashes() -> None:
++    adapter = Phase13TimeVaryingWeightAdapter([member("ekf", 1.0)])
++
++    with pytest.raises(ValueError, match=r"validation_residual_mae.*must be finite"):
++        adapter.update_weights(update({"ekf": {"validation_residual_mae": float("nan")}}))
++
++    bad_update = TimeVaryingWeightUpdateInput(
++        update_id="phase13-update-bad-evidence",
++        step_index=0,
++        t=0.0,
++        split_id="phase13-validation-split",
++        provenance_id="phase13-update-provenance",
++        metrics_by_member={"ekf": {"validation_residual_mae": 0.2}},
++        evidence={"dataset_manifest_sha256": sha("1")},
++    )
++    with pytest.raises(ValueError, match=r"update\.evidence\.split_manifest_sha256"):
++        adapter.update_weights(bad_update)
++
++
++def test_adapter_skeleton_blocks_estimator_execution_and_soc_derivation() -> None:
++    adapter = Phase13TimeVaryingWeightAdapter([member("ekf", 1.0)])
++
++    with pytest.raises(Phase13ExecutionBlockedError, match="does not execute estimators"):
++        adapter.step(t=0.0, voltage_V=3.3, current_A=0.0, temperature_C=25.0)
++
++    with pytest.raises(Phase13ExecutionBlockedError, match="does not derive SOC/SOH"):
++        adapter.estimate(t=0.0, voltage_V=3.3, current_A=0.0, temperature_C=25.0)
+
+tokens used
+106,733
+Implemented and pushed commit `f2c3f20` to `glassbox-phase13-11-filters-time-varying-weights-20260509T134830Z`.
+
+Changed:
+- [phase13_time_varying_weights.py](/mnt/c/doctorat/bsebench-org/bsebench-filters-glassbox-phase13-11-filters-time-varying-weights-20260509T134830Z/src/bsebench_filters/phase13_time_varying_weights.py): non-executing Phase 13 time-varying weight adapter skeleton with bounded simplex projection, exact-member metric updates, hash/provenance/split evidence validation, and explicit execution/SOC-SOH derivation blockers.
+- [test_phase13_time_varying_weights.py](/mnt/c/doctorat/bsebench-org/bsebench-filters-glassbox-phase13-11-filters-time-varying-weights-20260509T134830Z/tests/test_phase13_time_varying_weights.py): focused coverage for deterministic bounded updates, missing evidence, missing members, non-finite metrics, and blocked execution.
+
+Validation:
+- `COVERAGE_FILE=.coverage.phase13_time_varying .venv/bin/python -m pytest tests/test_phase13_time_varying_weights.py` passed: 5 tests.
+- `.venv/bin/ruff check src tests` passed.
+- `git diff --cached --check` passed before commit.
+
+Skipped: full pytest suite, because the requested validation was targeted and the cheap broader check was covered by full `ruff check src tests`.

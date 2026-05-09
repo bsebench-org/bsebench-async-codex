@@ -1,0 +1,160 @@
++def test_build_manifest_sorts_inputs_and_summarizes_compute_fields() -> None:
++    manifest = build_phase13_compute_profile_manifest(**_manifest_kwargs())
++
++    assert manifest["schema_version"] == PHASE13_COMPUTE_PROFILE_SCHEMA_VERSION
++    assert manifest["manifest_id"].startswith(PHASE13_COMPUTE_PROFILE_ID_PREFIX)
++    assert [split["split_id"] for split in manifest["splits"]] == [
++        "validation-a",
++        "validation-b",
++    ]
++    assert [member["member_id"] for member in manifest["members"]] == ["member-a", "member-b"]
++    assert manifest["units"] == {
++        "runtime_ns": "nanoseconds",
++        "memory_current_bytes": "bytes_caller_reported_current",
++        "memory_peak_bytes": "bytes_caller_reported_peak",
++        "iteration_count": "iterations",
++    }
++    assert manifest["summary"] == {
++        "member_count": 2,
++        "split_count": 2,
++        "runtime_ns_total": 200,
++        "runtime_ns_max": 125,
++        "memory_current_bytes_max": 11,
++        "memory_peak_bytes_max": 30,
++        "iteration_count_total": 8,
++        "complete": True,
++    }
++    assert validate_phase13_compute_profile_manifest(manifest) == manifest["summary"]
++    json.dumps(manifest, allow_nan=False)
++
++
++@pytest.mark.fast
++def test_manifest_id_is_stable_for_input_order() -> None:
++    left = build_phase13_compute_profile_manifest(**_manifest_kwargs())
++    kwargs = _manifest_kwargs()
++    kwargs["splits"] = list(reversed(kwargs["splits"]))  # type: ignore[arg-type]
++    kwargs["member_profiles"] = list(reversed(kwargs["member_profiles"]))  # type: ignore[arg-type]
++
++    right = build_phase13_compute_profile_manifest(**kwargs)
++
++    assert left["manifest_id"] == right["manifest_id"]
++    assert left == right
++
++
++@pytest.mark.fast
++def test_write_manifest_validates_and_emits_strict_json(tmp_path) -> None:
++    manifest = build_phase13_compute_profile_manifest(**_manifest_kwargs())
++    output_path = write_phase13_compute_profile_manifest(
++        manifest,
++        tmp_path / "phase13-compute-profile.json",
++    )
++
++    loaded = json.loads(output_path.read_text(encoding="utf-8"))
++
++    assert loaded == manifest
++    assert output_path.read_text(encoding="utf-8").endswith("\n")
++
++
++@pytest.mark.fast
++def test_missing_provenance_evidence_and_hashes_fail_closed() -> None:
++    kwargs = _manifest_kwargs()
++    kwargs["provenance"] = {
++        "run_id": "run-20260509",
++        "runner_name": "bsebench-runner",
++        "runner_version": "0.1.0a0",
++    }
++    with pytest.raises(Phase13ComputeProfileError, match="generated_at_utc"):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++    kwargs = _manifest_kwargs()
++    kwargs["evidence"] = {"path": "outputs/raw.json"}
++    with pytest.raises(Phase13ComputeProfileError, match="evidence missing required fields"):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++    kwargs = _manifest_kwargs()
++    splits = copy.deepcopy(kwargs["splits"])
++    splits[0]["content_sha256"] = "not-a-sha"  # type: ignore[index]
++    kwargs["splits"] = splits
++    with pytest.raises(Phase13ComputeProfileError, match=r"splits\[0\]\.content_sha256"):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++
++@pytest.mark.fast
++def test_missing_or_mismatched_splits_fail_closed() -> None:
++    kwargs = _manifest_kwargs()
++    kwargs["splits"] = []
++    with pytest.raises(Phase13ComputeProfileError, match="splits must be a non-empty list"):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++    kwargs = _manifest_kwargs()
++    members = copy.deepcopy(kwargs["member_profiles"])
++    members[0]["split_id"] = "undeclared-split"  # type: ignore[index]
++    kwargs["member_profiles"] = members
++    with pytest.raises(Phase13ComputeProfileError, match="split_id is not declared in splits"):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++
++@pytest.mark.fast
++def test_missing_nonfinite_or_inconsistent_member_metrics_fail_closed() -> None:
++    kwargs = _manifest_kwargs()
++    members = copy.deepcopy(kwargs["member_profiles"])
++    del members[0]["runtime_ns"]  # type: ignore[index]
++    kwargs["member_profiles"] = members
++    with pytest.raises(Phase13ComputeProfileError, match="missing required fields: runtime_ns"):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++    kwargs = _manifest_kwargs()
++    members = copy.deepcopy(kwargs["member_profiles"])
++    members[0]["runtime_ns"] = math.nan  # type: ignore[index]
++    kwargs["member_profiles"] = members
++    with pytest.raises(Phase13ComputeProfileError, match=r"runtime_ns must be finite"):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++    kwargs = _manifest_kwargs()
++    members = copy.deepcopy(kwargs["member_profiles"])
++    members[0]["iteration_count"] = -1  # type: ignore[index]
++    kwargs["member_profiles"] = members
++    with pytest.raises(Phase13ComputeProfileError, match="iteration_count"):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++    kwargs = _manifest_kwargs()
++    members = copy.deepcopy(kwargs["member_profiles"])
++    members[0]["memory_current_bytes"] = 31  # type: ignore[index]
++    members[0]["memory_peak_bytes"] = 30  # type: ignore[index]
++    kwargs["member_profiles"] = members
++    with pytest.raises(Phase13ComputeProfileError, match="memory_peak_bytes must be >="):
++        build_phase13_compute_profile_manifest(**kwargs)
++
++
++@pytest.mark.fast
++def test_validate_manifest_rejects_tampered_summary_or_id() -> None:
++    manifest = build_phase13_compute_profile_manifest(**_manifest_kwargs())
++    tampered_summary = copy.deepcopy(manifest)
++    tampered_summary["summary"]["runtime_ns_total"] = 1
++
++    with pytest.raises(Phase13ComputeProfileError, match="summary does not match"):
++        validate_phase13_compute_profile_manifest(tampered_summary)
++
++    tampered_id = copy.deepcopy(manifest)
++    tampered_id["manifest_id"] = PHASE13_COMPUTE_PROFILE_ID_PREFIX + ("0" * 64)
++
++    with pytest.raises(Phase13ComputeProfileError, match="manifest_id does not match"):
++        validate_phase13_compute_profile_manifest(tampered_id)
+
+tokens used
+93,185
+Implemented and pushed the Phase 13 compute-profile manifest work.
+
+Changed:
+- [phase13_compute_profile.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase13-09-runner-compute-profile-20260509T134830Z/src/bsebench_runner/phase13_compute_profile.py:1): strict builder/validator/writer for ensemble compute-profile manifests, including provenance, split/hash evidence, runtime, memory, iteration counts, deterministic manifest IDs, and fail-closed validation.
+- [test_phase13_compute_profile.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase13-09-runner-compute-profile-20260509T134830Z/tests/test_phase13_compute_profile.py:1): focused tests for deterministic output and missing-data/hash/split/provenance/metric failures.
+
+Validation:
+- `uv run --extra dev pytest tests/test_phase13_compute_profile.py` passed.
+- `uv run --extra dev ruff check src/bsebench_runner/phase13_compute_profile.py tests/test_phase13_compute_profile.py` passed.
+- `git diff --check` passed.
+- Broader cheap check `uv run --extra dev ruff check src tests` passed.
+
+Pushed commit:
+`86d2b92adb539fccf46d82a9b1719339ef4f864e`  
+`GLASSBOX [role: phase13-runner-compute] add compute profile manifest`

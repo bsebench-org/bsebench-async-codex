@@ -1,0 +1,160 @@
++        },
++    }
++
++
++def _valid_manifest() -> dict[str, object]:
++    return build_phase13_hierarchical_prior_manifest(
++        prior_id="phase13_hierarchical_prior_fixture",
++        prior_spec=default_hierarchical_prior_spec(),
++        evidence=_evidence(),
++        diagnostic_metrics={
++            "calibration_log_likelihood": -12.25,
++            "prior_predictive_spread": 0.125,
++        },
++        phase12_gate=_phase12_gate(),
++    )
++
++
++def test_hierarchical_prior_manifest_blocks_missing_evidence_by_default() -> None:
++    manifest = build_phase13_hierarchical_prior_manifest()
++
++    assert manifest["schema_version"] == PHASE13_HIERARCHICAL_PRIOR_SCHEMA_VERSION
++    assert manifest["claim_status"] == NO_GO_CLAIM
++    assert manifest["readiness"]["status"] == "blocked"
++    assert manifest["execution_policy"]["prior_parameter_use_allowed"] is False
++    assert manifest["execution_policy"]["estimator_execution_allowed"] is False
++    assert manifest["execution_policy"]["transfer_execution_allowed"] is False
++    assert manifest["execution_policy"]["empirical_advantage_claim_allowed"] is False
++    assert "evidence.dataset_manifest_sha256" in manifest["readiness"]["blocking_gaps"][0]
++
++
++def test_valid_hierarchical_prior_metadata_keeps_execution_and_claims_blocked() -> None:
++    manifest = _valid_manifest()
++    normalized = validate_phase13_hierarchical_prior_manifest(manifest)
++
++    assert manifest["readiness"] == {"status": "metadata_ready", "blocking_gaps": []}
++    assert normalized["method_family"] == "ensemble"
++    assert normalized["execution_policy"]["prior_parameter_use_allowed"] is True
++    assert normalized["execution_policy"]["soc_derivation_allowed"] is False
++    assert normalized["execution_policy"]["soh_derivation_allowed"] is False
++    assert normalized["execution_policy"]["estimator_execution_allowed"] is False
++    assert normalized["execution_policy"]["transfer_execution_allowed"] is False
++    assert normalized["execution_policy"]["empirical_advantage_claim_allowed"] is False
++    assert normalized["diagnostic_metrics"]["prior_predictive_spread"] == pytest.approx(0.125)
++    assert len(normalized["hierarchical_prior"]["levels"]) == 2
++    assert len(normalized["hierarchical_prior"]["ensemble_members"]) == 2
++    assert_phase13_hierarchical_prior_manifest(manifest)
++    json.dumps(normalized, allow_nan=False)
++
++
++@pytest.mark.parametrize(
++    ("mutation", "message"),
++    [
++        (
++            lambda payload: payload["evidence"].pop("dataset_manifest_sha256"),
++            r"evidence\.dataset_manifest_sha256",
++        ),
++        (
++            lambda payload: payload["evidence"]["split"].update(
++                {"split_manifest_sha256": "4" * 64}
++            ),
++            r"split\.split_manifest_sha256 must match evidence\.split_manifest_sha256",
++        ),
++        (
++            lambda payload: payload["evidence"]["provenance"].pop("source_ledger_id"),
++            r"evidence\.provenance\.source_ledger_id",
++        ),
++        (
++            lambda payload: payload["diagnostic_metrics"].update(
++                {"calibration_log_likelihood": float("nan")}
++            ),
++            r"diagnostic_metrics\.calibration_log_likelihood must be a finite number",
++        ),
++        (
++            lambda payload: payload["phase12_parameter_gate"].update(
++                {"parameter_use_allowed": False}
++            ),
++            r"phase12_parameter_gate\.parameter_use_allowed must be true",
++        ),
++        (
++            lambda payload: payload.update({"claim_status": "FRONTIER_PERFORMANCE"}),
++            "claim_status must remain NO_GO_CLAIM",
++        ),
++    ],
++)
++def test_hierarchical_prior_validation_fails_closed_for_missing_or_unsafe_metadata(
++    mutation,
++    message: str,
++) -> None:
++    manifest = _valid_manifest()
++    mutation(manifest)
++
++    with pytest.raises(HierarchicalPriorValidationError, match=message):
++        validate_phase13_hierarchical_prior_manifest(manifest)
++    assert hierarchical_prior_blocking_gaps(manifest)
++
++
++@pytest.mark.parametrize(
++    ("mutation", "message"),
++    [
++        (
++            lambda prior: prior.update({"levels": prior["levels"][:1]}),
++            "levels must contain at least 2 levels",
++        ),
++        (
++            lambda prior: prior["ensemble_members"][1].update(
++                {"member_id": prior["ensemble_members"][0]["member_id"]}
++            ),
++            r"ensemble_members\[1\]\.member_id must be unique",
++        ),
++        (
++            lambda prior: prior["levels"][0]["distribution"]["parameters"].update(
++                {"scale": float("inf")}
++            ),
++            r"distribution\.parameters\.scale must be a finite number",
++        ),
++    ],
++)
++def test_hierarchical_prior_spec_validation_rejects_ambiguous_or_nonfinite_priors(
++    mutation,
++    message: str,
++) -> None:
++    prior = default_hierarchical_prior_spec()
++    mutation(prior)
++    manifest = build_phase13_hierarchical_prior_manifest(
++        prior_spec=prior,
++        evidence=_evidence(),
++        diagnostic_metrics={"calibration_log_likelihood": -1.0},
++        phase12_gate=_phase12_gate(),
++    )
++
++    with pytest.raises(HierarchicalPriorValidationError, match=message):
++        validate_phase13_hierarchical_prior_manifest(manifest)
++
++
++def test_hierarchical_prior_manifest_rejects_execution_or_transfer_flags() -> None:
++    manifest = deepcopy(_valid_manifest())
++    manifest["execution_policy"]["estimator_execution_allowed"] = True
++
++    with pytest.raises(
++        HierarchicalPriorValidationError,
++        match=r"execution_policy\.estimator_execution_allowed must remain false",
++    ):
++        validate_phase13_hierarchical_prior_manifest(manifest)
+
+tokens used
+106,568
+Implemented and pushed `78eb2c2 GLASSBOX [role: phase13-filters-hierarchical] add hierarchical prior metadata gates` to `glassbox-phase13-12-filters-hierarchical-priors-20260509T134830Z`.
+
+Added:
+- [phase13_hierarchical_priors.py](/mnt/c/doctorat/bsebench-org/bsebench-filters-glassbox-phase13-12-filters-hierarchical-priors-20260509T134830Z/src/bsebench_filters/phase13_hierarchical_priors.py): metadata-only manifest builder, validator, fail-closed blocking gaps, Phase 12 gate checks, finite diagnostic metric checks, provenance/hash/split validation, and explicit no-execution/no-claim policy.
+- [test_phase13_hierarchical_priors.py](/mnt/c/doctorat/bsebench-org/bsebench-filters-glassbox-phase13-12-filters-hierarchical-priors-20260509T134830Z/tests/test_phase13_hierarchical_priors.py): focused coverage for valid metadata and missing evidence, bad hashes/splits/provenance, non-finite metrics, unsafe claims, and execution flags.
+
+Validation:
+- `UV_LINK_MODE=copy uv run --extra dev pytest tests/test_phase13_hierarchical_priors.py -q` passed: 12 passed.
+- `git diff --check` passed.
+- `UV_LINK_MODE=copy uv run --extra dev ruff check ...` passed.
+- `UV_LINK_MODE=copy uv run --extra dev ruff format --check ...` passed.
+- `python -m py_compile ...` passed.
+
+Skipped full repo pytest because the requested targeted validation passed and the broader suite was not a cheap check in the current concurrent Phase 13 workspace.
