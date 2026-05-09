@@ -27,6 +27,8 @@ LOG_PATH = STATE_DIR / "cto-layered-watchdog.log"
 STATUS_PATH = STATE_DIR / "cto-layered-watchdog-status.md"
 LOCK_PATH = STATE_DIR / "cto-layered-watchdog.lock"
 REFILL_LOG = STATE_DIR / "phase9-11-refill-python.nohup.log"
+PAUSE_FILE = STATE_DIR / "AUTONOMY_PAUSED"
+ALLOW_AUTONOMY = os.environ.get("BSEBENCH_ALLOW_CODEX_AUTONOMY", "").lower() in {"1", "true", "yes"}
 
 
 def now() -> str:
@@ -39,6 +41,18 @@ def log(message: str) -> None:
     with LOG_PATH.open("a", encoding="utf-8") as fh:
         fh.write(line)
     print(line, end="")
+
+
+def autonomy_paused() -> bool:
+    return bool(autonomy_block_reason())
+
+
+def autonomy_block_reason() -> str:
+    if not ALLOW_AUTONOMY:
+        if PAUSE_FILE.exists():
+            return f"pause_file={PAUSE_FILE}"
+        return "allow_env_missing=BSEBENCH_ALLOW_CODEX_AUTONOMY"
+    return ""
 
 
 def run(args: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
@@ -104,6 +118,9 @@ def acquire_lock():
 
 
 def run_refill_once() -> bool:
+    if autonomy_paused():
+        log(f"REFILL_ONCE_BLOCKED {autonomy_block_reason()}")
+        return False
     proc = run(
         [
             "/usr/bin/env",
@@ -122,6 +139,9 @@ def run_refill_once() -> bool:
 
 
 def ensure_daemon(ps: str) -> bool:
+    if autonomy_paused():
+        log(f"DAEMON_BLOCKED {autonomy_block_reason()}")
+        return False
     if refill_daemon_pids(ps):
         return True
     with REFILL_LOG.open("ab") as out:
@@ -158,6 +178,7 @@ def write_status(mode: str, active: list[str], pids: int, uploads: int, daemon_o
         f"- Refill daemon: `{'OK' if daemon_ok else 'MISSING'}`",
         f"- HF uploads: `{uploads}`",
         "- Scope lock: Phase 9/10/11 only.",
+        f"- Autonomy paused: `{'yes' if autonomy_paused() else 'no'}`",
         "",
         "### Active Workdirs",
         "",
@@ -180,13 +201,16 @@ def main() -> int:
     pids = codex_pid_count(ps)
     uploads = upload_count(ps)
     daemon_ok = bool(refill_daemon_pids(ps))
+    paused = autonomy_paused()
 
-    if args.mode in {"daemon", "audit"} or not daemon_ok:
+    if paused:
+        log(f"PAUSED mode={args.mode} active={len(active)} target={TARGET} action=status_only {autonomy_block_reason()}")
+    elif args.mode in {"daemon", "audit"} or not daemon_ok:
         ensure_daemon(ps)
         ps = ps_output()
         daemon_ok = bool(refill_daemon_pids(ps))
 
-    if len(active) < TARGET:
+    if len(active) < TARGET and not paused:
         run_refill_once()
         ps = ps_output()
         active = active_workdirs(ps)

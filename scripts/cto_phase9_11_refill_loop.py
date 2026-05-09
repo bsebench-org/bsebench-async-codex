@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Phase 9/10/11-only Codex refill loop.
+"""Phase 9-only Codex refill loop.
 
-Keeps useful work running without starting Phase 12/13+ tasks or HF uploads.
+Keeps useful Phase 9 closure work running without starting Phase 10+ tasks or
+HF uploads.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(os.environ.get("BSEBENCH_ROOT", "/mnt/c/doctorat/bsebench-org"))
 STATE_DIR = Path(os.environ.get("STATE_DIR", "/home/oakir/.local/state/bsebench-async-watchdog"))
-TARGET = int(os.environ.get("TARGET_CODEX", "18"))
+TARGET = int(os.environ.get("TARGET_CODEX", "17"))
 INTERVAL = int(os.environ.get("INTERVAL_SECONDS", "60"))
 REPORT_SECONDS = int(os.environ.get("REPORT_SECONDS", "900"))
 MODEL = os.environ.get("MODEL", "gpt-5.5")
@@ -28,22 +29,27 @@ LOG = STATE_DIR / "phase9-11-refill-python.log"
 REPORT = STATE_DIR / "phase9-11-checkpoint-status.md"
 LOCK = STATE_DIR / "phase9-11-refill-python.lock"
 INDEX = STATE_DIR / "phase9-11-refill-python.index"
+PAUSE_FILE = STATE_DIR / "AUTONOMY_PAUSED"
+ALLOW_AUTONOMY = os.environ.get("BSEBENCH_ALLOW_CODEX_AUTONOMY", "").lower() in {"1", "true", "yes"}
 
 TASKS: list[tuple[str, str, str]] = [
     ("bsebench-datasets", "p9-tier2-profile-cache", "Phase 9 profile-axis Tier2 cache/provenance audit; local evidence only; fail closed."),
-    ("bsebench-datasets", "p10-tier2-aging-cache", "Phase 10 aging/SOH Tier2 cache/provenance audit; local evidence only; fail closed."),
-    ("bsebench-datasets", "p11-tier2-residual-cache", "Phase 11 residual Tier2 unit/cadence/cache audit; local evidence only; fail closed."),
+    ("bsebench-datasets", "p9-profile-source-ledger", "Phase 9 profile source-ledger completeness and machine-readable evidence audit; no downloads/uploads."),
+    ("bsebench-datasets", "p9-profile-split-integrity", "Phase 9 profile train/calibration/eval split integrity checks; reject leakage."),
+    ("bsebench-datasets", "p9-local-path-discovery", "Phase 9 local Tier2 path discovery and manifest reconciliation; no downloads/uploads."),
     ("bsebench-runner", "p9-profile-empirical-scheduler", "Phase 9 empirical profile dry-run scheduler; refuse all-blocked matrices."),
-    ("bsebench-runner", "p10-aging-empirical-scheduler", "Phase 10 aging/SOH dry-run scheduler; require split/cache/provenance evidence."),
-    ("bsebench-runner", "p11-residual-trace-scheduler", "Phase 11 residual trace dry-run scheduler; require units/cadence/components."),
+    ("bsebench-runner", "p9-profile-cache-smoke", "Phase 9 cache hydration smoke fixtures and fail-closed no-cache behavior."),
+    ("bsebench-runner", "p9-profile-cli-acceptance", "Phase 9 CLI acceptance path for profile axis; focused tests only."),
+    ("bsebench-runner", "p9-profile-failclosed-fixtures", "Phase 9 fail-closed fixtures for missing provenance/source-ledger evidence."),
     ("bsebench-stats", "p9-profile-verdict-inputs", "Phase 9 verdict-input validator; reject synthetic-only or missing source-ledger evidence."),
-    ("bsebench-stats", "p10-aging-verdict-inputs", "Phase 10 verdict-input validator; require aging/SOH empirical evidence."),
-    ("bsebench-stats", "p11-residual-verdict-inputs", "Phase 11 verdict-input validator; require residual trace evidence."),
-    ("bsebench-specs", "p9-11-schema-export-audit", "Phase 9/10/11 schema/export audit with focused fail-closed tests."),
-    ("bsebench-filters", "p9-11-contract-export-audit", "Phase 9/10/11 filter contract/export audit with focused tests."),
-    ("bsebench-datasets", "p9-11-local-path-discovery", "Phase 9/10/11 local Tier2 path discovery; no downloads/uploads."),
-    ("bsebench-runner", "p9-11-dryrun-cli-smoke", "Phase 9/10/11 dry-run CLI smoke fixtures; no expensive filters."),
-    ("bsebench-stats", "p9-11-no-claims-linter", "Phase 9/10/11 no-claims linter for SOTA/winner/leaderboard wording."),
+    ("bsebench-stats", "p9-profile-metric-contract", "Phase 9 profile metric contract checks; no SOTA/winner claims."),
+    ("bsebench-stats", "p9-profile-evidence-table", "Phase 9 evidence table generator/validator for audit report inputs."),
+    ("bsebench-stats", "p9-no-claims-linter", "Phase 9 no-claims linter for SOTA/winner/leaderboard wording."),
+    ("bsebench-specs", "p9-schema-export-audit", "Phase 9 schema/export audit with focused fail-closed tests."),
+    ("bsebench-specs", "p9-api-contract-audit", "Phase 9 plugin/API contract audit for profile-axis submission payloads."),
+    ("bsebench-filters", "p9-filter-contract-audit", "Phase 9 filter contract/export audit with focused tests."),
+    ("bsebench-filters", "p9-baseline-export-audit", "Phase 9 baseline filter export/import smoke tests; no leaderboard claims."),
+    ("bsebench-runner", "p9-final-closure-dryrun", "Phase 9 final closure dry-run checklist: cache, provenance, split, CLI, verdict inputs."),
 ]
 
 
@@ -53,6 +59,18 @@ def log(message: str) -> None:
     with LOG.open("a", encoding="utf-8") as fh:
         fh.write(line)
     print(line, end="", flush=True)
+
+
+def autonomy_block_reason() -> str:
+    if not ALLOW_AUTONOMY:
+        if PAUSE_FILE.exists():
+            return f"pause_file={PAUSE_FILE}"
+        return "allow_env_missing=BSEBENCH_ALLOW_CODEX_AUTONOMY"
+    return ""
+
+
+def autonomy_paused() -> bool:
+    return bool(autonomy_block_reason())
 
 
 def active_workdirs() -> list[str]:
@@ -104,6 +122,9 @@ def next_task() -> tuple[str, str, str]:
 
 
 def launch_one() -> None:
+    if autonomy_paused():
+        log(f"LAUNCH_BLOCKED {autonomy_block_reason()}")
+        return
     repo, slug, objective = next_task()
     base = ROOT / repo
     if not (base / ".git").exists():
@@ -126,11 +147,11 @@ def launch_one() -> None:
 
     prompt = "\n".join(
         [
-            "You are a BSEBench Phase 9/10/11 closure worker. Do not work on Phase 12/13 or later.",
+            "You are a BSEBench Phase 9 closure worker. Do not work on Phase 10/11/12/13 or later.",
             f"Objective: {objective}",
             "Rules: no Co-Authored-By Claude. Commit subject must start with GLASSBOX.",
             "No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits.",
-            "Scientific integrity: do not declare Phase 9/10/11 complete unless evidence supports it.",
+            "Scientific integrity: do not declare Phase 9 complete unless evidence supports it.",
             "Fail closed on missing cache/provenance/Tier2/source-ledger/empirical-run evidence.",
             "No SOTA, novelty, winner, leaderboard, or public benchmark claims.",
             "Inspect existing code/tests first, keep scope narrow, add focused tests, run ruff/format/diff checks available in this repo.",
@@ -178,11 +199,11 @@ def launch_one() -> None:
 
 def write_report(workdirs: list[str]) -> None:
     lines = [
-        f"## Phase 9/10/11 Checkpoint Status - {time.strftime('%Y-%m-%dT%H:%M:%S%z')}",
+        f"## Phase 9 Checkpoint Status - {time.strftime('%Y-%m-%dT%H:%M:%S%z')}",
         "",
         f"- Active unique Codex workdirs: `{len(workdirs)}` / target `{TARGET}`",
         f"- Real HF upload processes: `{upload_count()}`",
-        "- Scope lock: Phase 9/10/11 only until validation checkpoint closes.",
+        "- Scope lock: Phase 9 only until validation checkpoint closes.",
         "- Scientific status: NO-GO until cache/provenance/Tier2 empirical evidence passes.",
         "",
         "### Active Workdirs",
@@ -198,6 +219,10 @@ def tick() -> None:
     workdirs = active_workdirs()
     uploads = upload_count()
     log(f"TICK active={len(workdirs)} target={TARGET} uploads={uploads}")
+    if autonomy_paused():
+        log(f"PAUSED {autonomy_block_reason()} action=status_only")
+        write_report(workdirs)
+        return
     if uploads:
         log(f"UPLOAD_GUARD uploads={uploads} action=no_upload_refill_only")
     while len(workdirs) < TARGET:
