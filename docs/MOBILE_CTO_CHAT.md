@@ -910,7 +910,7 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Claim status: `NO_GO_CLAIM`; preuve de contrat, pas preuve empirique.
 - Next: preflight documentaire `imperial_kirkaldy_21700_2024`, sans upload.
 
-## CODEX STATUS 2026-05-09 12:02 CEST
+## CODEX STATUS 2026-05-09 11:54 CEST
 
 - Codex exec actifs: `0`; mode commits directs verifies.
 - Phase 12: `79%` (`+4%` since 11:52).
@@ -918,6 +918,16 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Source primaire verifiee: Zenodo `10.5281/zenodo.10637534`, version `v1`, CC-BY-4.0, 7 fichiers, 49.4 GB, MD5 source-page.
 - Upload HF: `0`; upload explicitement non autorise tant que download, MD5 local, SHA-256, archive sampling et manifest Tier 1 ne sont pas faits.
 - Next: producteur realiste `TransferReadiness` depuis manifests/caches, puis premier pilot design no-claim.
+
+## CODEX STATUS 2026-05-09 11:55 CEST
+
+- Correction GLASSBOX: le bloc precedent avait ete timestampé `12:02` par erreur; l'heure systeme est `11:54-11:55 CEST`.
+- Phase 12: `83%` (`+4%` since 11:54).
+- Nouveau livrable: `bsebench-datasets` `a2075f4` ajoute un producteur manifest-backed `TransferReadiness`.
+- Validation: `19 passed` sur transfer-readiness inventory + manifest tests; ruff check/format et diff check OK.
+- Impact: chemin reel maintenant disponible `dataset manifests + local evidence files -> specs inventory -> stats preflight -> runner gate`.
+- Claim status: `NO_GO_CLAIM`; pas d'estimateur execute, pas d'upload.
+- Next: premier pilot design no-claim avec artefacts requis et gaps exacts.
 
 ## CODEX STATUS 2026-05-09 11:15 CEST
 
