@@ -865,6 +865,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - HF lane: `0` upload; consolidation deja produite, uploads bloques tant que source/licence/checksums ne sont pas verifies.
 - Next: mettre a jour la documentation vivante/site avec la chaine Phase 12 et preparer audit Phase 12 avant toute revendication scientifique.
 
+## CODEX STATUS 2026-05-09 11:17 CEST
+
+- Codex exec actifs: `0` OS-level workers; readonly status loop active (`cto_readonly_status_loop.py`).
+- Phase 9: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 12: `52%` (`+7%` since 11:13).
+- Nouveau livrable Phase 12: `bsebench-website` `dde7d40` ajoute la page `/transfer-readiness/` et l'entree sidebar.
+- Validation: `npm ci`, `npm run build`, `git diff --check`; build Astro genere 12 pages dont `/transfer-readiness/`.
+- Garde-fou: la page parle de readiness plumbing, candidate queue, mechanical gate; pas de claim SOC/SOH.
+- Next: integrer les audits sidecar Phase 12 + datasets/HF et choisir le prochain commit produit a plus forte valeur.
+
 ## CODEX STATUS 2026-05-09 11:15 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
