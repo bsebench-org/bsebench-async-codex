@@ -4,13 +4,15 @@
     "filters-ema-bias-correction",
     "stats-adaptive-delta-gate"
   ],
+  "direct_log": "/home/oakir/.local/state/bsebench-phase15-direct/phase-15-10-stats-synthetic-ema-fixtures-20260509T163452Z.log",
+  "direct_worktree": "/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase15-10-stats-synthetic-ema-fixtures-20260509T163452Z",
   "exit_code": null,
   "phase_id": "phase-15-10-stats-synthetic-ema-fixtures-20260509T163452Z",
-  "status": "queued",
+  "status": "running_direct",
   "target_branch": "glassbox-phase15-10-stats-synthetic-ema-fixtures-20260509T163452Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
   "ts_done": null,
   "ts_queued": "2026-05-09T16:34:52.142079Z",
-  "ts_started": null,
-  "worker_id": null
+  "ts_started": "2026-05-09T16:53:10.509381Z",
+  "worker_id": "direct:3088551"
 }
