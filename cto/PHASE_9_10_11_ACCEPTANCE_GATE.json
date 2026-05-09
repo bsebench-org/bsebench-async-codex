@@ -1,0 +1,185 @@
+{
+  "schema_version": "phase9_10_11_acceptance_gate/v1",
+  "generated_at": "2026-05-09T01:56:00+02:00",
+  "phase_scope": [
+    "phase9",
+    "phase10",
+    "phase11"
+  ],
+  "guardrails": {
+    "hf_uploads": 0,
+    "dataset_downloads": 0,
+    "thesis_edits": false,
+    "roadmap_edits": false,
+    "claim_registry_edits": false,
+    "claim55_edits": false,
+    "public_comparison_claims": false,
+    "public_benchmark_claims": false
+  },
+  "closure_policy": {
+    "tooling_can_pass_without_scientific_closure": true,
+    "fail_closed_on_missing_scientific_evidence": true,
+    "scientific_closure_requires": [
+      "cache",
+      "provenance",
+      "tier2",
+      "source_ledger",
+      "empirical_run"
+    ]
+  },
+  "phases": {
+    "phase9": {
+      "label": "profile-axis stress",
+      "scientific_closure": false,
+      "tooling": {
+        "schema_or_contract": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "profile-axis schema or contract exists and has recorded validation"
+          }
+        },
+        "scheduler_or_validator": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "profile scheduler or validator refuses missing evidence"
+          }
+        },
+        "validation": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "focused tests and diff checks are recorded before merge"
+          }
+        }
+      },
+      "scientific": {
+        "cache": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "provenance": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "tier2": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "source_ledger": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "empirical_run": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        }
+      }
+    },
+    "phase10": {
+      "label": "aging and SOH generalization",
+      "scientific_closure": false,
+      "tooling": {
+        "schema_or_contract": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "aging and SOH metadata contract exists and has recorded validation"
+          }
+        },
+        "scheduler_or_validator": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "aging scheduler or validator refuses missing evidence"
+          }
+        },
+        "validation": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "focused tests and diff checks are recorded before merge"
+          }
+        }
+      },
+      "scientific": {
+        "cache": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "provenance": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "tier2": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "source_ledger": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "empirical_run": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        }
+      }
+    },
+    "phase11": {
+      "label": "residual decomposition",
+      "scientific_closure": false,
+      "tooling": {
+        "schema_or_contract": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "residual input or decomposition contract is validated"
+          }
+        },
+        "scheduler_or_validator": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "residual scheduler or validator refuses missing evidence"
+          }
+        },
+        "validation": {
+          "status": "defined",
+          "evidence": {
+            "criterion": "focused tests and diff checks are recorded before merge"
+          }
+        }
+      },
+      "scientific": {
+        "cache": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "provenance": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "tier2": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "source_ledger": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        },
+        "empirical_run": {
+          "status": "missing",
+          "blocker_if_missing": true,
+          "evidence": {}
+        }
+      }
+    }
+  }
+}
