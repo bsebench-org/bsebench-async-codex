@@ -1109,3 +1109,14 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 13:24 CEST
+
+- Codex exec actifs: `0`; direct verified commit mode.
+- Phase 12 execution-clearance chain: `99%` (`+1%` since 13:14).
+- New pushed deliverable: `bsebench-runner` commit `72d0c61` (`GLASSBOX add Phase 12 execution clearance gate`).
+- What changed: runner now has a single gate that combines runner preflight, SOC evidence remediation, and parameter-freeze evidence.
+- Real gate status: `blocked`; ready components `0`; blocked components `3`; `transfer_execution_allowed=false`; `estimator_execution_allowed=false`; `soc_derivation_allowed=false`; `parameter_use_allowed=false`.
+- Blocking gaps: runner preflight blocked, `240` traces need ground-truth metadata, `72` need capacity evidence, and calibration hashes are missing for parameter freeze.
+- Validation: targeted pytest `5 passed`; ruff format/check OK; git diff check OK; four-eyes subagent verdict `commit autorisé`; changed-file anti-claim scan OK.
+- Next: Phase 12 can only move by producing real SOC evidence and calibration evidence, or by explicitly scoping a SOH-only pilot without SOC/SOH universal claims.
