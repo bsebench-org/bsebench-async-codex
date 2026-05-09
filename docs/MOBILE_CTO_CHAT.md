@@ -1408,3 +1408,12 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 ## CODEX STATUS 2026-05-09 17:26 CEST
 - Phase 14 direct monitor: running `1`, done `8`, error `0`, queued `2`.
 - Scientific status: `NO_GO_CLAIM`; no tight-bound, theorem, SOTA, or empirical validation claim.
+
+## CODEX STATUS 2026-05-09 17:29 CEST
+
+- Phase 14: `73%` (`+18%` since 17:22; 8/11 tasks done, 2/11 running, 1/11 dependency-queued).
+- Product mains updated: specs `1a67d01`, stats `a4569e0`, runner `ed7fde2`, filters `7da2092`, datasets `f09d4f8`, website `31591ba`.
+- Running direct workers: stats model-uncertainty/oracle mixture, stats synthetic sanity fixtures.
+- Waiting: stats bound report gate; it stays blocked until model-uncertainty is done and merged into `bsebench-stats/main`.
+- Validation added since 17:22: stats linear PCRLB merged after targeted checks plus full stats suite `400 passed`, ruff OK, diff check OK, push OK.
+- Scientific status: `NO_GO_CLAIM`; no theorem, tight-bound, SOTA, empirical validation, upload, or estimator execution.
