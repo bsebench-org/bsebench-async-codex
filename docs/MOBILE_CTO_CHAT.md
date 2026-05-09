@@ -750,6 +750,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Challenge/decision: do not launch Phase 12 writes before repo hygiene is restored, because that would recreate stale branch/worktree ambiguity.
 - Next: finish cleanup, commit cleanup audit, then launch Phase 12 first wave with disjoint scopes.
 
+## CODEX STATUS 2026-05-09 10:18 CEST
+
+- Codex exec actifs: `0` OS-level workers; readonly status loop remains active.
+- Cleanup: `100%` (`+100%` since 10:09); all seven repos have `0` secondary worktrees.
+- Branch cleanup: local branches reduced to `main` only in async/specs/datasets/stats/runner/filters/website; remote branches untouched.
+- Root cleanup: `153` old CTO/report dirs archived; only `.phase9-local-cache` and `.phase10-local-cache` remain.
+- Phase 9: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 12: `5%` (`+5%`); execution plan created, includes gated HF registry consolidation before any upload.
+- Next: commit cleanup audit + Phase 12 plan, then launch first Phase 12 workers from clean `main`.
+
 ## CODEX STATUS 2026-05-09 10:15 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
