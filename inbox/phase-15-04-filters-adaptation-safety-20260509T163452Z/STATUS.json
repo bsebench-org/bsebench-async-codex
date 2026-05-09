@@ -1,17 +1,19 @@
 {
   "base_branch": "main",
+  "branch_sha": "4e3347f98756b3322aec69e83dce96788a270562",
   "depends_on": [
     "filters-ema-bias-correction",
     "filters-residual-predictor-contract"
   ],
   "direct_log": "/home/oakir/.local/state/bsebench-phase15-direct/phase-15-04-filters-adaptation-safety-20260509T163452Z.log",
   "direct_worktree": "/mnt/c/doctorat/bsebench-org/bsebench-filters-glassbox-phase15-04-filters-adaptation-safety-20260509T163452Z",
-  "exit_code": null,
+  "exit_code": 0,
   "phase_id": "phase-15-04-filters-adaptation-safety-20260509T163452Z",
-  "status": "running_direct",
+  "push_result": "ok",
+  "status": "done",
   "target_branch": "glassbox-phase15-04-filters-adaptation-safety-20260509T163452Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-filters",
-  "ts_done": null,
+  "ts_done": "2026-05-09T17:08:33.348512Z",
   "ts_queued": "2026-05-09T16:34:52.142079Z",
   "ts_started": "2026-05-09T16:53:04.407316Z",
   "worker_id": "direct:3087999"

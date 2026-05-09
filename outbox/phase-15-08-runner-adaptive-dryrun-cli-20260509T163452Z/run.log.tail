@@ -1,0 +1,160 @@
++            lambda payload: payload["claims"].__setitem__("filter_superiority", True),
++            "unsupported_claim:filter_superiority",
++        ),
++        (
++            lambda payload: payload.__setitem__(
++                "notes",
++                ["synthetic negative-control text claiming adaptive gain"],
++            ),
++            "forbidden_wording:inputs.notes[0]:adaptive_gain",
++        ),
++    ],
++)
++def test_phase15_adaptive_dry_run_fails_closed_for_blockers(
++    mutation: Any,
++    expected_gap: str,
++) -> None:
++    payload = _inputs()
++    mutation(payload)
++
++    report = validate_phase15_adaptive_dry_run(payload)
++
++    assert report["decision"]["plan_status"] == "blocked"
++    assert report["decision"]["adaptive_plan_ready"] is False
++    assert report["decision"]["adaptive_update_execution_allowed"] is False
++    assert report["execution"]["attempted"] is False
++    assert expected_gap in report["blocking_gaps"]
++    json.dumps(report, allow_nan=False)
++
++
++def test_phase15_adaptive_dry_run_blocks_execution_requests_without_side_effects() -> None:
++    payload = _inputs()
++    payload["requested_actions"] = ["filter_execution", "model_training"]
++    payload["execution_request"] = {"dataset_download": True, "soc_derivation": True}
++
++    report = validate_phase15_adaptive_dry_run(payload)
++
++    assert report["decision"]["plan_status"] == "blocked"
++    assert "execution_refused:filter_execution" in report["blocking_gaps"]
++    assert "execution_refused:model_training" in report["blocking_gaps"]
++    assert "execution_refused:dataset_download" in report["blocking_gaps"]
++    assert "execution_refused:soc_derivation" in report["blocking_gaps"]
++    assert report["execution"] == {
++        "attempted": False,
++        "dataset_download_attempted": False,
++        "hf_upload_attempted": False,
++        "estimator_execution_attempted": False,
++        "filter_execution_attempted": False,
++        "adaptive_learning_execution_attempted": False,
++        "adaptive_update_execution_attempted": False,
++        "model_training_attempted": False,
++        "soc_derivation_attempted": False,
++        "soh_derivation_attempted": False,
++        "reason": "phase15_adaptive_plan_dry_run_only",
++    }
++
++
++def test_phase15_adaptive_dry_run_cli_writes_ready_report(
++    tmp_path: Path,
++    capsys: pytest.CaptureFixture[str],
++) -> None:
++    inputs = _write_json(tmp_path / "inputs.json", _inputs())
++    output = tmp_path / "dry-run-report.json"
++
++    rc = main(
++        [
++            "--inputs-json",
++            str(inputs),
++            "--output",
++            str(output),
++            "--generated-at-utc",
++            "2026-05-09T16:34:52Z",
++        ]
++    )
++
++    assert rc == 0
++    assert "status=ready" in capsys.readouterr().out
++    report = json.loads(output.read_text(encoding="utf-8"))
++    assert report["decision"]["plan_status"] == "ready"
++    assert report["input"]["sha256"]
++    assert report["input"]["baseline_id"] == "synthetic_baseline_v0"
++    assert report["execution"]["filter_execution_attempted"] is False
++
++
++def test_phase15_adaptive_dry_run_cli_returns_blocked_code_unless_allowed(
++    tmp_path: Path,
++) -> None:
++    payload = _inputs()
++    payload["evidence"]["evaluation_split"]["calibration_overlap_count"] = 1
++    inputs = _write_json(tmp_path / "blocked-inputs.json", payload)
++    output = tmp_path / "blocked-report.json"
++
++    assert main(["--plan-json", str(inputs), "--output", str(output)]) == 2
++    report = json.loads(output.read_text(encoding="utf-8"))
++    assert report["decision"]["plan_status"] == "blocked"
++    assert "split_leakage:calibration_evaluation_overlap_count" in report["blocking_gaps"]
++
++    assert main(["--plan-json", str(inputs), "--output", str(output), "--allow-blocked"]) == 0
++
++
++def test_phase15_adaptive_dry_run_cli_rejects_non_standard_json_constants(
++    tmp_path: Path,
++    capsys: pytest.CaptureFixture[str],
++) -> None:
++    payload = _inputs()
++    payload["evidence"]["baseline"]["metrics"]["residual_rmse"] = math.nan
++    inputs = _write_json(tmp_path / "nan-inputs.json", payload, allow_nan=True)
++
++    assert main(["--inputs-json", str(inputs)]) == 2
++    assert "non-standard JSON constant" in capsys.readouterr().err
++
++
++def test_phase15_adaptive_dry_run_module_entrypoint_smoke(tmp_path: Path) -> None:
++    inputs = _write_json(tmp_path / "inputs.json", _inputs())
++    output = tmp_path / "module-report.json"
++    env = {
++        **os.environ,
++        "PYTHONPATH": f"{Path.cwd() / 'src'}{os.pathsep}{os.environ.get('PYTHONPATH', '')}",
++    }
++
++    result = subprocess.run(
++        [
++            sys.executable,
++            "-m",
++            "bsebench_runner.phase15_adaptive_dry_run_cli",
++            "--inputs-json",
++            str(inputs),
++            "--output",
++            str(output),
++        ],
++        check=False,
++        env=env,
++        text=True,
++        capture_output=True,
++    )
++
++    assert result.returncode == 0, result.stderr
++    report = json.loads(output.read_text(encoding="utf-8"))
++    assert report["execution"]["filter_execution_attempted"] is False
++    assert report["decision"]["adaptive_update_execution_allowed"] is False
+
+tokens used
+106,397
+Implemented and pushed the Phase 15 adaptive dry-run CLI.
+
+Changed:
+- [phase15_adaptive_dry_run_cli.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase15-08-runner-adaptive-dryrun-cli-20260509T163452Z/src/bsebench_runner/phase15_adaptive_dry_run_cli.py)
+- [test_phase15_adaptive_dry_run_cli.py](/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase15-08-runner-adaptive-dryrun-cli-20260509T163452Z/tests/test_phase15_adaptive_dry_run_cli.py)
+
+Commit pushed:
+`da55f794f026e87caf8062934a7719bcf6cc05e8`
+`GLASSBOX [role: phase15-runner-adaptive-dryrun-cli] add adaptive dry-run cli`
+
+Validation:
+- `uv run --extra dev pytest tests/test_phase15_adaptive_plan.py tests/test_phase15_adaptive_dry_run_cli.py` -> 21 passed
+- `uv run --extra dev ruff check src/bsebench_runner/phase15_adaptive_dry_run_cli.py tests/test_phase15_adaptive_dry_run_cli.py` -> passed
+- `git diff --check` -> passed
+- `git diff --cached --check` -> passed
+- `python -m compileall -q src/bsebench_runner/phase15_adaptive_dry_run_cli.py` -> passed
+
+Note: `python -m pytest ...` with the system Python could not run because `pytest` was not installed there, so I used the repo-managed `uv --extra dev` environment. Full project pytest was not run; focused Phase 15 coverage and a cheap ruff pass were run.

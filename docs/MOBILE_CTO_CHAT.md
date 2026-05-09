@@ -1569,3 +1569,11 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Running now: filters adaptation safety, stats adaptive report gate, runner adaptive dry-run CLI, stats synthetic EMA fixtures.
 - Supervisor loop: active PID `3084015`; it continues monitoring every 5 minutes and will hold new launches on any error.
 - Scientific status: `NO_GO_CLAIM`; no RMSE gain, no >20% improvement, no neural training, no real-trace estimator execution.
+
+## CODEX STATUS 2026-05-09 19:08 CEST
+- Phase 15 direct monitor: running `0`, done `11`, error `0`, queued `0`.
+- Scientific status: `NO_GO_CLAIM`; adaptive tooling/preflight only, no RMSE gain, no >20% improvement, no neural training.
+
+## CODEX STATUS 2026-05-09 19:08 CEST
+- Phase 15 direct monitor: running `0`, done `11`, error `0`, queued `0`.
+- Scientific status: `NO_GO_CLAIM`; adaptive tooling/preflight only, no RMSE gain, no >20% improvement, no neural training.

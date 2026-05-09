@@ -1,0 +1,160 @@
++@pytest.mark.fast
++def test_gated_claim_flags_pass_with_matching_audited_verdict_artifact() -> None:
++    payload = _payload_with_audit("Synthetic adaptive report.")
++    payload["claims"]["sota"] = True
++    payload["audited_verdict_artifact"]["authorized_claim_categories"] = ["sota"]
++
++    report = build_phase15_adaptive_report_gate(payload)
++
++    assert report["gate_status"] == "passed"
++    assert _gate(report, "claim_flag_gate")["matched_categories"] == ["sota"]
++    assert _gate(report, "authorization_gate")["authorized_categories"] == ["sota"]
++    assert report["blocking_gaps"] == []
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "expected_gap"),
++    [
++        (
++            lambda payload: payload["audited_verdict_artifact"].pop("phase15_evidence"),
++            "missing_phase15_evidence",
++        ),
++        (
++            lambda payload: payload["audited_verdict_artifact"].update(
++                {"artifact_sha256": "not-a-sha256"}
++            ),
++            "invalid_verdict_hash",
++        ),
++        (
++            lambda payload: payload["audited_verdict_artifact"]["metrics"].update(
++                {"audited_delta_gate_count": math.inf}
++            ),
++            "non_finite_verdict_metric",
++        ),
++        (
++            lambda payload: payload["audited_verdict_artifact"].update(
++                {"split_ids": ["synthetic-train-a"], "split_roles": {"synthetic-train-a": "train"}}
++            ),
++            "split_leakage",
++        ),
++        (
++            lambda payload: payload["audited_verdict_artifact"]["phase15_evidence"][
++                "adaptive_delta_gate_report"
++            ]["paired_delta_rows"][0]["adaptive_metrics"].update({"rmse": math.nan}),
++            "non_finite_delta_metric",
++        ),
++        (
++            lambda payload: payload["audited_verdict_artifact"]["phase15_evidence"][
++                "adaptive_delta_gate_report"
++            ].update({"blocking_gaps": [{"gap_id": "split_leakage"}]}),
++            "adaptive_delta_gate_has_blocking_gaps",
++        ),
++    ],
++)
++def test_invalid_audited_verdict_evidence_fails_closed(
++    mutate: Callable[[dict[str, Any]], object],
++    expected_gap: str,
++) -> None:
++    payload = _payload_with_audit("The adaptive method is superior to the baseline.")
++    mutate(payload)
++
++    report = build_phase15_adaptive_report_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert _gate(report, "authorization_gate")["status"] == "blocked"
++    assert expected_gap in _gap_ids(report)
++    assert "unauthorized_claim_wording" in _gap_ids(report)
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_verdict_artifact_must_authorize_matched_claim_category() -> None:
++    payload = _payload_with_audit("The adaptive filter has an RMSE improvement.")
++    payload["audited_verdict_artifact"]["authorized_claim_categories"] = ["leaderboard"]
++
++    report = build_phase15_adaptive_report_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert "unauthorized_claim_category" in _gap_ids(report)
++    assert "unauthorized_claim_wording" in _gap_ids(report)
++
++
++@pytest.mark.fast
++def test_unsupported_claims_fail_closed() -> None:
++    payload = _payload()
++    payload["requested_claims"] = ["winner"]
++    payload["claims"]["winner"] = True
++
++    report = build_phase15_adaptive_report_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert "unsupported_requested_claim" in _gap_ids(report)
++    assert "unsupported_claim_flag" in _gap_ids(report)
++    assert _gate(report, "release_gate")["pass"] is False
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_payload_is_not_mutated() -> None:
++    payload = _payload_with_audit("The audited report uses leaderboard wording.")
++    before = copy.deepcopy(payload)
++
++    build_phase15_adaptive_report_gate(payload)
++
++    assert payload == before
++
++
++@pytest.mark.fast
++def test_file_runner_writes_finite_json_report(tmp_path: Path) -> None:
++    input_path = tmp_path / "phase15_adaptive_report_gate_input.json"
++    output_path = tmp_path / "phase15_adaptive_report_gate_report.json"
++    input_path.write_text(json.dumps(_payload(), allow_nan=False), encoding="utf-8")
++
++    report = run_phase15_adaptive_report_gate(input_path, output_path)
++
++    assert output_path.exists()
++    loaded = json.loads(output_path.read_text(encoding="utf-8"))
++    assert loaded == report
++    assert loaded["source"] == {"input_path": str(input_path)}
++
++
++@pytest.mark.fast
++def test_unprocessable_top_level_payload_fails_loud() -> None:
++    with pytest.raises(Phase15AdaptiveReportGateError, match="gate_payload must be an object"):
++        build_phase15_adaptive_report_gate(["not", "an", "object"])
++
++
++@pytest.mark.fast
++def test_invalid_delta_hash_style_provenance_fails_closed() -> None:
++    payload = _payload_with_audit("The candidate appears on the leaderboard.")
++    payload["audited_verdict_artifact"]["audit"]["audit_artifact_sha256"] = "bad"
++    payload["audited_verdict_artifact"]["provenance"]["source_sha256"] = SHA256_D
++
++    report = build_phase15_adaptive_report_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert "invalid_audit_provenance" in _gap_ids(report)
++    assert "unauthorized_claim_wording" in _gap_ids(report)
+
+tokens used
+178,925
+Implemented and pushed the Phase 15 adaptive report gate.
+
+Changed:
+- [phase15_adaptive_report_gate.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase15-06-stats-adaptive-report-gate-20260509T163452Z/src/bsebench_stats/phase15_adaptive_report_gate.py)
+- [test_phase15_adaptive_report_gate.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase15-06-stats-adaptive-report-gate-20260509T163452Z/tests/test_phase15_adaptive_report_gate.py)
+
+Validation:
+- `uv run --extra dev pytest -q tests/test_phase15_adaptive_report_gate.py` -> 23 passed
+- `uv run --extra dev pytest -q` -> 460 passed
+- `uv run --extra dev ruff check ...` -> passed
+- `uv run --extra dev ruff format --check ...` -> passed
+- `git diff --check` -> passed
+
+Commit pushed:
+`49914d6a14d4e6e0ab48407f2fdc1fef25e21a94`
+`GLASSBOX [role: phase15-stats-adaptive-report-gate] add adaptive report gate`
+
+No validation skipped.

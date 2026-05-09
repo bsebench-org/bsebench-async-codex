@@ -1,0 +1,160 @@
++        "input_schema_version": DELTA_GATE_INPUT_SCHEMA_VERSION,
++        "report_schema_version": DELTA_GATE_SCHEMA_VERSION,
++    }
++
++
++@pytest.mark.fast
++def test_ema_report_matches_filter_helper_contract_and_reference() -> None:
++    fixture = _load_fixture()
++    expected = fixture["expected_reference"]
++    report = _validate_ema_report(fixture["ema_bias_correction_report"])
++
++    assert report["corrected_residuals"] == pytest.approx(expected["corrected_residuals"])
++    assert report["summary"]["final_bias"] == pytest.approx(expected["final_bias"])
++    assert report["summary"]["input_sha256"] == expected["input_sha256"]
++
++
++@pytest.mark.fast
++def test_paired_delta_gate_payload_passes_and_matches_reference() -> None:
++    fixture = _load_fixture()
++    expected = fixture["expected_reference"]
++    gate_report = _build_delta_gate_report(fixture["adaptive_delta_gate_input"])
++
++    assert gate_report["schema_version"] == DELTA_GATE_SCHEMA_VERSION
++    assert gate_report["source_schema_version"] == DELTA_GATE_INPUT_SCHEMA_VERSION
++    assert gate_report["gate_status"] == "passed"
++    assert gate_report["mechanical_validation_only"] is True
++    assert gate_report["adaptive_tooling_preflight_only"] is True
++    assert gate_report["metric_keys"] == expected["metric_keys"]
++    assert gate_report["blocking_gaps"] == []
++    assert gate_report["release_gate"]["pass"] is True
++    assert gate_report["release_gate"]["claim_authorization"] == "refused_by_default"
++
++    paired_rows = gate_report["paired_delta_rows"]
++    expected_rows = expected["paired_deltas"]
++    assert [row["pair_id"] for row in paired_rows] == [row["pair_id"] for row in expected_rows]
++    for row, expected_row in zip(paired_rows, expected_rows, strict=True):
++        assert row["deltas"]["absolute_residual"] == pytest.approx(
++            expected_row["absolute_residual"]
++        )
++        assert row["deltas"]["squared_residual"] == pytest.approx(expected_row["squared_residual"])
++    for metric_key, expected_summary in expected["delta_summary"].items():
++        assert gate_report["delta_summary"][metric_key] == pytest.approx(expected_summary)
++    json.dumps(gate_report, allow_nan=False)
++    _assert_json_finite(gate_report)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "message"),
++    [
++        (
++            lambda fixture: fixture["ema_bias_correction_report"]["evidence"].pop(
++                "split_manifest_sha256"
++            ),
++            "split_manifest_sha256",
++        ),
++        (
++            lambda fixture: fixture["ema_bias_correction_report"]["steps"][1].update(
++                {"residual": math.inf}
++            ),
++            "finite",
++        ),
++        (
++            lambda fixture: fixture["ema_bias_correction_report"].update(
++                {"correction_split_id": "phase15_synthetic_bias_fit"}
++            ),
++            "distinct",
++        ),
++        (
++            lambda fixture: fixture["ema_bias_correction_report"]["execution_policy"].update(
++                {"estimator_execution_allowed": True}
++            ),
++            "estimator_execution_allowed",
++        ),
++    ],
++)
++def test_ema_report_mutations_fail_closed(
++    mutate: Callable[[dict[str, Any]], object],
++    message: str,
++) -> None:
++    fixture = copy.deepcopy(_load_fixture())
++    mutate(fixture)
++
++    with pytest.raises((AssertionError, ValueError), match=message):
++        _validate_ema_report(fixture["ema_bias_correction_report"])
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "expected_gap"),
++    [
++        (
++            lambda fixture: fixture["adaptive_delta_gate_input"]["adaptive_artifact"].update(
++                {"artifact_sha256": "not-a-sha256"}
++            ),
++            "invalid_adaptive_hash",
++        ),
++        (
++            lambda fixture: fixture["adaptive_delta_gate_input"]["adaptive_artifact"][
++                "metric_rows"
++            ][1].update({"pair_id": "synthetic-scalar-extra"}),
++            "missing_baseline_row",
++        ),
++        (
++            lambda fixture: fixture["adaptive_delta_gate_input"]["adaptive_artifact"][
++                "metric_rows"
++            ][0]["metrics"].update({"absolute_residual": math.inf}),
++            "non_finite_metric",
++        ),
++        (
++            lambda fixture: fixture["adaptive_delta_gate_input"]["adaptive_artifact"][
++                "metric_rows"
++            ][0].update({"split_role": "training"}),
++            "split_leakage",
++        ),
++        (
++            lambda fixture: fixture["adaptive_delta_gate_input"]["claims"].update(
++                {"adaptive_gain": True}
++            ),
++            "unauthorized_claim_flag",
++        ),
++        (
++            lambda fixture: fixture["adaptive_delta_gate_input"]["documents"][0].update(
++                {"text": "This synthetic note contains adaptive gain wording."}
++            ),
++            "forbidden_adaptive_gain_wording",
++        ),
++    ],
++)
++def test_paired_delta_gate_mutations_fail_closed(
++    mutate: Callable[[dict[str, Any]], object],
++    expected_gap: str,
++) -> None:
++    fixture = copy.deepcopy(_load_fixture())
++    mutate(fixture)
++
++    report = _build_delta_gate_report(fixture["adaptive_delta_gate_input"])
++
++    assert report["gate_status"] == "blocked"
++    assert expected_gap in _gap_ids(report)
++    assert report["release_gate"]["pass"] is False
++    json.dumps(report, allow_nan=False)
+
+tokens used
+183,380
+Implemented and pushed commit `afe5374` to `origin/glassbox-phase15-10-stats-synthetic-ema-fixtures-20260509T163452Z`.
+
+Added:
+- [README.md](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase15-10-stats-synthetic-ema-fixtures-20260509T163452Z/tests/fixtures/phase15_ema_adaptation/README.md)
+- [scalar_bias_fixture.json](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase15-10-stats-synthetic-ema-fixtures-20260509T163452Z/tests/fixtures/phase15_ema_adaptation/scalar_bias_fixture.json)
+- [test_phase15_synthetic_ema.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase15-10-stats-synthetic-ema-fixtures-20260509T163452Z/tests/test_phase15_synthetic_ema.py)
+
+Validation run:
+- `uv run --locked --extra dev pytest tests/test_phase15_synthetic_ema.py -q` passed: 13 tests
+- `uv run --locked --extra dev ruff check tests/test_phase15_synthetic_ema.py` passed
+- `git diff --check` passed
+- `uv run --locked --extra dev pytest tests/test_phase14_synthetic_sanity.py tests/test_phase15_synthetic_ema.py -q` passed: 22 tests
+- `uv run --locked --extra dev pytest -m "not slow" -q` passed: 450 tests
+
+No validation skipped.
