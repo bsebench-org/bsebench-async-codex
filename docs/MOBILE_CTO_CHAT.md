@@ -1517,3 +1517,10 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Blocked until dependencies finish: adaptation safety, adaptive report gate, runner dry-run CLI, synthetic EMA fixtures.
 - Scientific status: `NO_GO_CLAIM`; adaptive tooling/preflight only, no RMSE gain, no >20% improvement, no neural training, no real-trace estimator execution.
 - Next: monitor first wave, push finished branches, then unlock dependent Phase 15 tasks only after their prerequisites are done.
+
+## CODEX STATUS 2026-05-09 18:42 CEST
+
+- Phase 15 supervisor loop: active as detached PID `3084015`, 5-minute monitor/refill cadence.
+- Phase 15 direct workers: running `7`, done `0`, error `0`, queued `4`.
+- Immediate log check: workers are reading repo context and planning edits; no startup auth/repo/env failure observed.
+- Safety behavior: if any worker lands in `error`, supervisor holds new launches and leaves outbox/log evidence for correction.
