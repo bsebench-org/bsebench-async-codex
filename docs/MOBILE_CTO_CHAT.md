@@ -1524,3 +1524,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 15 direct workers: running `7`, done `0`, error `0`, queued `4`.
 - Immediate log check: workers are reading repo context and planning edits; no startup auth/repo/env failure observed.
 - Safety behavior: if any worker lands in `error`, supervisor holds new launches and leaves outbox/log evidence for correction.
+
+## CODEX STATUS 2026-05-09 18:45 CEST
+
+- Codex exec actifs: `6` workdirs, `18` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
