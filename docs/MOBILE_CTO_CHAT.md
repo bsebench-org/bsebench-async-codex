@@ -1062,3 +1062,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Decision: `blocked_no_admissible_soc_truth_evidence`; no SOC label derivation and no estimator execution.
 - Validation: script ran on local caches; targeted pytest `23 passed`; ruff format/check OK; git diff check OK; no-claim phrase scan OK.
 - Next: collect/prove OCV/capacity anchors for SOC or keep any pilot explicitly SOH-only; parameter-freeze manifest remains required before execution.
+
+## CODEX STATUS 2026-05-09 13:00 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
