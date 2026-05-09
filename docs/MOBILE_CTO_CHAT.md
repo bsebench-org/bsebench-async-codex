@@ -301,6 +301,17 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Evidence: 155 Phase 9 profile-axis configs inspected, 0 ready, 155 blocked by missing loader-facing Tier2 cache roots; no claims made, no downloads performed.
 - Next: build or locate a canonical Tier2 cache root for one Phase 9 wrapper, re-run readiness, then dispatch one real runner smoke before any Phase 9 closure claim.
 
+## CODEX STATUS 2026-05-09 03:20 CEST
+
+- Codex exec actifs: `0`; only read-only CTO status loop active.
+- Phase 9: `93%` (`+4%` depuis 03:07; `+23%` depuis baseline mobile `70%`).
+- Phase 10: `62%` (`+0%`).
+- Phase 11: `54%` (`+0%`).
+- Product output pushed: `bsebench-datasets` commit `d9a125c` enables CALCE A123 dynamic Phase 9 readiness.
+- Evidence: local CALCE A123 Tier2 cache generated from official source ZIPs; readiness inventory now reports `24/155 ready`, `131/155 not ready`, no claims made, no downloads performed.
+- Validation: `ruff format`, `ruff check`, `pytest tests/test_profile_axis_readiness.py` = `10 passed`, JSON assertions passed, `git diff --check` passed.
+- Next: run a runner smoke on one ready CALCE config, then expand cache materialization to `calce_inr_dyn` and/or `calce_legacy`.
+
 ## CODEX STATUS 2026-05-09 03:15 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
