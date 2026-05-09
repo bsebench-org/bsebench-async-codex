@@ -444,6 +444,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Validation: `ruff` passed, targeted `pytest` passed (`21` tests), JSON no-claim assertions passed, `git diff --check` passed, and Halley audit findings were fixed before commit.
 - Next: Phase 10 contract-clean estimator/adaptation work; do not relax the SOC/SOH bounded-output contract and do not turn these diagnostics into performance/SOTA claims.
 
+## CODEX STATUS 2026-05-09 05:10 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs; only the read-only CTO status loop is active.
+- Upload HF: `0`; dataset uploads remain stopped.
+- Phase 9: `98%` (`+0%` since 04:56).
+- Phase 10: `86%` (`+4%` since 04:56; bounded projection diagnostic is implemented and pushed).
+- Phase 11: `59%` (`+0%` since 04:56).
+- Product output pushed: `bsebench-filters` commit `bb72d59` adds `Phase10BoundedProjectionAdapter`; `bsebench-runner` commit `c062da5` adds opt-in `--phase10-output-adaptation bounded-projection`.
+- Evidence: NASA B0005 Hinf strict mode still fails closed, but opt-in diagnostic mode writes `outputs/phase10_nasa_b0005_aging_soh_smoke_hinf_bounded_projection_20260509.json` with status `diagnostic_projected`, `20/20` checked steps, `passed_jobs=0`, `claim_eligible_jobs=0`.
+- Validation: filters `ruff` passed and `26` tests passed; runner `ruff` passed, `6` tests passed, JSON guardrails passed, `git diff --check` passed.
+- Next: Phase 10 native contract-clean estimator path or explicit policy validation; keep adapted diagnostics out of leaderboard/performance claims.
+
 ## CODEX STATUS 2026-05-09 05:00 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
