@@ -1505,3 +1505,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 18:39 CEST
+
+- Phase 14: `100%` closed, validated, cleaned, and reported.
+- Phase 14 final report: `docs/PHASE_14_FINAL_CLOSURE_REPORT_2026-05-09.md`.
+- Phase 14 cleanup: `11` product worktrees removed, `11` local branches deleted, `11` remote branches deleted, final monitor `done=11 error=0 queued=0 running=0`.
+- Phase 15: opened in guarded execution mode; planning commit `25a2708`, orchestration commit `a02c46e`, launch commit `b09acca`.
+- Phase 15 direct workers: running `7`, done `0`, error `0`, queued `4`.
+- Running scopes: specs adaptive schema, filters EMA helper, filters residual contract, stats delta gate, runner plan, datasets calibration evidence, website status page.
+- Blocked until dependencies finish: adaptation safety, adaptive report gate, runner dry-run CLI, synthetic EMA fixtures.
+- Scientific status: `NO_GO_CLAIM`; adaptive tooling/preflight only, no RMSE gain, no >20% improvement, no neural training, no real-trace estimator execution.
+- Next: monitor first wave, push finished branches, then unlock dependent Phase 15 tasks only after their prerequisites are done.
