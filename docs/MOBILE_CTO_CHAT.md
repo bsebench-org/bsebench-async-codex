@@ -1330,6 +1330,13 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Ready task graph drafted: 11 product tasks plus one integration audit, with disjoint owned paths and dependency gates.
 - Next action: queue only ready Phase 14 tasks, then launch direct isolated workers after queue commit and status sanity check.
 
+## CODEX STATUS 2026-05-09 17:02 CEST
+
+- Phase 14 direct workers: running `6`, done `0`, error `0`, queued `5`.
+- Running scopes: specs bound schema, stats matrix checks, runner bound plan, datasets noise evidence, filters ECM linearization, website Phase 14 page.
+- Queued dependencies: stats linear PCRLB, stats model-uncertainty/oracle mixture, stats report gate, runner dry-run CLI, stats synthetic sanity fixtures.
+- Scientific status: `NO_GO_CLAIM`; no theorem, tight-bound, SOTA, empirical validation, dataset upload, or estimator execution.
+
 ## CODEX STATUS 2026-05-09 16:45 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
