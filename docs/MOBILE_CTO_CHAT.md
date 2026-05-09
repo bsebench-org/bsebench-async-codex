@@ -1417,3 +1417,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Waiting: stats bound report gate; it stays blocked until model-uncertainty is done and merged into `bsebench-stats/main`.
 - Validation added since 17:22: stats linear PCRLB merged after targeted checks plus full stats suite `400 passed`, ruff OK, diff check OK, push OK.
 - Scientific status: `NO_GO_CLAIM`; no theorem, tight-bound, SOTA, empirical validation, upload, or estimator execution.
+
+## CODEX STATUS 2026-05-09 17:30 CEST
+
+- Codex exec actifs: `2` workdirs, `6` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
