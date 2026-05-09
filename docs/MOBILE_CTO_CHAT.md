@@ -851,3 +851,16 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 11:13 CEST
+
+- Codex exec actifs: `0` OS-level workers; readonly status loop active (`cto_readonly_status_loop.py`).
+- Decision qualite: je continue en commits directs verifies, pas de relance de workers vides/no-op. Les demandes de parallele restent limitees par la qualite et par les sessions ouvertes.
+- Phase 9: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 12: `45%` (`+10%` since 11:06).
+- Nouveau livrable Phase 12: `bsebench-runner` `e7ca7ee` ajoute un bundle demo end-to-end: readiness inventory, stats preflight, cache markers, transfer matrix plan gated by readiness.
+- Validation: `26 passed` sur demo + transfer matrix + CLI; ruff check/format et diff check OK.
+- HF lane: `0` upload; consolidation deja produite, uploads bloques tant que source/licence/checksums ne sont pas verifies.
+- Next: mettre a jour la documentation vivante/site avec la chaine Phase 12 et preparer audit Phase 12 avant toute revendication scientifique.
