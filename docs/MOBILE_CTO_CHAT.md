@@ -1437,3 +1437,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 ## CODEX STATUS 2026-05-09 17:40 CEST
 - Phase 14 direct monitor: running `1`, done `10`, error `0`, queued `0`.
 - Scientific status: `NO_GO_CLAIM`; no tight-bound, theorem, SOTA, or empirical validation claim.
+
+## CODEX STATUS 2026-05-09 17:45 CEST
+
+- Codex exec actifs: `1` workdirs, `3` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
