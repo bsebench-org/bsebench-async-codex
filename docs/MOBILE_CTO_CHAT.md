@@ -689,3 +689,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 09:20 CEST
+
+- Codex exec actifs: `0` OS-level `codex exec` PIDs; `0` product workers launched yet because Phase 12 was locked until the global audit landed.
+- Read-only status loop: `yes`.
+- Upload HF: `0` (paused by directive).
+- Phase 9: `100%` (`+0%` since 09:00); mechanical checkpoint accepted, scientific claim still `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%` since 09:00); strict smoke refreshed on runner `cc9e89b`, scientific claim still `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%` since 09:00); residual diagnostics accepted as mechanical-only, scientific claim still `NO_GO_CLAIM`.
+- Cross-phase audit: `100%` (`+100%` since 09:00); pushed async `3f9b957 GLASSBOX: record Phase 1-11 trajectory audit`.
+- Current action: open Phase 12 in clean worktrees because primary product repos contain pre-existing large dirty diffs.
+- Next gate: launch disjoint Phase 12 workers for specs/datasets/stats/runner/filters; no public/scientific claim language.
