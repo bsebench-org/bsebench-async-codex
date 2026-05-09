@@ -1544,3 +1544,7 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 ## CODEX STATUS 2026-05-09 18:52 CEST
 - Phase 15 direct monitor: running `1`, done `6`, error `0`, queued `4`.
 - Scientific status: `NO_GO_CLAIM`; adaptive tooling/preflight only, no RMSE gain, no >20% improvement, no neural training.
+
+## CODEX STATUS 2026-05-09 18:58 CEST
+- Phase 15 direct monitor: running `3`, done `7`, error `0`, queued `1`.
+- Scientific status: `NO_GO_CLAIM`; adaptive tooling/preflight only, no RMSE gain, no >20% improvement, no neural training.
