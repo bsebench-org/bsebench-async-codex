@@ -809,3 +809,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 10:50 CEST
+
+- Codex exec actifs: `0` OS-level workers; readonly status loop still active.
+- Correction opérationnelle: les lancements Phase 12 `codex exec` précédents ont été confirmés vides/no-op; je ne les compte plus comme travail réel.
+- Mode actuel: commits directs vérifiés sur repos produit pour éviter token burn sans livrable.
+- Phase 9: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 12: `20%` (`+12%` since last Phase 12 status at 10:34).
+- Livrables Phase 12 poussés:
+  - `bsebench-specs` `ce3aacf`: transfer-readiness contract + JSON Schema + tests, `169 passed`.
+  - `bsebench-datasets` `b168b2d`: consolidation parts 2-9 + DOCX, `182` rows, `154` unique candidates, `28` duplicate rows, part1 missing.
+- HF lane: `0` upload; queue only. Current status counts: `8` already manifested, `8` already in prospect catalog, `93` license review, `22` source verification, `12` scope review, `11` source missing.
+- Next: implement Phase 12 transfer-readiness preflight in stats/runner, then update mobile again with deltas.
