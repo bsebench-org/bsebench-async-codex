@@ -1661,3 +1661,23 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## 2026-05-09 20:33 CEST - General Handoff Audit Started
+
+- Preparing full transfer/audit document for possible handoff to Claude Code or
+  another LLM.
+- Scope: global state after Phase 15 closure, repo heads, validation evidence,
+  risks, branch hygiene, roadmap, and next-agent instructions.
+- Scientific status remains `NO_GO_CLAIM`.
+- Output target:
+  `docs/GENERAL_HANDOFF_AUDIT_REPORT_2026-05-09.md`.
+
+## 2026-05-09 20:36 CEST - General Handoff Audit Completed
+
+- General handoff/audit document produced:
+  `docs/GENERAL_HANDOFF_AUDIT_REPORT_2026-05-09.md`.
+- Contents: repo heads, phase 1-17 status matrix, Phase 9-15 evidence summary,
+  validation history, dataset registry state, branch hygiene, risks, do-not-do
+  list, Phase 16 recommendation, and Claude Code/LLM bootstrap prompt.
+- Validation: `git diff --check` passed; document is ASCII-only.
+- Scientific status remains `NO_GO_CLAIM`.
