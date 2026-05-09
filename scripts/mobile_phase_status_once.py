@@ -9,17 +9,21 @@ Use from cron every 15 minutes.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import os
 import re
 import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 
-REPO = Path(os.environ.get("ASYNC_CTO", "/mnt/c/doctorat/bsebench-org/bsebench-async-codex"))
+REPO = Path(
+    os.environ.get("ASYNC_CTO", "/mnt/c/doctorat/bsebench-org/bsebench-async-codex")
+)
 CHAT_PATH = REPO / "docs" / "MOBILE_CTO_CHAT.md"
 STATE_DIR = Path(
     os.environ.get(
@@ -28,11 +32,15 @@ STATE_DIR = Path(
     )
 )
 LAST_RUN_PATH = STATE_DIR / "mobile-phase-status-last-epoch.txt"
+LOCK_PATH = STATE_DIR / "mobile-phase-status.lock"
 MIN_INTERVAL_SECONDS = int(os.environ.get("MOBILE_STATUS_MIN_INTERVAL_SECONDS", "840"))
 PARIS = ZoneInfo("Europe/Paris")
+DEFAULT_PROGRESS = {9: 88, 10: 62, 11: 54}
 
 
-def run(args: list[str], *, cwd: Path = REPO, check: bool = False) -> subprocess.CompletedProcess[str]:
+def run(
+    args: list[str], *, cwd: Path = REPO, check: bool = False
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         args,
         cwd=cwd,
@@ -63,13 +71,23 @@ def write_last_epoch() -> None:
     LAST_RUN_PATH.write_text(str(time.time()), encoding="utf-8")
 
 
+@contextmanager
+def mobile_status_lock():
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    with LOCK_PATH.open("w", encoding="utf-8") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        yield
+
+
 def tracked_dirty_paths() -> list[str]:
     status = git(["status", "--porcelain", "--untracked-files=no"], check=True).stdout
     return [line[3:] for line in status.splitlines() if line.strip()]
 
 
 def sync_main() -> None:
-    dirty = [path for path in tracked_dirty_paths() if path != "docs/MOBILE_CTO_CHAT.md"]
+    dirty = [
+        path for path in tracked_dirty_paths() if path != "docs/MOBILE_CTO_CHAT.md"
+    ]
     if dirty:
         raise RuntimeError(f"tracked dirty files block mobile status update: {dirty}")
     git(["fetch", "origin", "main"])
@@ -84,7 +102,17 @@ def process_snapshot() -> tuple[int, int, bool]:
         if "codex exec" in line and "mobile_phase_status_once.py" not in line
     ]
     status_loop = "cto_readonly_status_loop.py" in ps
-    return len(codex_lines), len({line.split(" -C ", 1)[1].split()[0] for line in codex_lines if " -C " in line}), status_loop
+    return (
+        len(codex_lines),
+        len(
+            {
+                line.split(" -C ", 1)[1].split()[0]
+                for line in codex_lines
+                if " -C " in line
+            }
+        ),
+        status_loop,
+    )
 
 
 def latest_progress(text: str, phase: int) -> int | None:
@@ -92,16 +120,33 @@ def latest_progress(text: str, phase: int) -> int | None:
     return int(matches[-1]) if matches else None
 
 
-def phase_progress() -> dict[int, int]:
+def max_progress(text: str, phase: int) -> int | None:
+    matches = re.findall(rf"Phase {phase}:\s*`?(\d+)%", text)
+    return max((int(match) for match in matches), default=None)
+
+
+def requested_phase_progress() -> dict[int, int]:
     return {
-        9: int(os.environ.get("PHASE9_PROGRESS", "88")),
-        10: int(os.environ.get("PHASE10_PROGRESS", "62")),
-        11: int(os.environ.get("PHASE11_PROGRESS", "54")),
+        9: int(os.environ.get("PHASE9_PROGRESS", str(DEFAULT_PROGRESS[9]))),
+        10: int(os.environ.get("PHASE10_PROGRESS", str(DEFAULT_PROGRESS[10]))),
+        11: int(os.environ.get("PHASE11_PROGRESS", str(DEFAULT_PROGRESS[11]))),
+    }
+
+
+def phase_progress(text: str) -> dict[int, int]:
+    """Keep automatic reports from regressing manually verified progress."""
+    requested = requested_phase_progress()
+    allow_regression = os.environ.get("MOBILE_STATUS_ALLOW_REGRESSION") == "1"
+    if allow_regression:
+        return requested
+    return {
+        phase: max(requested_value, max_progress(text, phase) or requested_value)
+        for phase, requested_value in requested.items()
     }
 
 
 def build_block(text: str) -> str:
-    progress = phase_progress()
+    progress = phase_progress(text)
     deltas = {
         phase: progress[phase] - (latest_progress(text, phase) or progress[phase])
         for phase in progress
@@ -123,24 +168,31 @@ def build_block(text: str) -> str:
 """
 
 
-def append_status(*, dry_run: bool, push: bool) -> int:
-    sync_main()
-    text = CHAT_PATH.read_text(encoding="utf-8")
-    block = build_block(text)
-    if dry_run:
-        print(block)
-        return 0
+def append_status(*, dry_run: bool, push: bool, force: bool) -> int:
+    with mobile_status_lock():
+        if not force and not dry_run:
+            elapsed = time.time() - read_last_epoch()
+            if elapsed < MIN_INTERVAL_SECONDS:
+                print(f"skip: last mobile status {elapsed:.0f}s ago")
+                return 0
 
-    CHAT_PATH.write_text(text.rstrip() + "\n" + block, encoding="utf-8")
-    git(["add", str(CHAT_PATH.relative_to(REPO))])
-    diff_cached = git(["diff", "--cached", "--quiet"], check=False)
-    if diff_cached.returncode == 0:
+        sync_main()
+        text = CHAT_PATH.read_text(encoding="utf-8")
+        block = build_block(text)
+        if dry_run:
+            print(block)
+            return 0
+
+        CHAT_PATH.write_text(text.rstrip() + "\n" + block, encoding="utf-8")
+        git(["add", str(CHAT_PATH.relative_to(REPO))])
+        diff_cached = git(["diff", "--cached", "--quiet"], check=False)
+        if diff_cached.returncode == 0:
+            return 0
+        git(["commit", "-m", f"GLASSBOX: mobile CTO status {now_label()}"])
+        if push:
+            git(["push", "origin", "HEAD:main"])
+        write_last_epoch()
         return 0
-    git(["commit", "-m", f"GLASSBOX: mobile CTO status {now_label()}"])
-    if push:
-        git(["push", "origin", "HEAD:main"])
-    write_last_epoch()
-    return 0
 
 
 def main() -> int:
@@ -150,14 +202,10 @@ def main() -> int:
     parser.add_argument("--no-push", action="store_true")
     args = parser.parse_args()
 
-    if not args.force and not args.dry_run:
-        elapsed = time.time() - read_last_epoch()
-        if elapsed < MIN_INTERVAL_SECONDS:
-            print(f"skip: last mobile status {elapsed:.0f}s ago")
-            return 0
-
     try:
-        return append_status(dry_run=args.dry_run, push=not args.no_push)
+        return append_status(
+            dry_run=args.dry_run, push=not args.no_push, force=args.force
+        )
     except Exception as exc:
         print(f"mobile status failed: {exc}", file=sys.stderr)
         return 1
