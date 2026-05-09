@@ -901,6 +901,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Claim status: `NO_GO_CLAIM`; aucun resultat empirique SOC/SOH revendique.
 - Next: specs-cross-validation du demo inventory, puis producteur realiste depuis manifests/caches.
 
+## CODEX STATUS 2026-05-09 11:52 CEST
+
+- Codex exec actifs: `0`; mode commits directs verifies.
+- Phase 12: `75%` (`+3%` since 11:46).
+- Nouveau livrable: `bsebench-runner` `dcbc8a1` valide le demo inventory Phase 12 via `bsebench_specs.validate_transfer_readiness`.
+- Validation: `13 passed` sur demo + transfer matrix; ruff check/format OK avant commit.
+- Claim status: `NO_GO_CLAIM`; preuve de contrat, pas preuve empirique.
+- Next: preflight documentaire `imperial_kirkaldy_21700_2024`, sans upload.
+
 ## CODEX STATUS 2026-05-09 11:15 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
