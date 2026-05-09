@@ -290,3 +290,13 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Validation: runner `24 passed`, stats `32 passed`, datasets `22 passed`, specs `36 passed`, filters `61 passed`, async `5 passed + 2 probes`.
 - Scientific closure: `NO-GO` until one real Tier2 Phase 9 empirical profile-axis run produces evidence-backed artifacts.
 - Next: run/construct the Phase 9 empirical artifact bundle, then acceptance gate, then Phase 9 closure report.
+
+## CODEX STATUS 2026-05-09 03:07 CEST
+
+- Codex exec actifs: `0`; workers mutating intentionally stopped while the Phase 9 empirical blocker is isolated.
+- Phase 9: `89%` (`+1%` depuis 02:58; `+19%` depuis le baseline `70%`).
+- Phase 10: `62%` (`+0%`).
+- Phase 11: `54%` (`+0%`).
+- Product output pushed: `bsebench-datasets` commit `f4b404b` with `docs/PHASE_9_PROFILE_AXIS_READINESS_NO_GO_2026-05-09.md` and `outputs/phase9_profile_axis_readiness_20260509.json`.
+- Evidence: 155 Phase 9 profile-axis configs inspected, 0 ready, 155 blocked by missing loader-facing Tier2 cache roots; no claims made, no downloads performed.
+- Next: build or locate a canonical Tier2 cache root for one Phase 9 wrapper, re-run readiness, then dispatch one real runner smoke before any Phase 9 closure claim.
