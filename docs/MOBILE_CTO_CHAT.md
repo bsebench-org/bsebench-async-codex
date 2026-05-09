@@ -223,6 +223,7 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 10: `62%` (+0% depuis dernier status).
 - Phase 11: `54%` (+0% depuis dernier status).
 - Scientific closure: `NO-GO` until cache/provenance/Tier2 empirical evidence passes.
+
 - Recent signals:
   - bsebench-stats-phase9-11-refill-p9-11-no-claims-linter-20260509T005959+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
   - bsebench-runner-phase9-11-refill-p9-11-dryrun-cli-smoke-20260509T005949+0200.log: No Hugging Face uploads, no dataset downloads, no thesis edits, no roadmap edits, no claim-registry edits, no claim_55 edits. Scientific integrity: do not declare Phase 9/10/11 com
@@ -275,3 +276,17 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
   - bsebench-stats-phase9-11-refill-p9-profile-verdict-inputs-20260509T015022+0200.log: +                    "source_ledger_sha256": "2" * 64, +                    "cache_root": "cache://bsebench/phase9/tier2/profile-axis", +                    "cache_sha256": "3" * 6
   - bsebench-datasets-phase9-11-refill-p11-tier2-residual-cache-20260509T014930+0200.log: +    assert config["empirical_run_evidence"]["status"] == "unknown_metadata"  # type: ignore[index] json.dumps(payload, allow_nan=False) succeeded in 2798ms: 3 files already format
   - bsebench-runner-phase9-11-refill-p10-aging-empirical-scheduler-20260509T014955+0200.log: A  src/bsebench_runner/aging_soh_scheduler.py M  src/bsebench_runner/cli.py A  tests/test_aging_soh_scheduler.py codex Ruff format, ruff lint, and cached diff checks are clean. The
+
+## CODEX STATUS 2026-05-09 02:58 CEST
+
+- Codex exec actifs: `0`; daemons mutating stopped; only read-only status loop active.
+- Refill: `PAUSED`; no blind worker launch until Phase 9 empirical closure task is explicit.
+- Upload HF: `0`.
+- Scope: Phase 9 first; Phase 10/11 not advanced during this focused integration.
+- Phase 9: `88%` (`+18%` depuis le dernier baseline mobile `70%`).
+- Phase 10: `62%` (`+0%`).
+- Phase 11: `54%` (`+0%`).
+- Product output pushed to `main`: runner `8adadd8`, stats `3c3a6b5`, datasets `4f018e0`, specs `2964ed7`, filters `8c0d64b`, async `8dd4b2c`.
+- Validation: runner `24 passed`, stats `32 passed`, datasets `22 passed`, specs `36 passed`, filters `61 passed`, async `5 passed + 2 probes`.
+- Scientific closure: `NO-GO` until one real Tier2 Phase 9 empirical profile-axis run produces evidence-backed artifacts.
+- Next: run/construct the Phase 9 empirical artifact bundle, then acceptance gate, then Phase 9 closure report.
