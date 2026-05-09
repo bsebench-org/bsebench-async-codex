@@ -1315,6 +1315,14 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 13 direct monitor: running `0`, done `17`, error `0`.
 - Workers remain claim-guarded: no empirical SOC/SOH or method-ranking claim.
 
+## CODEX STATUS 2026-05-09 16:50 CEST
+
+- Phase 13: `100%` (`+100%` since opening wave; 17/17 workers merged, validated, pushed, and cleaned).
+- Product heads: specs `57d41e3`, stats `2457483`, runner `13d171c`, filters `be3e981`, datasets `3f4e4f3`, website `904902f`.
+- Validation: targeted Phase 13 tests passed in all Python repos (`27+55+40+41+13` pass plus 1 skipped), `ruff check .` passed, website `npm run build` passed (`13` pages).
+- Cleanup: 17/17 Phase 13 worktrees removed, 17/17 local branches deleted, 17/17 remote branches deleted after merge-proof.
+- Scientific status: `NO_GO_CLAIM`; no empirical SOC/SOH, ranking, SOTA, or transfer-success claim was made.
+
 ## CODEX STATUS 2026-05-09 16:45 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.

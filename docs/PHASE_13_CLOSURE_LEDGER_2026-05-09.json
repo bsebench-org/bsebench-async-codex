@@ -1,0 +1,46 @@
+{
+  "phase": 13,
+  "closed_at": "2026-05-09T16:50:00+02:00",
+  "status": {
+    "tooling": "GO_TOOLING",
+    "integration": "GO_INTEGRATION",
+    "validation": "GO_VALIDATION",
+    "scientific_claim": "NO_GO_CLAIM"
+  },
+  "worker_monitor": {
+    "state_file": "/home/oakir/.local/state/bsebench-phase13-direct/launch.tsv",
+    "log_dir": "/home/oakir/.local/state/bsebench-phase13-direct",
+    "done": 17,
+    "error": 0,
+    "running_direct": 0
+  },
+  "product_heads": {
+    "bsebench-specs": "57d41e3",
+    "bsebench-stats": "2457483",
+    "bsebench-runner": "13d171c",
+    "bsebench-filters": "be3e981",
+    "bsebench-datasets": "3f4e4f3",
+    "bsebench-website": "904902f"
+  },
+  "validation": {
+    "bsebench-specs": "27 passed, 1 skipped; ruff check .; git diff --check",
+    "bsebench-stats": "55 passed; ruff check .; git diff --check",
+    "bsebench-runner": "40 passed; ruff check .; git diff --check",
+    "bsebench-filters": "41 passed; ruff check .; git diff --check",
+    "bsebench-datasets": "13 passed; ruff check .; git diff --check",
+    "bsebench-website": "npm run build; 13 page(s) built; git diff --check"
+  },
+  "cleanup": {
+    "worktrees_removed": 17,
+    "local_branches_deleted": 17,
+    "remote_branches_deleted": 17,
+    "deletion_rule": "delete only if origin branch is ancestor of origin/main"
+  },
+  "guardrails": {
+    "secret_scan": "no Phase 13 secret/token patterns found",
+    "claim_scan": "hits are expected guardrail/test/no-claim wording only",
+    "hf_uploads": "stopped",
+    "empirical_runs": "none",
+    "performance_claims": "none"
+  }
+}
