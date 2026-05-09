@@ -382,3 +382,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Validation: `ruff format/check` passed, JSON guardrail assertions passed, `pytest tests/test_aging_soh_readiness.py tests/test_loader_nasa_pcoe.py -m 'not slow'` passed (`25` tests, `2` HF slow tests deselected); independent audit found no issue.
 - Known external blocker: the two HF slow tests fail without private HF auth (`401 Unauthorized`), not from local code.
 - Next: Phase 10 runner pre-dispatch plan from this ready NASA config, then bounded empirical smoke; no SOH performance/SOTA claim yet.
+
+## CODEX STATUS 2026-05-09 04:15 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `97%` (`+0%` since previous mobile status).
+- Phase 10: `72%` (`+0%` since previous mobile status).
+- Phase 11: `59%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
