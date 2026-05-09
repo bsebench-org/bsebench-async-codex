@@ -1,0 +1,160 @@
+
+
+codex
+Done. Added the Phase 15 public status page at [phase15-adaptive-learning.md](/mnt/c/doctorat/bsebench-org/bsebench-website-glassbox-phase15-11-website-phase15-page-20260509T163452Z/src/content/docs/phase15-adaptive-learning.md) and exposed it in the sidebar via [astro.config.mjs](/mnt/c/doctorat/bsebench-org/bsebench-website-glassbox-phase15-11-website-phase15-page-20260509T163452Z/astro.config.mjs).
+
+Validation passed:
+- `npm run build`
+- `git diff --check`
+- `git diff --cached --check`
+
+Committed and pushed to `origin/glassbox-phase15-11-website-phase15-page-20260509T163452Z`:
+
+`4538558 GLASSBOX [role: phase15-website-status] add Phase 15 status page`
+diff --git a/astro.config.mjs b/astro.config.mjs
+index f230020c41c89b3b72b05ba24b89e9921e691bc6..b31b019426c8ccd8252f3c4133cb841da52d4aba
+--- a/astro.config.mjs
++++ b/astro.config.mjs
+@@ -51,6 +51,7 @@
+             { label: "Transfer Readiness", slug: "transfer-readiness" },
+             { label: "Phase 13 Ensemble Methods", slug: "phase13-ensemble-methods" },
+             { label: "Phase 14 Information Bounds", slug: "phase14-information-bounds" },
++            { label: "Phase 15 Adaptive Learning", slug: "phase15-adaptive-learning" },
+             { label: "Citation", slug: "citation" },
+             { label: "License", slug: "license" },
+           ],
+diff --git a/src/content/docs/phase15-adaptive-learning.md b/src/content/docs/phase15-adaptive-learning.md
+new file mode 100755
+index 0000000000000000000000000000000000000000..7a739e7c634efd994772c92a3bafd8f866a319ce
+--- /dev/null
++++ b/src/content/docs/phase15-adaptive-learning.md
+@@ -0,0 +1,116 @@
++---
++title: Phase 15 Adaptive Learning
++description: Tooling and preflight status for adaptive filter-learning work.
++---
++
++BSEBench treats Phase 15 adaptive-learning work as blocked by default. The
++current public surface is tooling and preflight status only: it can describe
++what evidence a later adaptive filter-learning protocol would need, and it can
++refuse under-specified claim paths. It does not authorize neural training,
++estimator execution, real-data experiments, dataset download, Hugging Face
++upload, filter ranking, SOC/SOH performance conclusions, transfer conclusions,
++leaderboard placement, or universal-validity language.
++
++This page is a public status note for adaptive-learning readiness. It is not an
++empirical result, leaderboard, method comparison, training report, or proof that
++any filter has better task behavior.
++
++## Current status
++
++| Area | Status | Evidence |
++|---|---|---|
++| Adaptive-learning claim status | Blocked | The scientific verdict remains `NO_GO_CLAIM` |
++| Website status surface | Ready as documentation | This page records the public claim boundary |
++| Synthetic fixture use | Allowed for plumbing only | Synthetic fixtures may exercise preflight refusal paths |
++| Real-data evidence | Not cleared | No Phase 15 permission to execute estimators, download datasets, train models, or upload artifacts |
++| Split and provenance evidence | Not supplied | Future work must provide auditable split, truth, hash, and run provenance before any empirical claim path |
++| Filter-learning conclusions | Blocked | No filter superiority, SOC/SOH performance, transfer, leaderboard, or universal-validity conclusion is authorized |
++
++Scientific claim status: **NO_GO_CLAIM**. Phase 15 artifacts are preflight
++plumbing for future adaptive-learning work. They do not show that any adaptive
++filter, learned update rule, parameter schedule, neural component, or hybrid
++method changes any metric behavior or generalizes across any dataset.
++
++## Required evidence
++
++A future adaptive-learning claim path must declare:
++
++- Dataset identity, split identity, timebase, chemistry, temperature range,
++  profile family, cell population, and license status.
++- SOC and SOH truth provenance, including recalibration or reference method
++  whenever truth labels participate in a claim path.
++- Exact separation between parameter identification, adaptation, model
++  selection, hyperparameter search, and blind evaluation.
++- Leakage controls proving that evaluation rows, cells, cycles, profiles,
++  timestamps, and derived features do not influence earlier adaptation steps.
++- Filter family, adaptive mechanism, update policy, bounded parameter schedule,
++  stopping rules, random seeds, and frozen estimator configuration.
++- Code provenance, dependency versions, container or environment identity, and
++  immutable run configuration.
++- Metric definitions, units, denominators, uncertainty policy, and finite
++  numeric values for every reported metric.
++- Content hashes for dataset, split manifest, configuration, source artifact,
++  preflight report, run manifest, metric artifact, and any learned state.
++- A scientific verdict that remains `NO_GO_CLAIM` until an empirical protocol
++  and independent audit explicitly authorize a stronger claim.
++
++## Failure policy
++
++The readiness chain is fail-closed:
++
++- Missing dataset, split, truth, license, configuration, run, metric, or learned
++  state provenance blocks the claim path.
++- Missing separation between adaptation and blind evaluation blocks the claim
++  path.
++- Split leakage, timestamp leakage, cell leakage, profile leakage, feature
++  leakage, or hyperparameter leakage blocks the claim path.
++- Missing hashes or invalid hashes for any required artifact block the claim
++  path.
++- Missing units, denominators, uncertainty policy, or metric definitions block
++  the claim path.
++- Non-finite metric values, uncertainty values, parameter values, or learned
++  state values block the claim path.
++- Unsupported claim wording is rejected, including RMSE delta language,
++  percentage uplift language, SOTA language, filter superiority, SOC/SOH
++  performance, transfer success, leaderboard status, universal validity, or
++  adaptive performance-uplift wording.
++- Neural training, dataset download, Hugging Face upload, or estimator execution
++  is rejected unless a later task explicitly supplies permission, provenance,
++  and a bounded protocol.
++- Any verdict other than `NO_GO_CLAIM` is rejected until the empirical protocol
++  explicitly permits a stronger claim.
++
++## Phase 15 outputs
++
++The current Phase 15 website output is limited to public status documentation
++and a sidebar entry. It records the evidence boundary for later adaptive
++filter-learning work and keeps the scientific verdict blocked by default.
++
++No Phase 15 website page, runner, stats helper, filter helper, or dataset helper
++currently authorizes neural training, estimator execution, real-data evaluation,
++dataset upload, Hugging Face publication, filter ranking, SOC/SOH performance
++claims, transfer claims, leaderboard status, or scientific promotion beyond
++**NO_GO_CLAIM**.
++
++## What remains
++
++Before BSEBench can publish adaptive-learning conclusions, the project still
++needs:
++
++- Public schemas for adaptive-learning preflight inputs, split manifests, run
++  manifests, learned-state artifacts, and metric reports.
++- Synthetic fixtures that exercise missing evidence, non-finite values, split
++  leakage, invalid hashes, unsupported verdicts, and forbidden claim wording.
++- Real Tier 2 canonical Parquet datasets with verified licenses, checksums,
++  split manifests, and SOC/SOH truth provenance.
++- Frozen baseline estimators, bounded adaptive policies, immutable learned-state
++  artifacts, and reproducible run manifests.
++- A preregistered empirical protocol for any adaptive-learning comparison,
++  including leakage controls, uncertainty reporting, and acceptance criteria.
++- Independent audit of provenance hashes, split integrity, adaptation boundaries,
++  parameter-freezing, learned-state serialization, and wording controls.
++- Reproducible empirical runs with statistical summaries.
++
++Until those checks pass, public wording should say **tooling preflight**,
++**adaptive-learning readiness**, or **blocked-by-default claim plumbing**, not
++benchmark superiority or SOC/SOH performance.
+
+tokens used
+86,623
+Done. Added the Phase 15 public status page at [phase15-adaptive-learning.md](/mnt/c/doctorat/bsebench-org/bsebench-website-glassbox-phase15-11-website-phase15-page-20260509T163452Z/src/content/docs/phase15-adaptive-learning.md) and exposed it in the sidebar via [astro.config.mjs](/mnt/c/doctorat/bsebench-org/bsebench-website-glassbox-phase15-11-website-phase15-page-20260509T163452Z/astro.config.mjs).
+
+Validation passed:
+- `npm run build`
+- `git diff --check`
+- `git diff --cached --check`
+
+Committed and pushed to `origin/glassbox-phase15-11-website-phase15-page-20260509T163452Z`:
+
+`4538558 GLASSBOX [role: phase15-website-status] add Phase 15 status page`
