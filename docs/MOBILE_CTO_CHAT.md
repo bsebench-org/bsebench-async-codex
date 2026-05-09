@@ -1006,6 +1006,19 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 
 ## CODEX STATUS 2026-05-09 12:30 CEST
 
+- Codex exec actifs: `0`; direct verified commit mode remains active for Phase 12 critical path.
+- Phase 9: `100%` (`+0%` since 12:22).
+- Phase 10: `100%` (`+0%` since 12:22).
+- Phase 11: `100%` (`+0%` since 12:22).
+- Phase 12 transfer-readiness chain: `91%` (`+3%` since 12:22).
+- New pushed deliverable: `bsebench-runner` commit `b8cec17` (`GLASSBOX add Phase 12 first pilot runner gate`).
+- What changed: runner now consumes the real first-pilot preflight and proves scheduling is blocked mechanically: `ready_rows=0`, `blocked_rows=1`, `allowed_to_execute=false`, `result=not_run`.
+- Blocking gaps are only readiness gaps: `transfer_readiness_preflight_blocked`, `transfer_readiness_not_schedulable`, `transfer_inventory_not_ready`.
+- Validation: script assertions passed on local artifacts; targeted pytest `14 passed`; ruff format/check OK; git diff check OK.
+- Dataset truth audit result: no local cross-dataset candidate has both finite SOC and SOH truth. NASA B0005 is SOH-ready but SOC-null; CALCE local caches have V/I/T/time only. Next high-value task is SOC truth derivation/recalibration or an explicitly scoped SOH-only pilot.
+
+## CODEX STATUS 2026-05-09 12:30 CEST
+
 - Codex exec actifs: `0` workdirs, `0` PIDs.
 - Read-only status loop: `yes`.
 - Upload HF: `0`.
