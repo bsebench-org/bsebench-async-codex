@@ -1216,3 +1216,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 15:26 CEST
+
+- Codex exec actifs: `0`; direct verified commit mode.
+- Phase 12: `100%` (`+1%` since 13:24) as `CLOSED_MECHANICAL_NO_GO`.
+- New closure artifacts: `docs/PHASE_12_FINAL_CLOSURE_REPORT_2026-05-09.md` and `docs/PHASE_12_CLOSURE_LEDGER_2026-05-09.json`.
+- Closure meaning: transfer-readiness architecture, gates, evidence ledgers, and final execution-clearance audit are complete.
+- Non-closure meaning: no SOC/SOH transfer performance, no empirical success claim, no estimator execution.
+- Final gate: `blocked`; ready components `0`; blocked components `3`; transfer execution `false`; SOC derivation `false`; parameter use `false`.
+- Product heads: specs `ce3aacf`, datasets `9de818d`, stats `95ddd11`, filters `a1c9a01`, runner `72d0c61`, website `dde7d40`.
+- Validation: closure ledger JSON valid; git diff check OK; changed-file claim scan clean after wording fix.
+- Next: Phase 13 can start only by preserving the Phase 12 blockers: SOC OCV/capacity evidence, calibration freeze evidence, or explicitly scoped SOH-only pilot.

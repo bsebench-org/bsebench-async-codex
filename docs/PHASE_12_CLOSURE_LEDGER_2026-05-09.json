@@ -1,0 +1,119 @@
+{
+  "schema_version": "bsebench_phase12_closure_ledger_v1",
+  "generated_at": "2026-05-09T13:23:00Z",
+  "phase": 12,
+  "status": "CLOSED_MECHANICAL_NO_GO",
+  "scientific_verdict": "NO_GO_CLAIM",
+  "mechanical_validation_only": true,
+  "summary": {
+    "objective": "Cross-chemistry transfer-readiness plumbing for a universal SOC/SOH benchmark.",
+    "closure_meaning": "Phase 12 infrastructure, gates, ledgers, and final execution-clearance audit are complete.",
+    "non_closure_meaning": "No SOC/SOH empirical transfer result is claimed; execution remains blocked by evidence gates.",
+    "execution_clearance_status": "blocked",
+    "ready_components": 0,
+    "blocked_components": 3
+  },
+  "product_heads": {
+    "bsebench-specs": "ce3aacf",
+    "bsebench-datasets": "9de818d",
+    "bsebench-stats": "95ddd11",
+    "bsebench-filters": "a1c9a01",
+    "bsebench-runner": "72d0c61",
+    "bsebench-website": "dde7d40"
+  },
+  "critical_artifacts": [
+    {
+      "repo": "bsebench-runner",
+      "path": "outputs/phase12_execution_clearance_gate_20260509.json",
+      "sha256": "df71c115b5c79bcfa4821f9f975bbc155a8a2b8f16e7978f2797f53520bff598",
+      "role": "Final execution-clearance gate.",
+      "decision": "blocked"
+    },
+    {
+      "repo": "bsebench-datasets",
+      "path": "outputs/phase12_soc_evidence_remediation_plan_20260509.json",
+      "sha256": "57c66d79ae7a8c0fce56a97c0892a005843a0a9d808475db27dcd0656a71345d",
+      "role": "SOC evidence remediation queue.",
+      "decision": "blocked_evidence_collection_required"
+    },
+    {
+      "repo": "bsebench-filters",
+      "path": "outputs/phase12_hinf_parameter_freeze_manifest_20260509.json",
+      "sha256": "772058931adb85db03c84065dc9db2a838669ee5da18704f927f0e5e43517b19",
+      "role": "Hinf parameter-freeze manifest.",
+      "decision": "missing_calibration_evidence"
+    },
+    {
+      "repo": "bsebench-runner",
+      "path": "outputs/phase12_first_transfer_pilot_runner_gate_20260509.json",
+      "sha256": "e35557d99bef2eb6694dcb2073ee932f53cac45030efb12ec688d13e7aaab90a",
+      "role": "First real pilot runner gate proof.",
+      "decision": "not_run"
+    },
+    {
+      "repo": "bsebench-datasets",
+      "path": "outputs/phase12_dataset_registry_consolidation_20260509.json",
+      "sha256": "ada0c98615a4f6d63589892b185a12a318d060d50819284308ac174bb7e68e00",
+      "role": "Dataset registry consolidation.",
+      "decision": "line_by_line_status_available"
+    },
+    {
+      "repo": "bsebench-datasets",
+      "path": "outputs/phase12_dataset_upload_validation_queue_20260509.json",
+      "sha256": "5e97188745be44a6ac6b9dd950a2cec726ba60958789987a36523f21333c7201",
+      "role": "Dataset upload validation queue.",
+      "decision": "uploads_paused"
+    }
+  ],
+  "final_gate": {
+    "transfer_execution_allowed": false,
+    "estimator_execution_allowed": false,
+    "soc_derivation_allowed": false,
+    "parameter_use_allowed": false,
+    "blocking_gaps": [
+      "runner_gate_blocked",
+      "transfer_readiness_preflight_blocked",
+      "transfer_readiness_not_schedulable",
+      "transfer_inventory_not_ready",
+      "soc_evidence_not_ready",
+      "needs_ground_truth_metadata:240",
+      "needs_capacity_evidence:72",
+      "parameter_freeze_not_ready",
+      "missing_or_invalid_calibration_dataset_manifest_sha256",
+      "missing_or_invalid_calibration_split_manifest_sha256",
+      "missing_or_invalid_calibration_run_log_sha256",
+      "missing_or_invalid_estimator_config_sha256"
+    ]
+  },
+  "validation": {
+    "bsebench-datasets": [
+      "phase12_soc_evidence_remediation targeted pytest: 4 passed",
+      "ruff format/check passed",
+      "changed-file anti-claim scan passed"
+    ],
+    "bsebench-filters": [
+      "phase12_parameter_freeze targeted pytest: 3 passed",
+      "ruff format/check passed",
+      "changed-file anti-claim scan passed"
+    ],
+    "bsebench-runner": [
+      "phase12_execution_clearance targeted pytest: 5 passed",
+      "ruff format/check passed",
+      "changed-file anti-claim scan passed"
+    ],
+    "four_eyes": [
+      "SOC evidence remediation: commit OK",
+      "parameter freeze: commit acceptable",
+      "execution clearance: commit authorized"
+    ]
+  },
+  "handoff_to_phase13": {
+    "allowed": true,
+    "condition": "Phase 13 may start only with NO_GO_CLAIM preserved and without overriding Phase 12 execution blockers.",
+    "first_tasks": [
+      "Collect provenance-backed OCV/capacity anchors for SOC evidence.",
+      "Produce calibration dataset/split/run-log hashes for Hinf parameter freeze.",
+      "Optionally design SOH-only pilot with explicit non-SOC claim guard."
+    ]
+  }
+}
