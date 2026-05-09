@@ -125,6 +125,63 @@ unsupported_comparison_language() {
   run_git_guard "$repo"
 }
 
+phase9_closure_without_evidence() {
+  local repo="$tmp_root/phase9-closure-without-evidence"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase9-close.md" \
+    'Phase 9 is complete and ready for claim promotion.'
+  run_git_guard "$repo"
+}
+
+phase10_performance_without_evidence() {
+  local repo="$tmp_root/phase10-performance-without-evidence"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase10-performance.md" \
+    'Phase 10 improves RMSE versus the baseline.'
+  run_git_guard "$repo"
+}
+
+phase9_public_benchmark_claim() {
+  local repo="$tmp_root/phase9-public-benchmark"
+  init_repo "$repo"
+  commit_file "$repo" "reports/phase9-public.md" \
+    'Phase 9 is public benchmark ready and a winner on the leaderboard.'
+  run_git_guard "$repo"
+}
+
+phase9_guardrail_wording() {
+  local repo="$tmp_root/phase9-guardrail-wording"
+  init_repo "$repo"
+  commit_file "$repo" "inbox/phase-9-guardrail/BRIEF.md" \
+    'Do not declare Phase 9 complete without cache, provenance, Tier2, source-ledger, and empirical-run evidence.'
+  run_git_guard "$repo"
+}
+
+phase11_supported_closure() {
+  local repo="$tmp_root/phase11-supported-closure"
+  init_repo "$repo"
+
+  mkdir -p "$repo/reports"
+  cat > "$repo/reports/phase11-close.md" <<'REPORT'
+Phase 11 closure is supported for this internal audit only.
+
+Evidence bundle:
+- cache: local-cache manifest fixture-cache-manifest.json reports all inputs present.
+- provenance: manifest source identity fixture-provenance-ledger.json is present.
+- Tier2: Tier2 loader smoke passed for the frozen fixture.
+- source-ledger: reports/source-ledger.md contains the comparability table.
+- empirical-run: empirical-run fixture-run-001 has replay artifact hash abc123.
+REPORT
+  cat > "$repo/reports/source-ledger.md" <<'LEDGER'
+| source_id | doi_or_url | retrieved_at | metric | dataset | split | reported_value | bsebench_value | comparability | caveat |
+|---|---|---|---|---|---|---|---|---|---|
+| fixture-paper | https://doi.org/10.1234/example | 2026-05-08 | MAE SOC percent | CALCE A123 | fixed test profile | 1.20 | 1.30 | partial | synthetic fixture, not a real claim |
+LEDGER
+  git -C "$repo" add reports/phase11-close.md reports/source-ledger.md
+  git -C "$repo" commit -q -m "phase11 closure with evidence"
+  run_git_guard "$repo"
+}
+
 source_ledger_present_comparison() {
   local repo="$tmp_root/source-ledger-present"
   init_repo "$repo"
@@ -178,6 +235,31 @@ require_failure_contains \
   "unsupported SOTA novelty language" \
   "[REVIEW_REQUIRED] reports/comparison.md -- comparison language lacks completed source ledger and comparability table" \
   unsupported_comparison_language
+
+require_failure_contains \
+  "Phase 9 closure without evidence" \
+  "[BLOCKED] reports/phase9-close.md -- unsupported Phase 9/10/11 closure or performance claim lacks cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  phase9_closure_without_evidence
+
+require_failure_contains \
+  "Phase 10 performance without evidence" \
+  "[BLOCKED] reports/phase10-performance.md -- unsupported Phase 9/10/11 closure or performance claim lacks cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  phase10_performance_without_evidence
+
+require_failure_contains \
+  "Phase 9 public benchmark claim" \
+  "[BLOCKED] reports/phase9-public.md -- Phase 9/10/11 public benchmark, SOTA, novelty, winner, or leaderboard claim is forbidden" \
+  phase9_public_benchmark_claim
+
+require_success_contains \
+  "Phase 9 guardrail wording" \
+  "[ALLOWED] inbox/phase-9-guardrail/BRIEF.md -- ordinary non-protected change" \
+  phase9_guardrail_wording
+
+require_success_contains \
+  "Phase 11 supported closure" \
+  "[ALLOWED] reports/phase11-close.md -- Phase 9/10/11 claim language with cache/provenance/Tier2/source-ledger/empirical-run evidence" \
+  phase11_supported_closure
 
 require_success_contains \
   "source-ledger-present comparison" \
