@@ -1,0 +1,160 @@
++    json.dumps(report, allow_nan=False)
++
++
++@pytest.mark.parametrize(
++    ("mutation", "expected_gap"),
++    [
++        (
++            lambda payload: payload["evidence"].pop("truth"),
++            "missing_truth_evidence",
++        ),
++        (
++            lambda payload: payload["evidence"]["parameters"]["values"].__setitem__(
++                1,
++                math.inf,
++            ),
++            "non_finite:parameters.values[1]",
++        ),
++        (
++            lambda payload: payload["evidence"]["linearization"].__setitem__(
++                "observation_jacobian",
++                [[0.04, -0.2, 0.1]],
++            ),
++            "dimension_mismatch:linearization.observation_jacobian[0].columns "
++            "expected=2 actual=3",
++        ),
++        (
++            lambda payload: payload["evidence"]["noise"].__setitem__(
++                "prior_information",
++                [[1.0, 0.0], [0.0, 0.0]],
++            ),
++            "matrix_not_positive_definite:noise.prior_information",
++        ),
++        (
++            lambda payload: payload["claims"].__setitem__("tight_bound", True),
++            "unsupported_claim:tight_bound",
++        ),
++    ],
++)
++def test_phase14_bound_dry_run_fails_closed_for_blockers(
++    mutation: Any,
++    expected_gap: str,
++) -> None:
++    payload = _inputs()
++    mutation(payload)
++
++    report = validate_phase14_bound_dry_run(payload)
++
++    assert report["decision"]["plan_status"] == "blocked"
++    assert report["decision"]["information_bound_plan_ready"] is False
++    assert report["decision"]["bound_computation_allowed"] is False
++    assert report["execution"]["attempted"] is False
++    assert expected_gap in report["blocking_gaps"]
++    json.dumps(report, allow_nan=False)
++
++
++def test_phase14_bound_dry_run_cli_writes_ready_report(
++    tmp_path: Path,
++    capsys: pytest.CaptureFixture[str],
++) -> None:
++    inputs = _write_json(tmp_path / "inputs.json", _inputs())
++    output = tmp_path / "dry-run-report.json"
++
++    rc = main(
++        [
++            "--inputs-json",
++            str(inputs),
++            "--output",
++            str(output),
++            "--generated-at-utc",
++            "2026-05-09T14:57:52Z",
++        ]
++    )
++
++    assert rc == 0
++    assert "status=ready" in capsys.readouterr().out
++    report = json.loads(output.read_text(encoding="utf-8"))
++    assert report["decision"]["plan_status"] == "ready"
++    assert report["input"]["sha256"]
++    assert report["execution"]["filter_execution_attempted"] is False
++
++
++def test_phase14_bound_dry_run_cli_returns_blocked_code_unless_allowed(tmp_path: Path) -> None:
++    payload = _inputs()
++    payload["evidence"].pop("truth")
++    inputs = _write_json(tmp_path / "blocked-inputs.json", payload)
++    output = tmp_path / "blocked-report.json"
++
++    assert main(["--plan-json", str(inputs), "--output", str(output)]) == 2
++    report = json.loads(output.read_text(encoding="utf-8"))
++    assert report["decision"]["plan_status"] == "blocked"
++    assert "missing_truth_evidence" in report["blocking_gaps"]
++
++    assert main(["--plan-json", str(inputs), "--output", str(output), "--allow-blocked"]) == 0
++
++
++def test_phase14_bound_dry_run_cli_rejects_non_standard_json_constants(
++    tmp_path: Path,
++    capsys: pytest.CaptureFixture[str],
++) -> None:
++    payload = _inputs()
++    payload["evidence"]["parameters"]["values"][0] = math.nan
++    inputs = _write_json(tmp_path / "nan-inputs.json", payload, allow_nan=True)
++
++    assert main(["--inputs-json", str(inputs)]) == 2
++    assert "non-standard JSON constant" in capsys.readouterr().err
++
++
++def test_phase14_bound_dry_run_module_entrypoint_smoke(tmp_path: Path) -> None:
++    inputs = _write_json(tmp_path / "inputs.json", _inputs())
++    output = tmp_path / "module-report.json"
++    env = {
++        **os.environ,
++        "PYTHONPATH": f"{Path.cwd() / 'src'}{os.pathsep}{os.environ.get('PYTHONPATH', '')}",
++    }
++
++    result = subprocess.run(
++        [
++            sys.executable,
++            "-m",
++            "bsebench_runner.phase14_bound_dry_run_cli",
++            "--inputs-json",
++            str(inputs),
++            "--output",
++            str(output),
++        ],
++        check=False,
++        env=env,
++        text=True,
++        capture_output=True,
++    )
++
++    assert result.returncode == 0, result.stderr
++    report = json.loads(output.read_text(encoding="utf-8"))
++    assert report["execution"]["filter_execution_attempted"] is False
++    assert report["decision"]["bound_computation_allowed"] is False
+
+tokens used
+63,121
+Implemented and pushed commit `ed7fde2` to `origin/glassbox-phase14-07-runner-bound-dryrun-cli-20260509T145752Z`.
+
+Added:
+- `src/bsebench_runner/phase14_bound_dry_run_cli.py`
+  - strict JSON load
+  - dry-run report generation from `phase14_bound_plan`
+  - ready/blocked exit codes
+  - `--allow-blocked`
+  - no filter, estimator, dataset, SOC/SOH, upload, or bound-computation execution
+- `tests/test_phase14_bound_dry_run_cli.py`
+  - helper validation
+  - CLI ready/blocked behavior
+  - fail-closed blockers
+  - non-standard JSON constant rejection
+  - `python -m bsebench_runner.phase14_bound_dry_run_cli` smoke test
+
+Validation:
+- `uv run --extra dev pytest tests/test_phase14_bound_dry_run_cli.py tests/test_phase14_bound_plan.py` passed: 18 tests
+- `git diff --check` passed
+- `uv run --extra dev ruff check src/bsebench_runner/phase14_bound_dry_run_cli.py tests/test_phase14_bound_dry_run_cli.py` passed
+
+Full project test suite was not run; validation stayed scoped to the requested Phase 14 CLI path plus the bound-plan dependency.

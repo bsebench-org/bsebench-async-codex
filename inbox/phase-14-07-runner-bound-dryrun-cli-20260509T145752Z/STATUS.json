@@ -1,16 +1,18 @@
 {
   "base_branch": "main",
+  "branch_sha": "ed7fde28ca9887d8902174a9cc50f41c8203e5af",
   "depends_on": [
     "runner-bound-plan"
   ],
   "direct_log": "/home/oakir/.local/state/bsebench-phase14-direct/phase-14-07-runner-bound-dryrun-cli-20260509T145752Z.log",
   "direct_worktree": "/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase14-07-runner-bound-dryrun-cli-20260509T145752Z",
-  "exit_code": null,
+  "exit_code": 0,
   "phase_id": "phase-14-07-runner-bound-dryrun-cli-20260509T145752Z",
-  "status": "running_direct",
+  "push_result": "ok",
+  "status": "done",
   "target_branch": "glassbox-phase14-07-runner-bound-dryrun-cli-20260509T145752Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-runner",
-  "ts_done": null,
+  "ts_done": "2026-05-09T15:23:13.021481Z",
   "ts_queued": "2026-05-09T14:57:52.652525Z",
   "ts_started": null,
   "worker_id": "direct:3068055"
