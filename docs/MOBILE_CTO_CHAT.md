@@ -1323,6 +1323,13 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Cleanup: 17/17 Phase 13 worktrees removed, 17/17 local branches deleted, 17/17 remote branches deleted after merge-proof.
 - Scientific status: `NO_GO_CLAIM`; no empirical SOC/SOH, ranking, SOTA, or transfer-success claim was made.
 
+## CODEX STATUS 2026-05-09 17:00 CEST
+
+- Phase 14 opened in planning mode: information-theoretic bounds / PCRLB under model uncertainty.
+- Guardrail: `NO_GO_EMPIRICAL_CLAIM` and `NO_GO_THEORETICAL_CLAIM`; no tight-bound, theorem, SOTA, or empirical validation claim.
+- Ready task graph drafted: 11 product tasks plus one integration audit, with disjoint owned paths and dependency gates.
+- Next action: queue only ready Phase 14 tasks, then launch direct isolated workers after queue commit and status sanity check.
+
 ## CODEX STATUS 2026-05-09 16:45 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
