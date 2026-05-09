@@ -39,7 +39,7 @@ def phase_slug(phase_id: str) -> str:
     parts = phase_id.split("-")
     if len(parts) < 5:
         return phase_id
-    return "-".join(parts[4:-1])
+    return "-".join(parts[3:-1])
 
 
 def done_slugs() -> set[str]:
