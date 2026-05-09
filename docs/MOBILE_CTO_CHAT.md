@@ -988,3 +988,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 12:22 CEST
+
+- Codex exec actifs: `0`; direct verified commit mode for the critical Phase 12 bundle.
+- Read-only status loop: `yes` (`cto_readonly_status_loop.py`, PID `2920329`).
+- Upload HF: `0`; uploads remain paused until consolidated source/license/checksum status is clean.
+- Phase 9: `100%` (`+0%` since 12:15).
+- Phase 10: `100%` (`+0%` since 12:15).
+- Phase 11: `100%` (`+0%` since 12:15).
+- Phase 12 transfer-readiness chain: `88%` (`+5%` since 11:55).
+- New pushed deliverable: `bsebench-datasets` commit `31fb115` (`GLASSBOX add Phase 12 first transfer pilot bundle`).
+- What changed: first concrete transfer pilot bundle CALCE A123 LFP DST T25 -> NASA B0005 LCO CC-discharge T24 with manifest pair, endpoint ledgers, truth manifest, split manifest, parameter manifest, transfer-readiness inventory, stats preflight input/output, generator, and tests.
+- Scientific gate: `preflight_blocked`, as expected. Blockers are `inventory_not_ready`, `truth_not_ready`, and `parameters_not_frozen`; no estimator run and no performance claim.
+- Validation: targeted pytest `21 passed`; `ruff format --check` OK; `ruff check` OK; `git diff --check` OK; stats preflight returned expected code `2`.
+- Next: Phase 12 runner-matrix gate and/or replace this blocked pilot with a source-target pair that has finite SOC truth plus frozen estimator parameters.
