@@ -394,3 +394,16 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `59%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 04:26 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs; only the read-only CTO status loop is active.
+- Upload HF: `0`; uploads remain stopped until the consolidated registry status is done.
+- Phase 9: `97%` (`+0%` since 04:15; tooling and empirical smoke checkpoint remain passed, scientific closure still fail-closed).
+- Phase 10: `75%` (`+3%` since 04:15).
+- Phase 11: `59%` (`+0%` since 04:15).
+- Product output pushed: `bsebench-runner` commit `fb58d53` adds Phase 10 NASA aging/SOH runner predispatch.
+- Evidence: `outputs/phase10_nasa_b0005_aging_soh_plan_20260509.json` has `planned_runs=1`; `outputs/phase10_nasa_b0005_aging_soh_predispatch_20260509.json` has `ready_rows=1`, `blocked_rows=0`, `scientific_verdict=none`.
+- Validation: `ruff check` passed, `pytest tests/test_phase10_aging_soh_plan_from_readiness.py tests/test_aging_soh_predispatch.py -q` passed (`15` tests), JSON guardrail assertions passed.
+- Four-eyes audit: Ramanujan found one cache fail-closed weakness before commit; fixed by preserving structured `exists:false` cache evidence and adding a regression test.
+- Next: return to Phase 9 closure path, then Phase 10 bounded empirical smoke only after the predispatch gate is stable; no SOH performance/SOTA claim yet.
