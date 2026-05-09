@@ -910,6 +910,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Claim status: `NO_GO_CLAIM`; preuve de contrat, pas preuve empirique.
 - Next: preflight documentaire `imperial_kirkaldy_21700_2024`, sans upload.
 
+## CODEX STATUS 2026-05-09 12:02 CEST
+
+- Codex exec actifs: `0`; mode commits directs verifies.
+- Phase 12: `79%` (`+4%` since 11:52).
+- Nouveau livrable: `bsebench-datasets` `9da7b08` ajoute le preflight Tier 1 `imperial_kirkaldy_21700_2024`.
+- Source primaire verifiee: Zenodo `10.5281/zenodo.10637534`, version `v1`, CC-BY-4.0, 7 fichiers, 49.4 GB, MD5 source-page.
+- Upload HF: `0`; upload explicitement non autorise tant que download, MD5 local, SHA-256, archive sampling et manifest Tier 1 ne sont pas faits.
+- Next: producteur realiste `TransferReadiness` depuis manifests/caches, puis premier pilot design no-claim.
+
 ## CODEX STATUS 2026-05-09 11:15 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
