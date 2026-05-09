@@ -1,0 +1,160 @@
++    assert report["decision"]["validated_mixture_information_blocks_supplied"] is True
++    assert (
++        report["decision"][
++            "true_bayesian_model_uncertainty_pcrlb_label_allowed_by_input_contract"
++        ]
++        is True
++    )
++    assert report["blocking_gaps"] == []
++
++    summary = report["weighted_conditional_summary"]
++    assert summary["status"] == "available"
++    assert summary["is_true_bayesian_model_uncertainty_pcrlb"] is False
++    assert summary["weights"] == {"model-a": pytest.approx(0.4), "model-b": pytest.approx(0.6)}
++    assert summary["information_matrices"][0] == [
++        [pytest.approx(5.2), pytest.approx(0.0)],
++        [pytest.approx(0.0), pytest.approx(10.8)],
++    ]
++    assert summary["information_matrices"][1] == [
++        [pytest.approx(6.8), pytest.approx(0.0)],
++        [pytest.approx(0.0), pytest.approx(13.6)],
++    ]
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_weighted_conditional_summary_without_mixture_blocks_stays_no_go() -> None:
++    report = build_phase14_model_uncertainty_preflight(
++        _payload(include_mixture_blocks=False, request_true_label=False)
++    )
++
++    assert report["decision"]["preflight_status"] == "ready"
++    assert report["scientific_verdict"] == NO_GO_CLAIM
++    assert report["component_status"]["mixture_information_blocks"]["status"] == "not_supplied"
++    assert report["decision"]["validated_mixture_information_blocks_supplied"] is False
++    assert (
++        report["decision"][
++            "true_bayesian_model_uncertainty_pcrlb_label_allowed_by_input_contract"
++        ]
++        is False
++    )
++    assert report["weighted_conditional_summary"]["status"] == "available"
++    assert (
++        report["weighted_conditional_summary"]["is_true_bayesian_model_uncertainty_pcrlb"]
++        is False
++    )
++    assert report["blocking_gaps"] == []
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_true_bayesian_model_uncertainty_label_request_requires_mixture_blocks() -> None:
++    report = build_phase14_model_uncertainty_preflight(
++        _payload(include_mixture_blocks=False, request_true_label=True)
++    )
++
++    assert report["decision"]["preflight_status"] == "blocked"
++    assert (
++        f"missing_validated_mixture_information_blocks:"
++        f"{TRUE_BAYESIAN_MODEL_UNCERTAINTY_PCRLB_LABEL}"
++    ) in report["blocking_gaps"]
++    assert report["scientific_verdict"] == NO_GO_CLAIM
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "expected_gap"),
++    [
++        (
++            lambda payload: payload["models"][0].pop("weight"),
++            "missing_model_weight:models[0]",
++        ),
++        (
++            lambda payload: payload["models"][1].update({"weight": 0.7}),
++            "invalid_model_weight_sum:expected=1.0 actual=1.1",
++        ),
++        (
++            lambda payload: payload["models"][0]["bound_artifact"].pop("sha256"),
++            "missing_bound_artifact_sha256:models[0].bound_artifact",
++        ),
++        (
++            lambda payload: payload["models"][0]["bound_artifact"].update(
++                {"state_dimension": 3}
++            ),
++            "dimension_mismatch:models[0].bound_artifact.state_dimension expected=2 actual=3",
++        ),
++        (
++            lambda payload: payload["models"][0]["bound_artifact"]["information_matrices"][0][
++                "values"
++            ][0].__setitem__(0, math.inf),
++            "invalid_information_matrix:models[0].bound_artifact.information_matrices[0]",
++        ),
++        (
++            lambda payload: payload["models"][1]["bound_artifact"]["bound_covariances"][1][
++                "values"
++            ][1].__setitem__(1, -0.01),
++            "invalid_bound_covariance:models[1].bound_artifact.bound_covariances[1]",
++        ),
++    ],
++)
++def test_missing_or_invalid_model_evidence_blocks_preflight(
++    mutate: Callable[[dict[str, Any]], object],
++    expected_gap: str,
++) -> None:
++    payload = _payload()
++    mutate(payload)
++
++    report = build_phase14_model_uncertainty_preflight(payload)
++
++    assert report["decision"]["preflight_status"] == "blocked"
++    assert expected_gap in report["blocking_gaps"]
++    assert report["decision"]["bound_computation_allowed"] is False
++    assert report["scientific_verdict"] == NO_GO_CLAIM
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_duplicate_model_ids_and_unsupported_claim_flags_fail_closed() -> None:
++    payload = _payload()
++    payload["models"][1]["model_id"] = "model-a"
++    payload["claims"]["sota"] = True
++
++    report = build_phase14_model_uncertainty_preflight(payload)
++
++    assert report["decision"]["preflight_status"] == "blocked"
++    assert "duplicate_model_id:model-a" in report["blocking_gaps"]
++    assert "unsupported_claim:sota" in report["blocking_gaps"]
++    assert report["scientific_verdict"] == NO_GO_CLAIM
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_builder_rejects_non_mapping_payload_and_invalid_options() -> None:
++    with pytest.raises(Phase14ModelUncertaintyError, match="payload must be a mapping"):
++        build_phase14_model_uncertainty_preflight(["not", "a", "mapping"])  # type: ignore[arg-type]
++
++    with pytest.raises(Phase14ModelUncertaintyError, match="generated_at"):
++        build_phase14_model_uncertainty_preflight(_payload(), generated_at=" ")
++
++    with pytest.raises(Phase14ModelUncertaintyError, match="weight_sum_atol"):
++        build_phase14_model_uncertainty_preflight(copy.deepcopy(_payload()), weight_sum_atol=-1.0)
+
+tokens used
+179,688
+Implemented and pushed the Phase 14 model-uncertainty/oracle-mixture preflight.
+
+Changed:
+- [phase14_model_uncertainty.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-04-stats-model-uncertainty-20260509T145752Z/src/bsebench_stats/phase14_model_uncertainty.py)
+- [test_phase14_model_uncertainty.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-04-stats-model-uncertainty-20260509T145752Z/tests/test_phase14_model_uncertainty.py)
+
+Commit pushed:
+`16cd2b3 GLASSBOX [role: phase14-stats-model-uncertainty] add oracle-mixture preflight`
+
+Validation:
+- Focused pytest: `23 passed`
+- Full pytest after rebasing onto current `origin/main`: `411 passed`
+- `ruff check`: passed
+- `git diff --check`: passed
+
+No validation skipped. Branch is pushed and tracking `origin/glassbox-phase14-04-stats-model-uncertainty-20260509T145752Z`.
