@@ -1,13 +1,15 @@
 {
   "base_branch": "main",
   "depends_on": [],
+  "direct_log": "/home/oakir/.local/state/bsebench-phase15-direct/phase-15-01-specs-adaptive-filter-schema-20260509T163452Z.log",
+  "direct_worktree": "/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase15-01-specs-adaptive-filter-schema-20260509T163452Z",
   "exit_code": null,
   "phase_id": "phase-15-01-specs-adaptive-filter-schema-20260509T163452Z",
-  "status": "queued",
+  "status": "running_direct",
   "target_branch": "glassbox-phase15-01-specs-adaptive-filter-schema-20260509T163452Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-specs",
   "ts_done": null,
   "ts_queued": "2026-05-09T16:34:52.142079Z",
-  "ts_started": null,
-  "worker_id": null
+  "ts_started": "2026-05-09T16:39:05.991627Z",
+  "worker_id": "direct:3080798"
 }
