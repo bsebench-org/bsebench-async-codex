@@ -18,6 +18,7 @@ Usage:
 Checks changed paths and, when a git diff is available, added text for:
   - protected thesis, claim registry, claims/registry.yaml, roadmap, claim_55 edits
   - unsupported SOTA, novelty, leaderboard, breakthrough, or verified-claim wording
+  - unsupported Phase 9/10/11 closure or performance wording
   - comparison wording backed by a complete source ledger and comparability table
 
 Default git mode compares origin/main...HEAD in the current repository.
@@ -243,6 +244,67 @@ has_comparison_language() {
   return 1
 }
 
+assertion_text() {
+  awk '
+    BEGIN { IGNORECASE = 1 }
+    !/(do not|must not|no[[:space:]]+|forbid|forbidden|unsupported|unless|without|fail closed|not declare|not ready|not claim-ready|guardrail|guard|fixture|string:)/
+  '
+}
+
+has_phase9_11_context() {
+  local path="$1"
+  local text="$2"
+  local lower
+  lower=$(printf '%s\n%s' "$path" "$text" | lower_text)
+
+  [[ "$lower" =~ phase[[:space:]_.-]*(9|10|11)([^0-9]|$) ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])p(9|10|11)([^0-9]|$) ]] && return 0
+  return 1
+}
+
+has_phase9_11_closure_or_performance_claim() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | assertion_text | lower_text)
+
+  [[ -n "$lower" ]] || return 1
+
+  [[ "$lower" =~ phase[[:space:]_.-]*(9|10|11).{0,120}(complete|completed|closed|closure|done|finished|validated|verified|claim-ready|claim[[:space:]_-]*ready|benchmark-ready|benchmark[[:space:]_-]*ready|ready[[:space:]]+for[[:space:]]+public) ]] && return 0
+  [[ "$lower" =~ (complete|completed|closed|closure|done|finished|validated|verified|claim-ready|claim[[:space:]_-]*ready|benchmark-ready|benchmark[[:space:]_-]*ready|ready[[:space:]]+for[[:space:]]+public).{0,120}phase[[:space:]_.-]*(9|10|11) ]] && return 0
+  [[ "$lower" =~ (performance|mae|rmse|mape|accuracy|error|score|metric).{0,120}(improv|reduc|lower|better|best|beat|beats|outperform|winner|wins) ]] && return 0
+  [[ "$lower" =~ (improv|reduc|lower|better|best|beat|beats|outperform|winner|wins).{0,120}(performance|mae|rmse|mape|accuracy|error|score|metric|baseline) ]] && return 0
+  return 1
+}
+
+has_phase9_11_forbidden_public_claim() {
+  local text="$1"
+  local lower
+  lower=$(printf '%s' "$text" | assertion_text | lower_text)
+
+  [[ -n "$lower" ]] || return 1
+
+  [[ "$lower" =~ (^|[^a-z0-9])sota([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ state-of-the-art ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])novel(ty)?([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ leaderboard ]] && return 0
+  [[ "$lower" =~ (^|[^a-z0-9])winner([^a-z0-9]|$) ]] && return 0
+  [[ "$lower" =~ public[[:space:]_-]*benchmark ]] && return 0
+  [[ "$lower" =~ benchmark[[:space:]_-]*(ready|quality|release|leaderboard) ]] && return 0
+  return 1
+}
+
+phase9_11_evidence_complete() {
+  local text="$1"
+
+  has_field "$text" '(cache|local[[:space:]_-]*cache|cache[[:space:]_-]*root|cache[[:space:]_-]*availability)' || return 1
+  has_field "$text" '(provenance|manifest|source[[:space:]_-]*identity)' || return 1
+  has_field "$text" 'tier[[:space:]_-]*2' || return 1
+  has_field "$text" '(source[[:space:]_-]*ledger|comparability[[:space:]_-]*table)' || return 1
+  has_field "$text" '(empirical[[:space:]_-]*run|run[[:space:]_-]*(id|log|artifact)|artifact[[:space:]_-]*(sha|hash)|replay)' || return 1
+  ledger_text_is_complete "$text" || return 1
+  return 0
+}
+
 is_source_ledger_path() {
   local path="$1"
   local lower
@@ -340,6 +402,24 @@ for path in "${changed_paths[@]}" ; do
     emit_result "BLOCKED" "$path" "added direct claim_55 targeting"
     blocked=$((blocked + 1))
     continue
+  fi
+
+  if [[ -n "$added_text" ]] && has_phase9_11_context "$path" "$added_text" ; then
+    if has_phase9_11_forbidden_public_claim "$added_text" ; then
+      emit_result "BLOCKED" "$path" "Phase 9/10/11 public benchmark, SOTA, novelty, winner, or leaderboard claim is forbidden"
+      blocked=$((blocked + 1))
+      continue
+    fi
+    if has_phase9_11_closure_or_performance_claim "$added_text" ; then
+      if phase9_11_evidence_complete "$added_all" ; then
+        emit_result "ALLOWED" "$path" "Phase 9/10/11 claim language with cache/provenance/Tier2/source-ledger/empirical-run evidence"
+        allowed=$((allowed + 1))
+      else
+        emit_result "BLOCKED" "$path" "unsupported Phase 9/10/11 closure or performance claim lacks cache/provenance/Tier2/source-ledger/empirical-run evidence"
+        blocked=$((blocked + 1))
+      fi
+      continue
+    fi
   fi
 
   if [[ -n "$added_text" ]] && has_comparison_language "$added_text" ; then
