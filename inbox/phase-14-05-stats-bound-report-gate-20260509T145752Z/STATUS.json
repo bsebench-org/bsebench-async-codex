@@ -1,17 +1,19 @@
 {
   "base_branch": "main",
+  "branch_sha": "16cd2b370937da243cc3e4d38b39e999dbf90040",
   "depends_on": [
     "stats-linear-pcrlb",
     "stats-model-uncertainty"
   ],
   "direct_log": "/home/oakir/.local/state/bsebench-phase14-direct/phase-14-05-stats-bound-report-gate-20260509T145752Z.log",
   "direct_worktree": "/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-05-stats-bound-report-gate-20260509T145752Z",
-  "exit_code": null,
+  "exit_code": 0,
   "phase_id": "phase-14-05-stats-bound-report-gate-20260509T145752Z",
-  "status": "running_direct",
+  "push_result": "ok",
+  "status": "done",
   "target_branch": "glassbox-phase14-05-stats-bound-report-gate-20260509T145752Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-stats",
-  "ts_done": null,
+  "ts_done": "2026-05-09T15:46:49.539440Z",
   "ts_queued": "2026-05-09T14:57:52.652525Z",
   "ts_started": null,
   "worker_id": "direct:3074578"

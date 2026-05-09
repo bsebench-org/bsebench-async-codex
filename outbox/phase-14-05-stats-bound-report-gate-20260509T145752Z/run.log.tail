@@ -1,0 +1,160 @@
++    assert _gate(report, "authorization_gate")["horizon_steps"] == 1
++    assert report["blocking_gaps"] == []
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_gated_claim_flags_require_audited_verdict_artifact() -> None:
++    payload = _payload()
++    payload["claims"]["sota"] = True
++
++    report = build_phase14_bound_report_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert _gate(report, "claim_flag_gate")["matched_categories"] == ["sota"]
++    assert "missing_audited_verdict_artifact" in _gap_ids(report)
++    assert "unauthorized_claim_flag" in _gap_ids(report)
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "expected_gap"),
++    [
++        (
++            lambda payload: payload["audited_verdict_artifact"].pop("phase14_evidence"),
++            "missing_phase14_evidence",
++        ),
++        (
++            lambda payload: payload["audited_verdict_artifact"]["metrics"].update(
++                {"mechanical_evidence_count": math.inf}
++            ),
++            "non_finite_verdict_metric",
++        ),
++        (
++            lambda payload: payload["audited_verdict_artifact"]["phase14_evidence"][
++                "linear_pcrlb_report"
++            ]["dimensions"].update({"state_dim": 3}),
++            "dimension_mismatch",
++        ),
++        (
++            lambda payload: payload["audited_verdict_artifact"]["phase14_evidence"][
++                "linear_pcrlb_report"
++            ]["covariance_lower_bound_sequence"][1][1].__setitem__(1, -0.1),
++            "invalid_covariance_matrix",
++        ),
++    ],
++)
++def test_invalid_audited_verdict_evidence_fails_closed(
++    mutate: Callable[[dict[str, Any]], object],
++    expected_gap: str,
++) -> None:
++    payload = _payload_with_claim("The report uses empirical bound wording.")
++    mutate(payload)
++
++    report = build_phase14_bound_report_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert _gate(report, "authorization_gate")["status"] == "blocked"
++    assert expected_gap in _gap_ids(report)
++    assert "unauthorized_claim_wording" in _gap_ids(report)
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_verdict_artifact_must_authorize_matched_claim_category() -> None:
++    payload = _payload_with_claim("The report uses a tight bound phrase.")
++    payload["audited_verdict_artifact"]["authorized_claim_categories"] = ["leaderboard"]
++
++    report = build_phase14_bound_report_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert "unauthorized_claim_category" in _gap_ids(report)
++    assert "unauthorized_claim_wording" in _gap_ids(report)
++
++
++@pytest.mark.fast
++def test_payload_is_not_mutated() -> None:
++    payload = _payload_with_claim("The audited report uses leaderboard wording.")
++    before = copy.deepcopy(payload)
++
++    build_phase14_bound_report_gate(payload)
++
++    assert payload == before
++
++
++@pytest.mark.fast
++def test_file_runner_writes_finite_json_report(tmp_path: Path) -> None:
++    input_path = tmp_path / "phase14_bound_gate_input.json"
++    output_path = tmp_path / "phase14_bound_gate_report.json"
++    input_path.write_text(json.dumps(_payload(), allow_nan=False), encoding="utf-8")
++
++    report = run_phase14_bound_report_gate(input_path, output_path)
++
++    assert output_path.exists()
++    loaded = json.loads(output_path.read_text(encoding="utf-8"))
++    assert loaded == report
++    assert loaded["source"] == {"input_path": str(input_path)}
++
++
++@pytest.mark.fast
++def test_unprocessable_top_level_payload_fails_loud() -> None:
++    with pytest.raises(Phase14BoundReportGateError, match="gate_payload must be an object"):
++        build_phase14_bound_report_gate(["not", "an", "object"])
+
+ succeeded in 12630ms:
+.................                                                        [100%]
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                                              Stmts   Miss Branch BrPart  Cover   Missing
+-------------------------------------------------------------------------------------------------------------
+src/bsebench_stats/__init__.py                                        9      0      0      0   100%
+src/bsebench_stats/aging_invariance_contract.py                     230    230    106      0     0%   3-428
+src/bsebench_stats/compute_cost.py                                  100    100     48      0     0%   3-191
+src/bsebench_stats/convergence.py                                    79     79     34      0     0%   3-131
+src/bsebench_stats/ensemble_contract.py                             180    180     68      0     0%   3-340
+src/bsebench_stats/friedman.py                                       61     53     28      0     9%   75-84, 116-127, 156-170, 203-238
+src/bsebench_stats/friedman_nemenyi.py                               63     55     22      0     9%   23-32, 56-79, 109-139
+src/bsebench_stats/multi_axis_ranking.py                            178    178     70      0     0%   3-330
+src/bsebench_stats/panel.py                                         168    168     86      0     0%   7-338
+src/bsebench_stats/phase13_bootstrap_uncertainty.py                 305    261    156      0    10%   40-55, 67-95, 113-175, 187, 199-213, 221-235, 239-247, 260-275, 279-283, 287-289, 293-297, 301-305, 309-319, 323-325, 329-335, 339-344, 348-350, 354-356, 360-365, 369-374, 378-385, 389-395, 399-402, 412-429, 433-455, 459-460, 464-473, 477-480, 484-504, 508-528
+src/bsebench_stats/phase13_comparison_gate.py                       156    156     62      0     0%   8-319
+src/bsebench_stats/phase13_no_claims.py                             243    243     94      0     0%   3-627
+src/bsebench_stats/phase14_bound_report_gate.py                     481    127    198     64    71%   196->194, 286->290, 312, 332-333, 341-342, 344-345, 351-352, 411-412, 423-425, 430, 432-433, 443, 445-446, 457-465, 468-476, 483-485, 565, 573, 581, 659-660, 663-664, 675-676, 681-682, 685, 729-730, 737-744, 747-754, 765-766, 768-769, 775-776, 778-785, 788-796, 821-822, 869-870, 875-876, 885-886, 895-896, 906-915, 930, 932, 943-944, 992-993, 998-999, 1007-1008, 1018-1019, 1029-1030, 1047-1048, 1058-1069, 1072-1073, 1081-1082, 1103, 1105, 1111-1112, 1124-1125, 1177-1185, 1192-1193, 1206, 1208-1216, 1279-1288, 1401-1404, 1406, 1412, 1421->1420, 1436, 1445, 1448
+src/bsebench_stats/phase14_linear_pcrlb.py                          183    154     68      0    12%   57-73, 112-299, 303-308, 312-324, 333-355, 359-364, 368-374, 381-395, 399-414, 418-420, 431-436, 440-448, 452, 456-461, 465, 469-483, 491-503
+src/bsebench_stats/phase14_matrix_checks.py                         285    103    112     30    59%   47-53, 65-81, 94, 116, 140-188, 218-219, 254-262, 297, 324, 344, 360->366, 371, 374-375, 377, 379, 381, 386-398, 403, 435, 461->463, 479->481, 497->499, 510-518, 539-556, 564, 570, 573, 580, 587, 593, 596-597, 599, 610, 620, 622-626, 628, 630, 645, 654, 657
+src/bsebench_stats/phase14_model_uncertainty.py                     378    326    152      0    10%   86-200, 204-213, 232-358, 362-374, 378-387, 397-471, 475, 498-564, 573-589, 593-597, 601-605, 614-681, 695-706, 717-769, 786-823, 846-847, 856-863, 867-875, 879-884, 888-898, 902-905, 909-912, 916, 920, 924-926, 930, 934-940
+src/bsebench_stats/profile_comparability.py                         141    141     56      0     0%   8-289
+src/bsebench_stats/rank_stability.py                                140    140     60      0     0%   3-261
+src/bsebench_stats/report_card.py                                    61     49     30      0    13%   15-17, 21-41, 45-52, 56-74, 93-107
+src/bsebench_stats/report_tables.py                                 184    184     90      0     0%   3-355
+src/bsebench_stats/residual_cov.py                                  150    130     46      0    10%   14-27, 31-41, 45-48, 52, 56-61, 65-70, 74-76, 83-95, 113-123, 139-146, 156-164, 174-187, 191-193, 197-205, 219-277
+src/bsebench_stats/residual_decomp_contract.py                      258    258    126      0     0%   3-479
+src/bsebench_stats/robustness.py                                    211    211     82      0     0%   3-503
+src/bsebench_stats/runners/__init__.py                               29      0      0      0   100%
+src/bsebench_stats/runners/aging_soh_stratified_preflight.py        390    325    146      0    12%   57, 67-72, 76-83, 87-89, 101-111, 122-133, 144-155, 167-170, 186-223, 233-316, 324-394, 420-438, 445-474, 481-495, 499, 503-510, 517-523, 527-529, 536, 545-559, 586-687, 695-755, 759-771, 785, 814-890, 894-903, 911-918, 922-942
+src/bsebench_stats/runners/friedman.py                               61     49     22      0    14%   15-24, 28-38, 42-45, 49-57, 65-71, 85-97
+src/bsebench_stats/runners/hinf_claim63_falsification_matrix.py     387    333    128      0    10%   46-62, 68-88, 94-110, 114-118, 122-124, 128, 132-134, 138-143, 147-149, 153-155, 159, 163-177, 185-218, 222-229, 236, 240-243, 252-254, 267-387, 391-393, 414-454, 474-484, 488-512, 526-539, 547-555, 578-590, 594-598, 636-656, 685-691, 715-742, 816-965, 969, 999-1019, 1057-1285, 1309-1358
+src/bsebench_stats/runners/hinf_null_control.py                     273    230    112      0    11%   27-43, 47-67, 71-81, 85-87, 91-93, 97-99, 103-108, 112-114, 118-123, 127-131, 135-148, 152-155, 159-162, 166-169, 173-176, 185-210, 214-219, 226-234, 242-265, 274-292, 305-317, 336-338, 350-362, 377-399, 442, 466-593, 607-622
+src/bsebench_stats/runners/hinf_sensitivity.py                      603    538    240      0     8%   34-50, 54-64, 68-70, 74-76, 80-85, 89-91, 95-100, 104-107, 111, 115-125, 134-155, 159-169, 178-183, 199-252, 275-310, 329-331, 338-348, 366-378, 382-388, 392-395, 405-449, 479, 483, 491-614, 637-644, 660-667, 678-702, 722-730, 734-743, 747-752, 761-806, 824-834, 861-869, 896-915, 926, 942-945, 973-983, 998-1153, 1208-1331, 1350-1358, 1376-1613, 1630-1929, 1947-1968
+src/bsebench_stats/runners/hinf_threshold_calibration.py            242    203     94      0    12%   50-70, 74-90, 94-104, 108-110, 114-116, 120-125, 129-131, 135-137, 141-145, 149-162, 166-175, 182-201, 212, 242-243, 255-266, 296-300, 335-350, 354-360, 394-399, 426-446, 467-471, 479-494, 535-705, 713-721, 742-791
+src/bsebench_stats/runners/hinf_uncertainty_report.py               246    209     88      0    11%   35-55, 59-75, 79-89, 93-95, 99-101, 105-110, 114-116, 120-122, 126-134, 138-142, 146-159, 163-171, 175-184, 188-202, 224, 238-258, 268-327, 349-369, 388-408, 448-464, 500-524, 547-554, 568-622, 650-743, 762-806
+src/bsebench_stats/runners/pcrlb_mad_floor_preflight.py             138    114     60      0    12%   22-24, 28-31, 35-37, 41-53, 57-69, 79-93, 99-132, 136-148, 156-176, 180, 212-255, 259-268, 276-283
+src/bsebench_stats/runners/phase9_11_no_claims_linter.py            201    161     78      0    14%   100, 108-110, 120-125, 129-144, 148-171, 175-188, 192, 202-253, 260-263, 267-280, 296-349, 356-387, 391-411, 421-488, 492-501, 509-516
+src/bsebench_stats/runners/profile_axis_variance.py                 584    506    316      0     9%   141-231, 243-257, 261-282, 286-296, 318-406, 410-452, 468-548, 557-569, 583-591, 611-650, 668-707, 721-732, 740-769, 788, 795-797, 801-804, 808-813, 817-826, 830-839, 843-855, 859-869, 873-879, 883-934, 941-998, 1013-1026, 1036-1048, 1056-1060, 1067-1074, 1078-1079, 1088-1107, 1111-1112, 1116-1132, 1136-1140, 1144-1152, 1156-1168, 1172-1179, 1183-1190, 1194-1202, 1206-1212, 1216-1220, 1224, 1232-1237, 1241-1243, 1247-1253, 1257-1265, 1269-1289
+src/bsebench_stats/runners/residual_cov.py                          167    141     56      0    12%   26-29, 36-38, 42-45, 49-59, 63-69, 73, 85-91, 95-105, 117-138, 150-161, 171-256, 264-266, 286-345, 356-370
+src/bsebench_stats/runners/residual_decomp.py                       209    177     64      0    12%   31-34, 47-59, 65, 83-86, 90-96, 106-122, 134-200, 208-210, 220-232, 242, 255-257, 261-266, 279-302, 323, 336-377, 381, 405-521, 546-639, 652-667
+src/bsebench_stats/runners/residual_decomposition_contract.py       270    216     94      0    15%   44-45, 49, 53-55, 59-62, 66-68, 72-76, 80-86, 90-98, 102-116, 120-132, 136-140, 153-168, 172-176, 190-215, 219-233, 242-268, 272-274, 285-316, 331-342, 346-352, 366-391, 404-422, 426, 458-543, 547-556, 564-571
+src/bsebench_stats/runners/residual_diagnostics_readiness.py        269    221     96      0    13%   52-54, 58, 72-77, 87-92, 103-116, 126-136, 146-159, 163-178, 182-198, 202-218, 222-241, 249-271, 283-311, 315-345, 356-399, 411-475, 485-528, 535-536, 540-552, 565, 587-607, 618-682, 686-695, 703-710
+src/bsebench_stats/runners/transfer_readiness_preflight.py          229    195     82      0    11%   51-54, 58-60, 72-84, 96-106, 110-125, 129-150, 161-185, 195-281, 291-338, 348-441, 451-520, 528-610, 653-668, 672-679, 685-725, 729-738, 747-754
+src/bsebench_stats/transfer_matrix.py                               156    156     50      0     0%   8-338
+src/bsebench_stats/universal_metrics.py                             226    202    122      0     7%   17-25, 29-50, 54-71, 75-84, 88-92, 96-98, 102-110, 130-166, 188-190, 194-205, 209-211, 215-218, 222-235, 239-263, 280-282, 292-338
+-------------------------------------------------------------------------------------------------------------
+TOTAL                                                              8924   7502   3642     94    13%
+17 passed in 9.50s
+
+codex
+I’m also running mypy on just the new module and test file. It’s not part of the requested validation, but it is cheap now that the dev environment is present and helps catch contract mistakes before committing.
+exec
+/bin/bash -lc 'uv run --extra dev mypy src/bsebench_stats/phase14_bound_report_gate.py tests/test_phase14_bound_report_gate.py' in /mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-05-stats-bound-report-gate-20260509T145752Z
