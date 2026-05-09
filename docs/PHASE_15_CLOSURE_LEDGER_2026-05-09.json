@@ -1,0 +1,56 @@
+{
+  "cleanup": {
+    "local_phase15_branches_deleted": 11,
+    "product_worktrees_removed": 11,
+    "remote_phase15_branches_deleted": 11,
+    "residual_phase15_local_branches": 0,
+    "residual_phase15_remote_branches": 0,
+    "residual_phase15_worktrees": 0
+  },
+  "closed_at": "2026-05-09 19:19 CEST",
+  "phase": 15,
+  "product_heads": {
+    "bsebench-datasets": "443d836",
+    "bsebench-filters": "cc75d9c",
+    "bsebench-runner": "04f6a48",
+    "bsebench-specs": "6f1070b",
+    "bsebench-stats": "a51b23d",
+    "bsebench-website": "0906629"
+  },
+  "scientific_status": "NO_GO_CLAIM",
+  "tasks": {
+    "done": 11,
+    "error": 0,
+    "queued": 0,
+    "running_direct": 0
+  },
+  "validation": {
+    "bsebench-datasets": {
+      "focused": "6 passed",
+      "full_not_slow": "433 passed, 29 deselected",
+      "full_slow_environment_findings": "2 HF 401 failures against bsebench-org/nasa-pcoe-saha-goebel-2007 in slow tests"
+    },
+    "bsebench-filters": {
+      "focused": "54 passed",
+      "full": "252 passed"
+    },
+    "bsebench-runner": {
+      "focused": "21 passed",
+      "full_not_slow_with_local_cross_repo_sources": "487 passed, 5 deselected",
+      "full_environment_findings": "stale installed cross-repo deps without PYTHONPATH; slow Audit-J NASA baseline depends on legacy/HF state"
+    },
+    "bsebench-specs": {
+      "focused": "13 passed",
+      "full": "223 passed, 1 skipped"
+    },
+    "bsebench-stats": {
+      "focused": "51 passed",
+      "full": "488 passed"
+    },
+    "bsebench-website": {
+      "build": "15 pages built"
+    },
+    "diff_check": "passed",
+    "phase15_worker_status": "11 done, 0 error"
+  }
+}

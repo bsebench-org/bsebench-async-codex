@@ -1570,6 +1570,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Supervisor loop: active PID `3084015`; it continues monitoring every 5 minutes and will hold new launches on any error.
 - Scientific status: `NO_GO_CLAIM`; no RMSE gain, no >20% improvement, no neural training, no real-trace estimator execution.
 
+## CODEX STATUS 2026-05-09 19:19 CEST
+
+- Phase 15: `100%` complete (`+36%` since 19:00 CEST).
+- Phase 15 workers: done `11`, error `0`, queued `0`, running `0`.
+- Product merges pushed: specs `6f1070b`, filters `cc75d9c`, stats `a51b23d`, runner `04f6a48`, datasets `443d836`, website `0906629`.
+- Focused Phase 15 tests: specs `13`, filters `54`, stats `51`, runner `21`, datasets `6`; website build `15` pages.
+- Broader local validation: specs `223 passed, 1 skipped`; filters `252 passed`; stats `488 passed`; runner local/not-slow `487 passed, 5 deselected`; datasets local/not-slow `433 passed, 29 deselected`.
+- Non-blocking findings: datasets slow HF tests hit `401 Unauthorized`; runner raw full suite needs local cross-repo `PYTHONPATH` and slow Audit-J NASA baseline is legacy/HF-state dependent.
+- Cleanup: `11` worktrees removed, `11` local branches deleted, `11` remote branches deleted.
+- Scientific status remains `NO_GO_CLAIM`; Phase 15 is adaptive-learning preflight only, not an empirical performance claim.
+- Final report: `docs/PHASE_15_FINAL_CLOSURE_REPORT_2026-05-09.md`.
+
 ## CODEX STATUS 2026-05-09 19:08 CEST
 - Phase 15 direct monitor: running `0`, done `11`, error `0`, queued `0`.
 - Scientific status: `NO_GO_CLAIM`; adaptive tooling/preflight only, no RMSE gain, no >20% improvement, no neural training.
