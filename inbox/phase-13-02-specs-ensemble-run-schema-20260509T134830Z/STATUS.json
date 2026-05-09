@@ -1,0 +1,12 @@
+{
+  "base_branch": "main",
+  "exit_code": null,
+  "phase_id": "phase-13-02-specs-ensemble-run-schema-20260509T134830Z",
+  "status": "queued",
+  "target_branch": "glassbox-phase13-02-specs-ensemble-run-schema-20260509T134830Z",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-specs",
+  "ts_done": null,
+  "ts_queued": "2026-05-09T13:48:30.652312Z",
+  "ts_started": null,
+  "worker_id": null
+}
