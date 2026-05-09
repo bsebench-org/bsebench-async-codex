@@ -1228,3 +1228,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Product heads: specs `ce3aacf`, datasets `9de818d`, stats `95ddd11`, filters `a1c9a01`, runner `72d0c61`, website `dde7d40`.
 - Validation: closure ledger JSON valid; git diff check OK; changed-file claim scan clean after wording fix.
 - Next: Phase 13 can start only by preserving the Phase 12 blockers: SOC OCV/capacity evidence, calibration freeze evidence, or explicitly scoped SOH-only pilot.
+
+## CODEX STATUS 2026-05-09 15:30 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
