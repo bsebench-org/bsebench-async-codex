@@ -825,6 +825,21 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - HF lane: `0` upload; queue only. Current status counts: `8` already manifested, `8` already in prospect catalog, `93` license review, `22` source verification, `12` scope review, `11` source missing.
 - Next: implement Phase 12 transfer-readiness preflight in stats/runner, then update mobile again with deltas.
 
+## CODEX STATUS 2026-05-09 11:06 CEST
+
+- Codex exec actifs: `0` OS-level workers; readonly status loop still active.
+- Decision qualité: pas de relance de workers no-op; production directe sur repos produit avec commits vérifiés.
+- Phase 9: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%` since previous mobile status); mechanical-only, `NO_GO_CLAIM`.
+- Phase 12: `35%` (`+15%` since 10:50).
+- Nouveaux livrables Phase 12:
+  - `bsebench-stats` `b0b0867`: transfer-readiness preflight fail-closed; `19 passed`; ruff/diff checks verts.
+  - `bsebench-runner` `b69ab71`: `transfer-matrix-plan` peut exiger un preflight prêt avant scheduling; `25 passed`; ruff/diff checks verts.
+- Chaîne actuelle: specs contract -> datasets registry queue -> stats preflight -> runner scheduling gate.
+- HF lane: toujours `0` upload; consolidation terminée, uploads restent bloqués tant que licence/source/checksums ne sont pas vérifiés.
+- Next: produire un artefact end-to-end Phase 12 démontrant contrat + preflight + runner gate, puis documenter sur site/docs vivants.
+
 ## CODEX STATUS 2026-05-09 11:00 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
