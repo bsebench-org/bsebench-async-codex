@@ -214,6 +214,21 @@ verify_and_merge() {
   diff_scope_tail=$(tail -80 "$diff_scope_log")
   rm -f "$diff_scope_log"
 
+  local anti_claim_tail=""
+  if needs_phase9_11_anti_claim_audit "$phase_id" "$target_branch" ; then
+    local anti_claim_log
+    anti_claim_log=$(mktemp)
+    if ! bash "$ASYNC_REPO/scripts/check-phase9-11-anti-claim-audit.sh" --dry-run --repo "$repo_dir" --base "origin/$base_branch" --head HEAD > "$anti_claim_log" 2>&1 ; then
+      write_verdict "$phase_id" "needs_fix" "Phase 9/10/11 anti-claim audit failed" "$(tail -80 "$anti_claim_log")" "$changed_files"
+      rm -f "$anti_claim_log"
+      cd "$repo_dir" || return
+      git checkout main --quiet
+      return
+    fi
+    anti_claim_tail=$(tail -80 "$anti_claim_log")
+    rm -f "$anti_claim_log"
+  fi
+
   # Verify commit metadata
   local author email body
   author=$(git log -1 --format=%an)
@@ -268,7 +283,7 @@ verify_and_merge() {
   fi
 
   local gate_tail
-  gate_tail="$(printf '%s\n\n%s\n' "$diff_scope_tail" "$(tail -50 "$gate_log")")"
+  gate_tail="$(printf '%s\n\n%s\n\n%s\n' "$diff_scope_tail" "$anti_claim_tail" "$(tail -50 "$gate_log")")"
   rm -f "$gate_log"
 
   if [[ "$gates_ok" -eq 0 ]] ; then
@@ -343,6 +358,21 @@ VERDICT
 
 Chef-daemon decision : $decision. Summary : $summary. Action taken per CHEF.md §6 auto-merge matrix." --quiet 2>/dev/null
   git push origin main --quiet 2>/dev/null || log "verdict push failed (will retry next tick)"
+}
+
+needs_phase9_11_anti_claim_audit() {
+  local phase_id="$1"
+  local target_branch="$2"
+  local combined
+
+  combined="$(printf '%s\n%s\n' "$phase_id" "$target_branch" | tr '[:upper:]' '[:lower:]')"
+  [[ "$combined" =~ phase9-11 ]] && return 0
+  [[ "$combined" =~ phase9_11 ]] && return 0
+  [[ "$combined" =~ phase[-_]?9 ]] && return 0
+  [[ "$combined" =~ phase[-_]?10 ]] && return 0
+  [[ "$combined" =~ phase[-_]?11 ]] && return 0
+  [[ "$combined" =~ (^|[^a-z0-9])p(9|10|11)[-_] ]] && return 0
+  return 1
 }
 
 # Classify status=error and write escalation verdict
