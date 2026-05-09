@@ -892,6 +892,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - HF lane: toujours `0` upload; queue de validation poussee dans `bsebench-datasets` `a0ee63f`.
 - Next: produire le rapport d'audit Phase 12 transversal puis preparer le premier producteur realiste de TransferReadiness depuis manifests/caches.
 
+## CODEX STATUS 2026-05-09 11:46 CEST
+
+- Codex exec actifs: `0`; mode commits directs verifies.
+- Phase 12: `72%` (`+4%` since 11:42).
+- Nouveau livrable: `bsebench-async-codex` `d1de168` ajoute `docs/PHASE_12_TRANSFER_READINESS_AUDIT_2026-05-09.md`.
+- Contenu audit: commits verifies, validations, capacites, gaps scientifiques, controles anti-hallucination, prochains work packages.
+- Claim status: `NO_GO_CLAIM`; aucun resultat empirique SOC/SOH revendique.
+- Next: specs-cross-validation du demo inventory, puis producteur realiste depuis manifests/caches.
+
 ## CODEX STATUS 2026-05-09 11:15 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
@@ -905,6 +914,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
 
 ## CODEX STATUS 2026-05-09 11:30 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 11:45 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
 - Read-only status loop: `yes`.
