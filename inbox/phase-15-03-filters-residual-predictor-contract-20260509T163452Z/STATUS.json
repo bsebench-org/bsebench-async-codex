@@ -1,0 +1,13 @@
+{
+  "base_branch": "main",
+  "depends_on": [],
+  "exit_code": null,
+  "phase_id": "phase-15-03-filters-residual-predictor-contract-20260509T163452Z",
+  "status": "queued",
+  "target_branch": "glassbox-phase15-03-filters-residual-predictor-contract-20260509T163452Z",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-filters",
+  "ts_done": null,
+  "ts_queued": "2026-05-09T16:34:52.142079Z",
+  "ts_started": null,
+  "worker_id": null
+}

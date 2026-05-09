@@ -1427,6 +1427,13 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Report files: `docs/PHASE_14_FINAL_CLOSURE_REPORT_2026-05-09.md` and `docs/PHASE_14_CLOSURE_LEDGER_2026-05-09.json`.
 - Scientific status: `NO_GO_CLAIM`; Phase 14 is tooling/theory preflight only, with no theorem, tight-bound, SOTA, empirical validation, upload, estimator execution, or SOC/SOH performance claim.
 
+## CODEX STATUS 2026-05-09 18:05 CEST
+
+- Phase 14 pre-Phase-15 check: report/ledger present, product repos clean, branches/worktrees cleaned, final monitor `done=11 error=0 running=0`.
+- Phase 15 opened in planning/queue mode: adaptive filter learning, EMA bias-correction first, residual-predictor contracts only, no neural training.
+- Phase 15 scientific status: `NO_GO_CLAIM`; no RMSE gain claim, no >20% improvement claim, no SOTA, no leaderboard, no estimator execution, no dataset download/upload.
+- Next action: queue Phase 15 inbox tasks, then launch only ready disjoint scopes after status sanity check.
+
 ## CODEX STATUS 2026-05-09 17:30 CEST
 
 - Codex exec actifs: `2` workdirs, `6` PIDs.

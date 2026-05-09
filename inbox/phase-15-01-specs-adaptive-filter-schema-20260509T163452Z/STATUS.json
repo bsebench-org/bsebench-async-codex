@@ -1,0 +1,13 @@
+{
+  "base_branch": "main",
+  "depends_on": [],
+  "exit_code": null,
+  "phase_id": "phase-15-01-specs-adaptive-filter-schema-20260509T163452Z",
+  "status": "queued",
+  "target_branch": "glassbox-phase15-01-specs-adaptive-filter-schema-20260509T163452Z",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-specs",
+  "ts_done": null,
+  "ts_queued": "2026-05-09T16:34:52.142079Z",
+  "ts_started": null,
+  "worker_id": null
+}

@@ -1,0 +1,15 @@
+{
+  "base_branch": "main",
+  "depends_on": [
+    "runner-adaptive-plan"
+  ],
+  "exit_code": null,
+  "phase_id": "phase-15-08-runner-adaptive-dryrun-cli-20260509T163452Z",
+  "status": "queued",
+  "target_branch": "glassbox-phase15-08-runner-adaptive-dryrun-cli-20260509T163452Z",
+  "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-runner",
+  "ts_done": null,
+  "ts_queued": "2026-05-09T16:34:52.142079Z",
+  "ts_started": null,
+  "worker_id": null
+}
