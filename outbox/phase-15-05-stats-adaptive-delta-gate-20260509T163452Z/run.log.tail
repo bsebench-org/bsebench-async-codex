@@ -1,0 +1,160 @@
++    report = build_phase15_adaptive_delta_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert expected_gap in _gap_ids(report)
++    assert report["release_gate"]["pass"] is False
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_non_finite_paired_metric_values_fail_closed() -> None:
++    payload = _payload()
++    payload["adaptive_artifact"]["metric_rows"][0]["metrics"]["rmse"] = math.inf
++
++    report = build_phase15_adaptive_delta_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert "non_finite_metric" in _gap_ids(report)
++    assert report["release_gate"]["pass"] is False
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("mutate", "expected_gap"),
++    [
++        (lambda payload: payload.pop("uncertainty"), "missing_uncertainty"),
++        (
++            lambda payload: payload["uncertainty"]["rmse"].update({"standard_error": math.inf}),
++            "non_finite_uncertainty",
++        ),
++        (
++            lambda payload: payload["uncertainty"]["rmse"].update({"lower": 0.02}),
++            "invalid_uncertainty_interval",
++        ),
++        (
++            lambda payload: payload["uncertainty"]["rmse"].update({"sample_count": 1}),
++            "invalid_uncertainty_sample_count",
++        ),
++    ],
++)
++def test_uncertainty_inputs_fail_closed(mutate, expected_gap: str) -> None:
++    payload = _payload()
++    mutate(payload)
++
++    report = build_phase15_adaptive_delta_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert expected_gap in _gap_ids(report)
++    assert report["uncertainty_gate"]["status"] == "blocked"
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_split_leakage_fails_closed() -> None:
++    payload = _payload()
++    for key in ("baseline_artifact", "adaptive_artifact"):
++        payload[key]["split_ids"] = ["synthetic-train-a"]
++        for row in payload[key]["metric_rows"]:
++            row["split_id"] = "synthetic-train-a"
++            row["split_role"] = "training"
++
++    report = build_phase15_adaptive_delta_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert "split_leakage" in _gap_ids(report)
++    assert report["release_gate"]["pass"] is False
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_invalid_hash_fails_closed() -> None:
++    payload = _payload()
++    payload["adaptive_artifact"]["artifact_sha256"] = "not-a-sha256"
++
++    report = build_phase15_adaptive_delta_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert "invalid_adaptive_hash" in _gap_ids(report)
++    assert report["artifact_gate"]["status"] == "blocked"
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_unsupported_claim_flags_fail_closed() -> None:
++    payload = _payload()
++    payload["claims"]["adaptive_gain"] = True
++
++    report = build_phase15_adaptive_delta_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert report["claim_flag_gate"]["matched_categories"] == ["adaptive_gain"]
++    assert "unauthorized_claim_flag" in _gap_ids(report)
++    assert "unsupported_claim_flag" in _gap_ids(report)
++    assert report["release_gate"]["claim_authorization"] == "refused_by_default"
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_forbidden_adaptive_gain_wording_fails_closed() -> None:
++    payload = _payload()
++    payload["documents"][0]["text"] = "This note asserts an adaptive gain over the baseline."
++
++    report = build_phase15_adaptive_delta_gate(payload)
++
++    assert report["gate_status"] == "blocked"
++    assert report["wording_gate"]["status"] == "blocked"
++    assert report["wording_gate"]["matched_categories"] == ["adaptive_gain"]
++    assert "forbidden_adaptive_gain_wording" in _gap_ids(report)
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_payload_is_not_mutated() -> None:
++    payload = _payload()
++    before = copy.deepcopy(payload)
++
++    build_phase15_adaptive_delta_gate(payload)
++
++    assert payload == before
++
++
++@pytest.mark.fast
++def test_file_runner_writes_finite_json_report(tmp_path: Path) -> None:
++    input_path = tmp_path / "phase15_delta_gate_input.json"
++    output_path = tmp_path / "phase15_delta_gate_report.json"
++    input_path.write_text(json.dumps(_payload(), allow_nan=False), encoding="utf-8")
++
++    report = run_phase15_adaptive_delta_gate(input_path, output_path)
++
++    assert output_path.exists()
++    loaded = json.loads(output_path.read_text(encoding="utf-8"))
++    assert loaded == report
++    assert loaded["source"] == {"input_path": str(input_path)}
++
++
++@pytest.mark.fast
++def test_unprocessable_top_level_payload_fails_loud() -> None:
++    with pytest.raises(Phase15AdaptiveDeltaGateError, match="gate_payload must be an object"):
++        build_phase15_adaptive_delta_gate(["not", "an", "object"])
+
+tokens used
+115,681
+Implemented and pushed the Phase 15 adaptive-delta gate.
+
+Changed:
+- [phase15_adaptive_delta_gate.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase15-05-stats-adaptive-delta-gate-20260509T163452Z/src/bsebench_stats/phase15_adaptive_delta_gate.py)
+- [test_phase15_adaptive_delta_gate.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase15-05-stats-adaptive-delta-gate-20260509T163452Z/tests/test_phase15_adaptive_delta_gate.py)
+
+Validation:
+- `uv run --extra dev pytest tests/test_phase15_adaptive_delta_gate.py -q` -> 15 passed
+- `uv run --extra dev pytest -q` -> 452 passed
+- `uv run --extra dev ruff check ...` -> passed
+- `uv run --extra dev ruff format --check ...` -> passed
+- `git diff --check` -> passed
+
+Commit pushed:
+- `9076563 GLASSBOX [role: phase15-stats-adaptive-delta-gate] add adaptive delta gate`
+- Branch: `glassbox-phase15-05-stats-adaptive-delta-gate-20260509T163452Z`
+
+Skipped validation: none.

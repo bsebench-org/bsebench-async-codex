@@ -1,0 +1,160 @@
++def test_missing_required_evidence_fails_closed() -> None:
++    """Required evidence kinds cannot be omitted."""
++    payload = _payload()
++    payload["evidence"] = [
++        artifact
++        for artifact in payload["evidence"]
++        if artifact["kind"] != "learning_rate_bounds_manifest"
++    ]
++
++    with pytest.raises(ValidationError, match="learning_rate_bounds_manifest"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++
++def test_invalid_hash_fails_closed() -> None:
++    """Evidence and split digests must be lowercase SHA-256 values."""
++    payload = _payload()
++    payload["evidence"][0]["sha256"] = "ABC"
++
++    with pytest.raises(ValidationError, match="sha256"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++    payload = _payload()
++    payload["splits"][0]["sample_index_sha256"] = "not-a-sha"
++
++    with pytest.raises(ValidationError, match="sample_index_sha256"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++
++def test_non_finite_learning_rate_fails_closed() -> None:
++    """Learning-rate bounds reject NaN and infinity."""
++    payload = _payload()
++    payload["learning_rate_bounds"][0]["initial_rate"] = math.inf
++
++    with pytest.raises(ValidationError, match="finite"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++
++def test_learning_rate_bounds_must_be_ordered() -> None:
++    """The initial rate must sit inside finite declared bounds."""
++    payload = _payload()
++    payload["learning_rate_bounds"][0]["initial_rate"] = 0.5
++
++    with pytest.raises(ValidationError, match=r"initial_rate.*\[min_rate, max_rate\]"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++
++def test_split_leakage_fails_closed() -> None:
++    """Calibration and evaluation membership hashes must remain separated."""
++    payload = _payload()
++    payload["splits"][1]["sample_index_sha256"] = payload["splits"][0]["sample_index_sha256"]
++
++    with pytest.raises(ValidationError, match="split leakage"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++
++def test_update_rule_split_role_leakage_fails_closed() -> None:
++    """Update rules cannot use calibration split IDs as evaluation split IDs."""
++    payload = _payload()
++    payload["online_update_rules"][0]["evaluation_split_ids"] = ["calibration_split"]
++
++    with pytest.raises(ValidationError, match="evaluation_split_ids"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++
++def test_residual_access_fails_closed_without_evidence_or_truth_forbidden() -> None:
++    """Residual policies require evidence and forbid target/label access."""
++    payload = _payload()
++    payload["residual_access"][0]["evidence_id"] = "update_rule_manifest"
++
++    with pytest.raises(ValidationError, match="residual_access.evidence_id"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++    payload = _payload()
++    payload["residual_access"][0]["evaluation_label_access"] = "allowed"
++
++    with pytest.raises(ValidationError):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++
++def test_claim_language_and_claim_fields_are_rejected() -> None:
++    """Unsupported performance claims and adaptive-gain wording fail closed."""
++    payload = _payload()
++    payload["summary"] = "SOTA RMSE gain with >20% improvement."
++
++    with pytest.raises(ValidationError, match="summary"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++    payload = _payload()
++    payload["online_update_rules"][0]["equation_summary"] = "Adaptive gain tuning for EKF."
++
++    with pytest.raises(ValidationError, match="adaptive-gain"):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++    payload = _payload()
++    payload["no_go_claim"]["rmse_gain_claim"] = True
++
++    with pytest.raises(ValidationError):
++        Phase15AdaptiveFilter.model_validate(payload)
++
++
++def test_phase15_adaptive_filter_schema_valid_json() -> None:
++    """Checked-in phase15_adaptive_filter.schema.json parses as valid JSON."""
++    assert SCHEMA_PATH.exists()
++    schema = _load_checked_in_schema()
++
++    assert schema["title"] == "Phase15AdaptiveFilter"
++    assert schema["$id"] == "https://bsebench.org/schemas/phase15_adaptive_filter.schema.json"
++    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
++    assert "no_go_claim" in schema["required"]
++    assert "online_update_rules" in schema["required"]
++
++
++def test_generated_schema_exposes_fail_closed_required_fields() -> None:
++    """Generated schema requires fields that close common adaptive-filter evidence gaps."""
++    schema = Phase15AdaptiveFilter.model_json_schema()
++
++    required = set(schema["required"])
++    assert {
++        "contract_evidence_id",
++        "splits",
++        "split_separation",
++        "residual_access",
++        "learning_rate_bounds",
++        "online_update_rules",
++        "evidence",
++        "no_go_claim",
++    } <= required
++    assert schema["properties"]["splits"]["minItems"] == 2
++    assert schema["properties"]["online_update_rules"]["minItems"] == 1
++    assert schema["properties"]["learning_rate_bounds"]["minItems"] == 1
++
++
++def test_checked_in_schema_matches_generated_schema() -> None:
++    """Checked-in schema stays synchronized with the Pydantic contract."""
++    generated = Phase15AdaptiveFilter.model_json_schema()
++    generated["$id"] = "https://bsebench.org/schemas/phase15_adaptive_filter.schema.json"
++    generated["$schema"] = "https://json-schema.org/draft/2020-12/schema"
++
++    assert _load_checked_in_schema() == generated
+
+tokens used
+107,717
+Implemented and pushed Phase 15 adaptive-filter schema contract.
+
+Changed only:
+- [phase15_adaptive_filter.py](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase15-01-specs-adaptive-filter-schema-20260509T163452Z/src/bsebench_specs/phase15_adaptive_filter.py)
+- [phase15_adaptive_filter.schema.json](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase15-01-specs-adaptive-filter-schema-20260509T163452Z/schemas/phase15_adaptive_filter.schema.json)
+- [test_phase15_adaptive_filter.py](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase15-01-specs-adaptive-filter-schema-20260509T163452Z/tests/test_phase15_adaptive_filter.py)
+
+Validation run:
+- `uv run --extra dev pytest tests/test_phase15_adaptive_filter.py tests/test_schema_export.py` passed: 25 passed
+- `uv run --extra dev ruff check src/bsebench_specs/phase15_adaptive_filter.py tests/test_phase15_adaptive_filter.py` passed
+- `git diff --cached --check` passed
+- `uv run --extra dev pytest` passed: 223 passed, 1 skipped; the skipped test was the existing optional jsonschema validation check.
+
+Committed and pushed:
+`996a9f2 GLASSBOX [role: phase15-specs-adaptive-filter-schema] define adaptive filter preflight contract`
+
+Branch pushed to:
+`glassbox-phase15-01-specs-adaptive-filter-schema-20260509T163452Z`
