@@ -653,3 +653,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `59%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 08:34 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 11 residual diagnostics checkpoint report and cross-phase guardrails.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+41%` since previous mobile status).
+- Scientific status: `NO-GO`; residual diagnostics remain mechanical-only because sensitivity and sample-support risks are recorded.
+- Next: async acceptance gate, research diff-scope guard, commit/push Phase 11 report, then cross-phase audit.
