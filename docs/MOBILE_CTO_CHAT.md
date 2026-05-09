@@ -1682,6 +1682,18 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Validation: `git diff --check` passed; document is ASCII-only.
 - Scientific status remains `NO_GO_CLAIM`.
 
+## 2026-05-09 20:51 CEST - Org Cleanup Before Phase 16
+
+- Local clutter removed; workspace now keeps only the 7 canonical BSEBench repos.
+- Safe remote branch cleanup done: `66` merged remote branches deleted.
+- Remaining merged remote branch clutter: `0`.
+- Remaining non-merged remote branch debt: `460`; preserved intentionally
+  because these branches may contain unique commits and require archive/review
+  before deletion.
+- Report:
+  `docs/ORG_CLEANUP_PRODUCTION_READINESS_REPORT_2026-05-09.md`.
+- Phase 16 may start from clean `main` branches, with `NO_GO_CLAIM` preserved.
+
 ## CODEX STATUS 2026-05-09 20:45 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
@@ -1693,3 +1705,29 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## 2026-05-09 20:53 CEST - Cleanup Finalized Before Phase 16
+
+- Canonical local workspace confirmed: 7 repos only.
+- All 7 canonical repos are on `main...origin/main`.
+- Safe branch cleanup: `66` merged remote branches deleted.
+- Merged remote branches remaining: `0`.
+- Non-merged remote branch debt remaining: `460`, intentionally preserved until
+  archive/review because these branches are not ancestors of `origin/main`.
+- `gh` is available in WSL via `/home/oakir/.local/bin/gh`, backed by Windows
+  GitHub CLI `2.62.0`; it is not authenticated.
+- Cleanup report ready:
+  `docs/ORG_CLEANUP_PRODUCTION_READINESS_REPORT_2026-05-09.md`.
+- Next action: open Phase 16 with adversarial claim-readiness validation.
+
+## 2026-05-09 20:55 CEST - Phase 16 Opened
+
+- Phase 16 opened as adversarial claim-readiness validation.
+- Opening audit:
+  `docs/PHASE_16_OPENING_AUDIT_2026-05-09.md`.
+- Allowed: schemas, gates, source-ledger completeness, replay-manifest
+  validators, adversarial review matrix.
+- Forbidden: publication claims, SOTA, leaderboard, universal SOC/SOH claims,
+  transfer-success claims, adaptive-gain claims, PCRLB tightness/theorem claims.
+- Default classification for every near-claim remains `EVIDENCE_GAP` until
+  source ledger, replay artifacts, hashes, and claim wording gates exist.
