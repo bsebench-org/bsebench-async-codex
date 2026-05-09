@@ -359,3 +359,14 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `59%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 03:57 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs; only the read-only status loop is active.
+- Phase 9: `97%` (`+0%` since 03:49; tooling and empirical smoke checkpoint passed, scientific claims still fail-closed).
+- Phase 10: `67%` (`+1%` since 03:49).
+- Phase 11: `59%` (`+0%` since 03:49).
+- Product output pushed: `bsebench-datasets` commit `f6cdfdc` records `outputs/phase10_aging_soh_readiness_20260509_baseline.json` and `docs/PHASE_10_AGING_SOH_READINESS_BASELINE_2026-05-09.md`.
+- Evidence: 155 aging/SOH configs inspected, `0` ready, `36` missing explicit `bsebench.aging_soh_metadata`, `119` missing loader-facing Tier2 cache; no SOH/SOTA/leaderboard claim.
+- Validation: `ruff check` passed, `pytest tests/test_aging_soh_readiness.py -q` passed (`13` tests), JSON guardrail assertions passed, independent audit found no issue.
+- Next: choose the first real aging/SOH raw mirror to convert into Tier2 Parquet with explicit SOH metadata, then rerun Phase 10 readiness.
