@@ -1,0 +1,160 @@
++        dtype=float,
++    ).ravel().tolist()
++    assert observed_information == pytest.approx(
++        [3.0, float(Fraction(19, 28)), float(Fraction(71, 132))]
++    )
++    assert np.asarray(
++        report["covariance_lower_bound_sequence"],
++        dtype=float,
++    ).ravel().tolist() == pytest.approx(
++        [float(Fraction(1, 3)), float(Fraction(28, 19)), float(Fraction(132, 71))]
++    )
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_matrix_synthetic_fixture_matches_reference_information_recursion() -> None:
++    state_transition = np.array([[1.0, 0.2], [0.0, 0.8]])
++    observation_matrix = np.array([[1.0, 0.0], [0.5, 1.0]])
++    process_covariance = np.array([[2.0, 0.3], [0.3, 1.5]])
++    measurement_covariance = np.array([[1.2, 0.1], [0.1, 0.9]])
++    prior_information = np.array([[2.0, 0.2], [0.2, 1.3]])
++
++    report = compute_linear_gaussian_pcrlb(
++        state_transition,
++        observation_matrix,
++        process_covariance,
++        measurement_covariance,
++        prior_information,
++        steps=3,
++    )
++
++    process_information = np.linalg.inv(process_covariance)
++    measurement_information = np.linalg.inv(measurement_covariance)
++    expected_d11 = state_transition.T @ process_information @ state_transition
++    expected_d12 = -(state_transition.T @ process_information)
++    expected_d22 = (
++        process_information + observation_matrix.T @ measurement_information @ observation_matrix
++    )
++    expected_sequence = [prior_information]
++    current_information = prior_information
++    for _ in range(3):
++        current_information = expected_d22 - expected_d12.T @ np.linalg.inv(
++            current_information + expected_d11
++        ) @ expected_d12
++        expected_sequence.append(current_information)
++
++    np.testing.assert_allclose(report["recursion_terms"]["D11"], expected_d11)
++    np.testing.assert_allclose(report["recursion_terms"]["D12"], expected_d12)
++    np.testing.assert_allclose(report["recursion_terms"]["D22"], expected_d22)
++    np.testing.assert_allclose(report["information_sequence"], expected_sequence)
++    for information_matrix, lower_bound in zip(
++        expected_sequence,
++        report["covariance_lower_bound_sequence"],
++        strict=True,
++    ):
++        np.testing.assert_allclose(lower_bound, np.linalg.inv(information_matrix))
++    assert len(report["recursion_steps"]) == 3
++    assert report["diagnostics"]["inputs"]["Q"]["matrix_role"] == "covariance"
++    assert report["diagnostics"]["inputs"]["prior_information"]["matrix_role"] == "information"
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_fixture_builder_fails_closed_for_missing_evidence() -> None:
++    with pytest.raises(Phase14LinearPcrlbError, match=r"requires supplied") as exc_info:
++        build_linear_gaussian_pcrlb_report({"F": [[1.0]], "H": [[1.0]]})
++
++    diagnostics = exc_info.value.diagnostics
++    assert diagnostics["status"] == "fail"
++    assert diagnostics["missing_evidence"] == ["Q", "R", "prior_information"]
++    _assert_strict_json(diagnostics)
++
++
++@pytest.mark.fast
++def test_linear_pcrlb_rejects_dimension_mismatch_and_non_finite_values() -> None:
++    with pytest.raises(Phase14LinearPcrlbError, match=r"H column count"):
++        compute_linear_gaussian_pcrlb(
++            [[1.0, 0.0], [0.0, 1.0]],
++            [[1.0]],
++            [[1.0, 0.0], [0.0, 1.0]],
++            [[1.0]],
++            [[1.0, 0.0], [0.0, 1.0]],
++        )
++
++    with pytest.raises(Phase14LinearPcrlbError, match=r"finite"):
++        compute_linear_gaussian_pcrlb(
++            [[1.0]],
++            [[1.0]],
++            [[np.inf]],
++            [[1.0]],
++            [[1.0]],
++        )
++
++
++@pytest.mark.fast
++def test_linear_pcrlb_rejects_invalid_covariance_and_information_matrices() -> None:
++    with pytest.raises(Phase14MatrixCheckError, match=r"positive definite"):
++        compute_linear_gaussian_pcrlb(
++            [[1.0]],
++            [[1.0]],
++            [[0.0]],
++            [[1.0]],
++            [[1.0]],
++        )
++
++    with pytest.raises(Phase14MatrixCheckError, match=r"positive definite"):
++        compute_linear_gaussian_pcrlb(
++            [[1.0]],
++            [[1.0]],
++            [[1.0]],
++            [[1.0]],
++            [[0.0]],
++        )
++
++
++@pytest.mark.fast
++def test_linear_pcrlb_rejects_unsupported_claims_and_non_synthetic_scope() -> None:
++    with pytest.raises(Phase14LinearPcrlbError, match=r"refuses") as claim_error:
++        compute_linear_gaussian_pcrlb(
++            [[1.0]],
++            [[1.0]],
++            [[1.0]],
++            [[1.0]],
++            [[1.0]],
++            claims=["tight_bound"],
++        )
++    assert claim_error.value.diagnostics["requested_claims"] == ["tight_bound"]
++    _assert_strict_json(claim_error.value.diagnostics)
++
++    with pytest.raises(Phase14LinearPcrlbError, match=r"synthetic") as scope_error:
++        build_linear_gaussian_pcrlb_report(
++            {
++                "fixture_scope": "real_battery_evidence",
++                "F": [[1.0]],
++                "H": [[1.0]],
++                "Q": [[1.0]],
++                "R": [[1.0]],
++                "prior_information": [[1.0]],
++            }
++        )
++    assert scope_error.value.diagnostics["required_fixture_scope"] == SYNTHETIC_FIXTURE_SCOPE
++    _assert_strict_json(scope_error.value.diagnostics)
+
+tokens used
+85,617
+Implemented and pushed `a4569e0` to `origin/glassbox-phase14-03-stats-linear-pcrlb-20260509T145752Z`.
+
+Added [phase14_linear_pcrlb.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-03-stats-linear-pcrlb-20260509T145752Z/src/bsebench_stats/phase14_linear_pcrlb.py) with deterministic Tichavsky-style `D11/D12/D22` linear-Gaussian PCRLB recursion, strict synthetic-fixture gating, matrix-check reuse, JSON-safe reports, and fail-closed claim/input validation.
+
+Added [test_phase14_linear_pcrlb.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-03-stats-linear-pcrlb-20260509T145752Z/tests/test_phase14_linear_pcrlb.py) covering scalar and matrix fixtures plus missing evidence, non-finite values, dimension mismatch, invalid covariance/information matrices, unsupported claims, and non-synthetic scope.
+
+Validation passed:
+- `uv run --extra dev pytest tests/test_phase14_linear_pcrlb.py`
+- `uv run --extra dev pytest tests/test_phase14_matrix_checks.py tests/test_phase14_linear_pcrlb.py`
+- `uv run --extra dev ruff check src tests`
+- `git diff --check`
+- `git diff --cached --check`
+- `uv run --extra dev pytest` with `400 passed`
+
+No validation skipped.
