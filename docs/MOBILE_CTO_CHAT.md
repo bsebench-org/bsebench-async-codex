@@ -364,6 +364,20 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - New pushed commit: `5495444` (`GLASSBOX: record Phase 9 final audit report`).
 - Next: Phase 10 native contract-clean estimator path / diagnostic adaptation guardrails.
 
+## CODEX STATUS 2026-05-09 08:14 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 10 audit/report written; next work is Phase 11 only.
+- Phase 9: `100%` (`+0%` since previous mobile status) for operational smoke checkpoint.
+- Phase 10: `100%` (`+14%` since previous mobile status) for operational aging/SOH diagnostic checkpoint.
+- Phase 11: `59%` (`+0%` since previous mobile status).
+- Scientific status: `NO_GO_CLAIM`; Phase 10 stats preflight blocks stratified aging/SOH analysis with `insufficient_axis_groups`.
+- New product output: `bsebench-stats` commit `99d3e60` adds Phase 10 aging/SOH stats preflight artifacts.
+- New async report: `docs/PHASE_10_FINAL_AUDIT_VALIDATION_REPORT_2026-05-09.md` passed the Phase 9/10/11 acceptance gate.
+- Next: Phase 11 residual diagnostics audit/validation/report.
+
 ## CODEX STATUS 2026-05-09 03:49 CEST
 
 - Codex exec actifs: `0` workdirs, `0` PIDs.
