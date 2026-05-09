@@ -1,0 +1,160 @@
++    assert_phase14_ecm_linearization_descriptor,
++    build_phase14_ecm_linearization_descriptor,
++    ecm_linearization_blocking_gaps,
++    validate_phase14_ecm_linearization_descriptor,
++)
++
++
++def _transition_jacobian() -> list[list[float]]:
++    return [
++        [1.0, -0.01, 0.0, 0.0],
++        [0.0, 0.97, 0.01, 0.0],
++        [0.0, 0.0, 0.95, 0.02],
++        [0.0, 0.0, 0.0, 1.0],
++    ]
++
++
++def _observation_jacobian() -> list[list[float]]:
++    return [[-0.004, -1.0, -0.5, 0.02]]
++
++
++def _valid_descriptor() -> dict[str, object]:
++    return build_phase14_ecm_linearization_descriptor(
++        descriptor_id="phase14-linearization-fixture",
++        filter_name="fixture_ekf",
++        ecm_name="fixture_1rc_ecm",
++        state_dim=4,
++        observation_dim=1,
++        state_transition_jacobian=_transition_jacobian(),
++        observation_jacobian=_observation_jacobian(),
++    )
++
++
++def test_ecm_linearization_descriptor_accepts_finite_supplied_jacobians() -> None:
++    descriptor = _valid_descriptor()
++    normalized = validate_phase14_ecm_linearization_descriptor(descriptor)
++
++    assert normalized["schema_version"] == PHASE14_ECM_LINEARIZATION_SCHEMA_VERSION
++    assert normalized["contract"] == PHASE14_ECM_LINEARIZATION_CONTRACT
++    assert normalized["claim_status"] == NO_GO_CLAIM
++    assert normalized["dimensions"] == {"state_dim": 4, "observation_dim": 1}
++    assert normalized["state_transition_jacobian"] == _transition_jacobian()
++    assert normalized["observation_jacobian"] == _observation_jacobian()
++    assert normalized["validation_policy"] == {
++        "dimension_checks_only": True,
++        "finite_value_checks_only": True,
++        "alters_filter_math": False,
++    }
++    assert normalized["execution_policy"]["estimator_execution_allowed"] is False
++    assert normalized["execution_policy"]["soc_derivation_allowed"] is False
++    assert normalized["execution_policy"]["soh_derivation_allowed"] is False
++    assert normalized["execution_policy"]["transfer_execution_allowed"] is False
++    assert normalized["execution_policy"]["empirical_advantage_claim_allowed"] is False
++    assert normalized["readiness"] == {"status": "descriptor_ready", "blocking_gaps": []}
++    assert_phase14_ecm_linearization_descriptor(descriptor)
++    json.dumps(normalized, allow_nan=False)
++
++
++@pytest.mark.parametrize(
++    ("mutation", "message"),
++    [
++        (
++            lambda payload: payload["dimensions"].update({"state_dim": 0}),
++            r"dimensions\.state_dim must be a positive integer",
++        ),
++        (
++            lambda payload: payload.update(
++                {"state_transition_jacobian": payload["state_transition_jacobian"][:3]}
++            ),
++            r"state_transition_jacobian shape must be \(4, 4\); got \(3, 4\)",
++        ),
++        (
++            lambda payload: payload["state_transition_jacobian"][0].pop(),
++            r"state_transition_jacobian must be a numeric 2-D matrix",
++        ),
++        (
++            lambda payload: payload.update({"observation_jacobian": [[1.0, 0.0, 0.0]]}),
++            r"observation_jacobian shape must be \(1, 4\); got \(1, 3\)",
++        ),
++        (
++            lambda payload: payload.update(
++                {"observation_jacobian": [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]]}
++            ),
++            r"observation_jacobian shape must be \(1, 4\); got \(2, 4\)",
++        ),
++        (
++            lambda payload: payload["state_transition_jacobian"][1].__setitem__(2, float("nan")),
++            "state_transition_jacobian values must be finite",
++        ),
++        (
++            lambda payload: payload["observation_jacobian"][0].__setitem__(0, float("inf")),
++            "observation_jacobian values must be finite",
++        ),
++    ],
++)
++def test_ecm_linearization_validation_fails_closed_for_dimensions_and_finiteness(
++    mutation,
++    message: str,
++) -> None:
++    descriptor = _valid_descriptor()
++    mutation(descriptor)
++
++    with pytest.raises(ECMLinearizationValidationError, match=message):
++        validate_phase14_ecm_linearization_descriptor(descriptor)
++    assert ecm_linearization_blocking_gaps(descriptor)
++
++
++@pytest.mark.parametrize(
++    ("mutation", "message"),
++    [
++        (
++            lambda payload: payload.update({"claim_status": "TIGHT_BENCHMARK_BOUND"}),
++            "claim_status must remain NO_GO_CLAIM",
++        ),
++        (
++            lambda payload: payload["execution_policy"].update(
++                {"estimator_execution_allowed": True}
++            ),
++            r"execution_policy\.estimator_execution_allowed must remain false",
++        ),
++        (
++            lambda payload: payload["execution_policy"].update(
++                {"empirical_advantage_claim_allowed": True}
++            ),
++            r"execution_policy\.empirical_advantage_claim_allowed must remain false",
++        ),
++        (
++            lambda payload: payload["validation_policy"].update({"alters_filter_math": True}),
++            r"validation_policy\.alters_filter_math must be false",
++        ),
++    ],
++)
++def test_ecm_linearization_descriptor_blocks_execution_and_claims(
++    mutation,
++    message: str,
++) -> None:
++    descriptor = deepcopy(_valid_descriptor())
++    mutation(descriptor)
++
++    with pytest.raises(ECMLinearizationValidationError, match=message):
++        validate_phase14_ecm_linearization_descriptor(descriptor)
+
+tokens used
+90,933
+Implemented and pushed the Phase 14 ECM/filter linearization descriptor contract.
+
+Changed:
+- [phase14_ecm_linearization.py](/mnt/c/doctorat/bsebench-org/bsebench-filters-glassbox-phase14-09-filters-ecm-linearization-20260509T145752Z/src/bsebench_filters/phase14_ecm_linearization.py)
+- [test_phase14_ecm_linearization.py](/mnt/c/doctorat/bsebench-org/bsebench-filters-glassbox-phase14-09-filters-ecm-linearization-20260509T145752Z/tests/test_phase14_ecm_linearization.py)
+
+Commit pushed:
+`4c1d1d4 GLASSBOX [role: phase14-filters-ecm-linearization] add ECM linearization descriptor`
+
+Validation:
+- `pytest tests/test_phase14_ecm_linearization.py`: 12 passed
+- full `pytest`: 198 passed
+- `ruff check` on touched files: passed
+- `mypy` on new module: passed
+- `git diff --check HEAD~1 HEAD`: passed
+
+No validation skipped.
