@@ -1051,3 +1051,14 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 12:48 CEST
+
+- Codex exec actifs: `0`; direct verified commit mode.
+- Phase 12 transfer-readiness/SOC-evidence chain: `95%` (`+2%` since 12:38).
+- New pushed deliverable: `bsebench-datasets` commit `2f9d7c6` (`GLASSBOX add Phase 12 SOC truth evidence gate`).
+- What changed: fail-closed gate for admissible SOC truth evidence; it requires finite time/current, positive capacity, and valid `bsebench.ground_truth_evidence` metadata for coulomb counting + OCV recalibration.
+- Gate numbers: `240` Parquet files scanned, `0` admissible SOC truth evidence traces, `240` blocked; time/current present in `240`, positive capacity in `168`, valid OCV evidence metadata in `0`.
+- Decision: `blocked_no_admissible_soc_truth_evidence`; no SOC label derivation and no estimator execution.
+- Validation: script ran on local caches; targeted pytest `23 passed`; ruff format/check OK; git diff check OK; no-claim phrase scan OK.
+- Next: collect/prove OCV/capacity anchors for SOC or keep any pilot explicitly SOH-only; parameter-freeze manifest remains required before execution.
