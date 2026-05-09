@@ -1252,3 +1252,9 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 15:54 CEST
+- Global audit 1-12 done; Phase 13 opened as mechanical ensemble-method infrastructure only, `NO_GO_CLAIM` preserved.
+- Branch cleanup: BSEBench product repos clean on `main`; no merged local branches to delete; `bsebench-async-codex-worker-2` fast-forwarded.
+- Phase 13: 17 direct isolated `codex exec` launched in product worktrees after async shared-lock issue was diagnosed; statuses marked `running_direct` to prevent duplicate async pickup.
+- Phase 12 blockers preserved: no SOC derivation, no estimator execution, no transfer execution, no parameter use unless gates authorize it.
