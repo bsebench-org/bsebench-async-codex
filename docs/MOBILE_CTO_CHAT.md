@@ -407,3 +407,15 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Validation: `ruff check` passed, `pytest tests/test_phase10_aging_soh_plan_from_readiness.py tests/test_aging_soh_predispatch.py -q` passed (`15` tests), JSON guardrail assertions passed.
 - Four-eyes audit: Ramanujan found one cache fail-closed weakness before commit; fixed by preserving structured `exists:false` cache evidence and adding a regression test.
 - Next: return to Phase 9 closure path, then Phase 10 bounded empirical smoke only after the predispatch gate is stable; no SOH performance/SOTA claim yet.
+
+## CODEX STATUS 2026-05-09 04:30 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `97%` (`+0%` since previous mobile status).
+- Phase 10: `75%` (`+0%` since previous mobile status).
+- Phase 11: `59%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
