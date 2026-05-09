@@ -737,3 +737,27 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Phase 11: `100%` (`+0%` since previous mobile status).
 - Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
 - Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
+
+## CODEX STATUS 2026-05-09 10:09 CEST
+
+- Codex exec actifs: `0` OS-level workers; worker launch intentionally held during cleanup.
+- Cleanup: active; stale worktrees are being removed from product repos after archive.
+- Cleanup delta: async/specs are at `0` secondary worktrees; datasets/stats/runner/filters still pruning/removing large NTFS worktree sets.
+- Phase 9: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 10: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 11: `100%` (`+0%`); mechanical-only, `NO_GO_CLAIM`.
+- Phase 12: `0%` (`+0%` implementation); execution plan created, product writes locked until cleanup audit is committed.
+- Challenge/decision: do not launch Phase 12 writes before repo hygiene is restored, because that would recreate stale branch/worktree ambiguity.
+- Next: finish cleanup, commit cleanup audit, then launch Phase 12 first wave with disjoint scopes.
+
+## CODEX STATUS 2026-05-09 10:15 CEST
+
+- Codex exec actifs: `0` workdirs, `0` PIDs.
+- Read-only status loop: `yes`.
+- Upload HF: `0`.
+- Scope: Phase 9 empirical closure first; Phase 10/11 stay locked unless Phase 9 evidence passes.
+- Phase 9: `100%` (`+0%` since previous mobile status).
+- Phase 10: `100%` (`+0%` since previous mobile status).
+- Phase 11: `100%` (`+0%` since previous mobile status).
+- Scientific closure: `NO-GO` until a real Tier2 Phase 9 empirical artifact bundle passes acceptance.
+- Next: Phase 9 empirical profile-axis run, acceptance gate, closure report.
