@@ -146,15 +146,14 @@ def main() -> int:
         counts[final_status] += 1
         changed = True
 
-    report = (
-        f"\n## CODEX STATUS {datetime.now().strftime('%Y-%m-%d %H:%M CEST')}\n"
-        f"- Phase 13 direct monitor: running `{counts['running_direct']}`, "
-        f"done `{counts['done']}`, error `{counts['error']}`.\n"
-        "- Workers remain claim-guarded: no empirical SOC/SOH or method-ranking claim.\n"
-    )
-    MOBILE.write_text(MOBILE.read_text(encoding="utf-8") + report, encoding="utf-8")
-
     if changed:
+        report = (
+            f"\n## CODEX STATUS {datetime.now().strftime('%Y-%m-%d %H:%M CEST')}\n"
+            f"- Phase 13 direct monitor: running `{counts['running_direct']}`, "
+            f"done `{counts['done']}`, error `{counts['error']}`.\n"
+            "- Workers remain claim-guarded: no empirical SOC/SOH or method-ranking claim.\n"
+        )
+        MOBILE.write_text(MOBILE.read_text(encoding="utf-8") + report, encoding="utf-8")
         git(ASYNC, "add", "inbox", "outbox", "docs/MOBILE_CTO_CHAT.md")
         git(ASYNC, "commit", "-m", "GLASSBOX record Phase 13 direct worker updates")
         git(ASYNC, "pull", "--rebase", "origin", "main")
@@ -166,4 +165,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

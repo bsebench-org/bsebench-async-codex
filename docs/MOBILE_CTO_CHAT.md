@@ -1258,3 +1258,7 @@ Codex workdirs, Hugging Face uploads paused, post-Phase-11 audit plan committed.
 - Branch cleanup: BSEBench product repos clean on `main`; no merged local branches to delete; `bsebench-async-codex-worker-2` fast-forwarded.
 - Phase 13: 17 direct isolated `codex exec` launched in product worktrees after async shared-lock issue was diagnosed; statuses marked `running_direct` to prevent duplicate async pickup.
 - Phase 12 blockers preserved: no SOC derivation, no estimator execution, no transfer execution, no parameter use unless gates authorize it.
+
+## CODEX STATUS 2026-05-09 15:56 CEST
+- Phase 13 direct monitor: running `17`, done `0`, error `0`.
+- Workers remain claim-guarded: no empirical SOC/SOH or method-ranking claim.
