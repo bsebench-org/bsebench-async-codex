@@ -1,0 +1,160 @@
++
++    with pytest.raises(ValidationError, match="noise_evidence"):
++        Phase14InformationBound.model_validate(payload)
++
++
++def test_dangling_matrix_evidence_fails_closed() -> None:
++    """Matrix evidence references must resolve to matrix_values artifacts."""
++    payload = _payload()
++    payload["pcrlb_inputs"]["prior_covariance"]["evidence_id"] = "missing_matrix_report"
++
++    with pytest.raises(ValidationError, match="p0 evidence_id"):
++        Phase14InformationBound.model_validate(payload)
++
++
++def test_non_finite_matrix_entries_fail_closed() -> None:
++    """PCRLB matrices cannot contain NaN or infinity."""
++    payload = _payload()
++    payload["pcrlb_inputs"]["state_transition_jacobians"][0]["values"][0][0] = math.inf
++
++    with pytest.raises(ValidationError, match="finite"):
++        Phase14InformationBound.model_validate(payload)
++
++
++def test_matrix_dimension_mismatch_fails_closed() -> None:
++    """Matrix shapes are checked against the declared state and measurement dimensions."""
++    payload = _payload()
++    payload["pcrlb_inputs"]["measurement_jacobians"][0] = _matrix(
++        "h_000",
++        "measurement_jacobian",
++        [[1.0]],
++    )
++
++    with pytest.raises(ValidationError, match="measurement_jacobians matrix dimensions"):
++        Phase14InformationBound.model_validate(payload)
++
++
++@pytest.mark.parametrize(
++    ("path", "values", "message"),
++    [
++        (
++            ("pcrlb_inputs", "process_noise_covariances", 0),
++            [[0.001, 0.1], [0.0, 0.002]],
++            "symmetric",
++        ),
++        (
++            ("pcrlb_outputs", "information_matrices", 0),
++            [[1.0, 2.0], [2.0, 1.0]],
++            "positive definite",
++        ),
++    ],
++)
++def test_invalid_covariance_or_information_matrix_fails_closed(
++    path: tuple[str, str, int],
++    values: list[list[float]],
++    message: str,
++) -> None:
++    """Covariance and information matrices must be symmetric positive definite."""
++    payload = _payload()
++    section, matrix_list, index = path
++    payload[section][matrix_list][index]["values"] = values
++
++    with pytest.raises(ValidationError, match=message):
++        Phase14InformationBound.model_validate(payload)
++
++
++def test_model_uncertainty_metadata_fails_closed() -> None:
++    """Non-empty model uncertainty requires matching labels and parameter covariance."""
++    payload = _payload()
++    payload["model_uncertainty"].pop("parameter_covariance")
++
++    with pytest.raises(ValidationError, match="parameter_covariance"):
++        Phase14InformationBound.model_validate(payload)
++
++    payload = _payload()
++    payload["model_uncertainty"]["parameter_labels"] = ["r0"]
++
++    with pytest.raises(ValidationError, match="parameter_labels length"):
++        Phase14InformationBound.model_validate(payload)
++
++
++def test_noise_evidence_must_cover_all_noise_covariances() -> None:
++    """Process and measurement noise evidence must cover every noise covariance matrix."""
++    payload = _payload()
++    payload["noise_evidence"][0]["covariance_matrix_ids"] = ["q_000"]
++
++    with pytest.raises(ValidationError, match="process noise evidence"):
++        Phase14InformationBound.model_validate(payload)
++
++
++def test_claim_language_and_claim_fields_are_rejected() -> None:
++    """Unsupported scientific claims cannot be smuggled through text or flags."""
++    payload = _payload()
++    payload["summary"] = "SOTA tight bound that proves universal validity."
++
++    with pytest.raises(ValidationError, match="summary"):
++        Phase14InformationBound.model_validate(payload)
++
++    payload = _payload()
++    payload["no_go_claim"]["filter_superiority_claim"] = True
++
++    with pytest.raises(ValidationError):
++        Phase14InformationBound.model_validate(payload)
++
++
++def test_phase14_information_bound_schema_valid_json() -> None:
++    """Checked-in phase14_information_bound.schema.json parses as valid JSON."""
++    assert SCHEMA_PATH.exists()
++    schema = _load_checked_in_schema()
++
++    assert schema["title"] == "Phase14InformationBound"
++    assert schema["$id"] == "https://bsebench.org/schemas/phase14_information_bound.schema.json"
++    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
++    assert "no_go_claim" in schema["required"]
++    assert "noise_evidence" in schema["required"]
++
++
++def test_generated_schema_exposes_fail_closed_required_fields() -> None:
++    """Generated schema requires the fields that close common evidence gaps."""
++    schema = Phase14InformationBound.model_json_schema()
++
++    required = set(schema["required"])
++    assert {
++        "state_space",
++        "measurement_space",
++        "pcrlb_inputs",
++        "model_uncertainty",
++        "noise_evidence",
++        "pcrlb_outputs",
++        "evidence",
++        "no_go_claim",
++    } <= required
++    assert schema["properties"]["noise_evidence"]["minItems"] == 2
++    assert schema["properties"]["evidence"]["minItems"] == 1
++
++
++def test_checked_in_schema_matches_generated_schema() -> None:
++    """Checked-in schema stays synchronized with the Pydantic contract."""
++    generated = Phase14InformationBound.model_json_schema()
++    generated["$id"] = "https://bsebench.org/schemas/phase14_information_bound.schema.json"
++    generated["$schema"] = "https://json-schema.org/draft/2020-12/schema"
++
++    assert _load_checked_in_schema() == generated
+
+tokens used
+129,845
+Implemented, committed, and pushed the Phase 14 information-bound contract.
+
+Changed:
+- [phase14_information_bound.py](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase14-01-specs-information-bound-schema-20260509T145752Z/src/bsebench_specs/phase14_information_bound.py)
+- [phase14_information_bound.schema.json](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase14-01-specs-information-bound-schema-20260509T145752Z/schemas/phase14_information_bound.schema.json)
+- [test_phase14_information_bound.py](/mnt/c/doctorat/bsebench-org/bsebench-specs-glassbox-phase14-01-specs-information-bound-schema-20260509T145752Z/tests/test_phase14_information_bound.py)
+
+Commit pushed:
+`1a67d01 GLASSBOX [role: phase14-specs-bound-schema] add information-bound schema`
+
+Validation:
+- `uv run --extra dev pytest tests/test_phase14_information_bound.py tests/test_schema_export.py` passed: 26 passed
+- `uv run --extra dev ruff check src/bsebench_specs/phase14_information_bound.py tests/test_phase14_information_bound.py` passed
+- `git diff --check` and staged `git diff --cached --check` passed
+- `uv run --extra dev pytest` passed: 210 passed, 1 skipped. The skipped test was an existing optional JSON Schema availability check.

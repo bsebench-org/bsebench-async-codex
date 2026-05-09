@@ -1,0 +1,160 @@
++@pytest.mark.fast
++@pytest.mark.parametrize(
++    ("matrix", "message"),
++    [
++        ([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], r"square"),
++        ([[1.0, np.nan], [0.0, 1.0]], r"finite"),
++        ([[1.0, True], [0.0, 1.0]], r"booleans"),
++        ([1.0, 2.0], r"2D"),
++    ],
++)
++def test_validate_square_matrix_rejects_invalid_finite_square_inputs(
++    matrix: object,
++    message: str,
++) -> None:
++    with pytest.raises(Phase14MatrixCheckError, match=message):
++        validate_square_matrix(matrix)
++
++
++@pytest.mark.fast
++def test_validate_symmetric_matrix_accepts_tolerance_and_rejects_asymmetry() -> None:
++    report = validate_symmetric_matrix(
++        [[2.0, 1.0 + 1e-12], [1.0, 3.0]],
++        symmetry_atol=1e-10,
++    )
++
++    assert report["symmetry"]["symmetric"] is True
++    assert report["symmetry"]["max_abs_asymmetry"] <= 1e-10
++    _assert_strict_json(report)
++
++    with pytest.raises(Phase14MatrixCheckError, match=r"symmetric") as exc_info:
++        validate_symmetric_matrix([[1.0, 2.0], [0.0, 1.0]], name="gain_matrix")
++
++    assert exc_info.value.diagnostics["status"] == "fail"
++    assert exc_info.value.diagnostics["matrix_name"] == "gain_matrix"
++    _assert_strict_json(exc_info.value.diagnostics)
++
++
++@pytest.mark.fast
++def test_validate_psd_matrix_accepts_singular_covariance_but_not_inversion_safe() -> None:
++    report = validate_psd_matrix([[1.0, 1.0], [1.0, 1.0]], name="cov")
++
++    assert report["spectrum"]["psd"] is True
++    assert report["spectrum"]["spd"] is False
++    assert report["conditioning"]["condition_number"] is None
++    assert report["conditioning"]["inversion_safe"] is False
++    _assert_strict_json(report)
++
++
++@pytest.mark.fast
++def test_validate_psd_matrix_rejects_negative_spectrum_with_json_safe_diagnostics() -> None:
++    with pytest.raises(Phase14MatrixCheckError, match=r"positive semidefinite") as exc_info:
++        validate_psd_matrix([[1.0, 0.0], [0.0, -0.25]], name="cov")
++
++    diagnostics = exc_info.value.diagnostics
++    assert diagnostics["status"] == "fail"
++    assert diagnostics["spectrum"]["min_eigenvalue"] == pytest.approx(-0.25)
++    assert diagnostics["spectrum"]["psd"] is False
++    _assert_strict_json(diagnostics)
++
++
++@pytest.mark.fast
++def test_validate_spd_matrix_requires_strictly_positive_spectrum() -> None:
++    report = validate_spd_matrix([[2.0, 0.25], [0.25, 1.0]], name="information")
++
++    assert report["spectrum"]["spd"] is True
++    assert report["conditioning"]["condition_number"] is not None
++    _assert_strict_json(report)
++
++    with pytest.raises(Phase14MatrixCheckError, match=r"positive definite"):
++        validate_spd_matrix([[1.0, 1.0], [1.0, 1.0]])
++
++
++@pytest.mark.fast
++def test_validate_dimension_compatibility_checks_declared_vector_and_matrix_dims() -> None:
++    report = validate_dimension_compatibility(
++        np.eye(3),
++        expected_dim=3,
++        reference_vector=[0.0, 1.0, 2.0],
++        reference_matrix=2.0 * np.eye(3),
++        name="covariance",
++        reference_vector_name="state",
++        reference_matrix_name="information",
++    )
++
++    assert report["matrix_role"] == "dimension_compatibility"
++    assert report["dimension"] == 3
++    assert report["dimension_checks"] == [
++        {"name": "expected_dim", "dimension": 3, "status": "pass"},
++        {"name": "state", "dimension": 3, "status": "pass"},
++        {"name": "information", "dimension": 3, "status": "pass"},
++    ]
++    _assert_strict_json(report)
++
++    with pytest.raises(Phase14MatrixCheckError, match=r"reference_vector length") as exc_info:
++        validate_dimension_compatibility(np.eye(3), reference_vector=[0.0, 1.0], name="cov")
++    assert exc_info.value.diagnostics["dimension_checks"][0] == {
++        "name": "reference_vector",
++        "dimension": 2,
++        "status": "fail",
++    }
++    _assert_strict_json(exc_info.value.diagnostics)
++
++
++@pytest.mark.fast
++def test_validate_inversion_ready_matrix_refuses_regularization_and_bad_conditioning() -> None:
++    with pytest.raises(Phase14MatrixCheckError, match=r"regularization is unsupported") as exc_info:
++        validate_inversion_ready_matrix(np.eye(2), regularization=1e-6)
++
++    assert exc_info.value.diagnostics["regularization"]["requested"] is True
++    assert exc_info.value.diagnostics["regularization"]["applied"] is False
++    _assert_strict_json(exc_info.value.diagnostics)
++
++    with pytest.raises(Phase14MatrixCheckError, match=r"condition number") as conditioned:
++        validate_inversion_ready_matrix(
++            [[1.0, 0.0], [0.0, 1e-8]],
++            max_condition_number=1e6,
++        )
++    assert conditioned.value.diagnostics["conditioning"]["inversion_safe"] is False
++    _assert_strict_json(conditioned.value.diagnostics)
++
++
++@pytest.mark.fast
++def test_covariance_and_information_matrix_roles_fail_closed() -> None:
++    covariance = validate_covariance_matrix([[1.0, 0.0], [0.0, 0.0]], expected_dim=2)
++    information = validate_information_matrix([[2.0, 0.0], [0.0, 1.0]], expected_dim=2)
++
++    assert covariance["matrix_role"] == "covariance"
++    assert covariance["spectrum"]["psd"] is True
++    assert covariance["spectrum"]["spd"] is False
++    assert information["matrix_role"] == "information"
++    assert information["spectrum"]["spd"] is True
++    assert information["conditioning"]["inversion_safe"] is True
++    _assert_strict_json(covariance)
++    _assert_strict_json(information)
++
++    with pytest.raises(Phase14MatrixCheckError, match=r"positive definite"):
++        validate_information_matrix([[1.0, 1.0], [1.0, 1.0]])
++    with pytest.raises(Phase14MatrixCheckError, match=r"regularization is unsupported"):
++        validate_covariance_matrix(np.eye(2), regularization=1e-9)
+
+tokens used
+123,283
+Implemented and pushed the Phase 14 matrix checks.
+
+Changes:
+- Added finite matrix validators in [phase14_matrix_checks.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-02-stats-matrix-checks-20260509T145752Z/src/bsebench_stats/phase14_matrix_checks.py:1)
+- Added focused tests in [test_phase14_matrix_checks.py](/mnt/c/doctorat/bsebench-org/bsebench-stats-glassbox-phase14-02-stats-matrix-checks-20260509T145752Z/tests/test_phase14_matrix_checks.py:1)
+- Covered square shape, symmetry, PSD/SPD, dimension compatibility, covariance/information roles, inversion readiness, regularization refusal, and strict JSON-safe diagnostics.
+
+Validation run:
+- `uv run --extra dev ruff check src/bsebench_stats/phase14_matrix_checks.py tests/test_phase14_matrix_checks.py`
+- `uv run --extra dev pytest tests/test_phase14_matrix_checks.py`
+- `uv run --extra dev pytest` -> `394 passed`
+- `git diff --check`
+- `git diff --cached --check`
+
+Commit pushed:
+- `ca784756ce480f0a690b17ee66eedecaa6aa3efa`
+- `GLASSBOX [role: phase14-stats-matrix-checks] add finite matrix validators`
+- Branch: `glassbox-phase14-02-stats-matrix-checks-20260509T145752Z`
