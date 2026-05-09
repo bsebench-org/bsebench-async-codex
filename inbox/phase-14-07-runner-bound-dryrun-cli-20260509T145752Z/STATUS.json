@@ -3,15 +3,13 @@
   "depends_on": [
     "runner-bound-plan"
   ],
-  "direct_log": "/home/oakir/.local/state/bsebench-phase14-direct/phase-14-07-runner-bound-dryrun-cli-20260509T145752Z.log",
-  "direct_worktree": "/mnt/c/doctorat/bsebench-org/bsebench-runner-glassbox-phase14-07-runner-bound-dryrun-cli-20260509T145752Z",
   "exit_code": null,
   "phase_id": "phase-14-07-runner-bound-dryrun-cli-20260509T145752Z",
-  "status": "running_direct",
+  "status": "queued",
   "target_branch": "glassbox-phase14-07-runner-bound-dryrun-cli-20260509T145752Z",
   "target_repo": "/mnt/c/doctorat/bsebench-org/bsebench-runner",
   "ts_done": null,
   "ts_queued": "2026-05-09T14:57:52.652525Z",
   "ts_started": null,
-  "worker_id": "direct:3066276"
+  "worker_id": null
 }
