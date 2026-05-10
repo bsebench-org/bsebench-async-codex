@@ -36,6 +36,102 @@ with a frozen score and ranking, but it does not yet have a full SOC+SOH
 BSE-Score.
 ```
 
+## Passation Update After Phase 50-51
+
+Date: 2026-05-10
+Status: UPDATED BEFORE PHASE 52
+
+This section supersedes the immediate next-work notes below where they predate
+Phases 50 and 51.
+
+Current state:
+
+```text
+Phase 50: release/reproducibility gate closed.
+Phase 51: SOH extension contract frozen.
+Phase 52: next phase, not started at the time of this passation update.
+```
+
+Current scientific status:
+
+```text
+The SOC operational track is locally reproducible and ranked.
+The full SOC+SOH BSE-Score is still not authorized.
+The missing work is now precisely scoped: build and run real SOH-capable
+methods under a blinded split/materialization contract.
+```
+
+Phase 50 result:
+
+```text
+artifact: bsebench-runner/outputs/phase50_release_readiness_gate_20260510.json
+sha256: 987fa32c5a7908bc728590028d32dd238d23638c0ed8444384561849085a0ae7
+status: release_readiness_local_complete_publication_pending
+local_reproducibility_ready: true
+publication_pending: true
+blockers: 0
+```
+
+Phase 51 result:
+
+```text
+artifact: bsebench-runner/outputs/phase51_soh_extension_contract_20260510.json
+sha256: 4544dcf8601da06a51947a8bcf7341d5a407d9b2f1f4449a1b89e9214ddef304
+status: soh_extension_contract_frozen_execution_pending
+three SOH method families: frozen
+soh_method_implementation_authorized_next_phase: true
+soh_accuracy_claim_authorized_now: false
+full_bse_score_authorized_now: false
+blockers: 0
+```
+
+Additional runner commits now part of the local handoff:
+
+```text
+cd011f4 GLASSBOX add Phase 50 release readiness gate
+3a1a1fe GLASSBOX freeze Phase 51 SOH extension contract
+```
+
+Additional documentation commit now part of the local handoff:
+
+```text
+58ddb38 GLASSBOX document Phase 50 and 51 gates
+```
+
+Current repository publication status immediately before Phase 52:
+
+```text
+bsebench-runner: main...origin/main [ahead 8], clean
+bsebench-datasets: main...origin/main [ahead 1], clean
+bsebench-async-codex: main...origin/main [ahead 9] before this passation update, clean except this document
+```
+
+Publication order remains:
+
+```text
+1. Push bsebench-datasets Phase 44 truth-exposure commit.
+2. Update bsebench-runner dependency lock to the published datasets commit.
+3. Push bsebench-runner Phase 42/43/45/46/47/48/50/51 commits.
+4. Push bsebench-async-codex documentation and handoff commits.
+```
+
+The next implementation phase must be Phase 52:
+
+```text
+Build the blinded SOH split/materialization harness.
+```
+
+Phase 52 definition of done:
+
+```text
+Produce a deterministic split manifest for eligible SOH datasets.
+Materialize inference tables that exclude soh_truth and capacity_Ah.
+Keep truth join strictly post-prediction.
+Emit a machine-readable audit artifact proving leakage controls.
+Add tests for forbidden-column rejection, split isolation, and output schema.
+Do not compute SOH accuracy or the full BSE-Score yet.
+```
+
 ## Production Artifacts
 
 Runner:
@@ -45,6 +141,8 @@ bsebench-runner/outputs/phase45_truth_state_metrics_run_20260510.json
 bsebench-runner/outputs/phase46_soh_capability_gate_20260510.json
 bsebench-runner/outputs/phase47_operational_score_contract_20260510.json
 bsebench-runner/outputs/phase48_operational_score_run_20260510.json
+bsebench-runner/outputs/phase50_release_readiness_gate_20260510.json
+bsebench-runner/outputs/phase51_soh_extension_contract_20260510.json
 ```
 
 Datasets:
