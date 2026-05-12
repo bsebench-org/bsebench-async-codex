@@ -168,8 +168,28 @@ The project follows the
 A copy is committed to each repository as `CODE_OF_CONDUCT.md`.
 Enforcement decisions are recorded as Committee resolutions per §3.
 
-Reporting channel : `conduct@bsebench.org` (forwarded to the Committee
-chair). The chair rotates yearly among the voting non-candidate seats.
+**Reporting channel (M0.5 → M5)** — phased:
+
+- **From M0.5 to M4** : reports are sent to the PhD advisor's
+  institutional email (Mme Rim). The advisor anonymises the report and
+  forwards it to the Committee chair within 7 days. This is a temporary
+  arrangement while no committee infrastructure is yet operational.
+- **From M5 onwards** : a private GitHub repository
+  `bsebench-org/conduct-reports` is created with write access restricted
+  to the Committee chair, the candidate (until graduation), and a
+  rotating second-reader Committee member. Reporters file
+  *confidential* issues there. The promised `conduct@bsebench.org`
+  email is operationalised at M5 alongside this repo (DNS + forwarding
+  setup is part of the M5 release deliverable, tracked in
+  `bsebench-async-codex/rfcs/_pending/conduct_channel_operationalisation.md`).
+
+This phased plan is explicit so the v0.1 governance does not promise
+infrastructure that does not exist yet. The plan was added in M0.5
+after the advisor challenge (`ADVISOR_CHALLENGE_M0_2026-05-12.md` §4
+R9) flagged the original `conduct@bsebench.org` promise as
+non-operational.
+
+The chair rotates yearly among the voting non-candidate seats.
 
 ---
 
